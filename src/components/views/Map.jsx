@@ -3,10 +3,8 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import markerIcon from "leaflet/dist/images/marker-icon-2x.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
-import { useEffect } from "react";
-import { useRef } from "react";
-import StatCard from "../common/StatCard";
-import MapSampleDetails from "../modals/mapSampleDetails";
+import { useEffect, useState } from "react";
+import MapSampleDetailsModal from "../modals/mapSampleDetailsModal";
 
 // L.Icon.Default.mergeOptions({
 //   iconUrl: markerIcon,
@@ -45,15 +43,24 @@ const getDefaultIcon = (position) => {
   });
 };
 
-function handleClick(e) {
-  console.log("ive been clicked");
-}
-
 export default function Map({ samples }) {
-  const popupRef = useRef(null);
+  const [mapDetails, setMapDetails] = useState({
+    isOpen: false,
+    samples: [],
+  });
+
+  const handleMarkerClick = (samplesArray, LatAndLngArray) => {
+    const samplesWithSameCoordinates = samplesArray.filter(
+      (s) =>
+        s.coordinates.lat == LatAndLngArray[0] &&
+        s.coordinates.lng == LatAndLngArray[1]
+    );
+    setMapDetails({ isOpen: true, samples: samplesWithSameCoordinates });
+  };
+
   return (
     <>
-      <div className='border border-red-950'>
+      <div className='border-2 border-red-950 relative '>
         <MapContainer
           center={defaultPosition}
           zoom={13}
@@ -71,7 +78,6 @@ export default function Map({ samples }) {
               return (
                 <Marker
                   key={s.id}
-                  ref={popupRef}
                   position={[s.coordinates.lat, s.coordinates.lng]}
                   icon={getDefaultIcon([s.coordinates.lat, s.coordinates.lng])}
                   eventHandlers={{
@@ -79,6 +85,10 @@ export default function Map({ samples }) {
                     click: (e) => {
                       // Prevent Leaflet default popup toggle
                       e.originalEvent.stopPropagation();
+                      handleMarkerClick(samples, [
+                        s.coordinates.lat,
+                        s.coordinates.lng,
+                      ]);
                     },
                     mouseout: (e) => e.target.closePopup(),
                   }}
@@ -102,7 +112,12 @@ export default function Map({ samples }) {
           <FitBounds markers={samples} />
         </MapContainer>
         {/* Overlay */}
-        <MapSampleDetails />
+        {mapDetails.isOpen && (
+          <MapSampleDetailsModal
+            setMapDetails={setMapDetails}
+            mapDetails={mapDetails}
+          />
+        )}
       </div>
     </>
   );
