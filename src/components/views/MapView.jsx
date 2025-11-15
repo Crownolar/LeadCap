@@ -1,5 +1,5 @@
 import { MapPin, MapPinned } from "lucide-react";
-import Map from "./Map";
+import Map from "../other/Map";
 
 const demoSamples = [
   {
@@ -32,6 +32,14 @@ const demoSamples = [
     lga: "ilega",
     state: "Ibadan state",
     leadLevel: 100,
+    coordinates: { lat: 11.56, lng: 30.6 },
+  },
+  {
+    id: 5,
+    market: "Lautech market",
+    lga: "ilega",
+    state: "Ibadan state",
+    leadLevel: 200,
     coordinates: { lat: 11.56, lng: 30.6 },
   },
 ];

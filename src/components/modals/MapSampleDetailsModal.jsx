@@ -1,4 +1,4 @@
-import MapSampleDetails from "./mapSampleDetails";
+import MapSampleDetails from "../other/MapSampleDetails";
 
 export default function MapSampleDetailsModal({ setMapDetails, mapDetails }) {
   return (

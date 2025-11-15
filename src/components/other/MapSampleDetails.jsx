@@ -2,7 +2,10 @@ export default function MapSampleDetails({ samples }) {
   return (
     <>
       {samples.map((s) => (
-        <div className='max-w-sm w-full bg-white rounded-2xl shadow-lg p-4 m-2'>
+        <div
+          key={s.id}
+          className='max-w-sm w-full bg-white rounded-2xl shadow-lg p-4 m-2'
+        >
           <div className='flex items-center justify-between mb-2'>
             <h2 className='text-lg font-semibold text-gray-800'>Test Sample</h2>
             <span className='text-xl'>🧪</span>
