@@ -1,6 +1,13 @@
+import { useState } from "react";
 import MapSampleDetails from "../other/MapSampleDetails";
+import CommentSection from "../other/CommentSection";
 
 export default function MapSampleDetailsModal({ setMapDetails, mapDetails }) {
+  const [commentSectionView, setCommentSectionView] = useState({
+    isOpen: false,
+    sample: null,
+  });
+
   return (
     <>
       <div className='bg-gray-900 absolute left-0 top-0 w-full h-full z-[1000]'>
@@ -19,7 +26,17 @@ export default function MapSampleDetailsModal({ setMapDetails, mapDetails }) {
           </span>
         </div>
         <div>
-          <MapSampleDetails samples={mapDetails.samples} />
+          {!commentSectionView.isOpen ? (
+            <MapSampleDetails
+              samples={mapDetails.samples}
+              setCommentSectionView={setCommentSectionView}
+            />
+          ) : (
+            <CommentSection
+              commentSectionView={commentSectionView}
+              setCommentSectionView={setCommentSectionView}
+            />
+          )}
         </div>
       </div>
     </>

@@ -81,12 +81,12 @@ export default function Map({ samples }) {
 
   return (
     <>
-      <div className='border-2 border-red-950 relative  '>
+      <div className='border-2 border-red-950 relative h-[700px]  '>
         <MapContainer
           center={defaultPosition}
           zoom={13}
           style={{
-            height: "600px",
+            height: "700px",
             width: "100%",
           }}
         >

@@ -1,4 +1,4 @@
-export default function MapSampleDetails({ samples }) {
+export default function MapSampleDetails({ samples, setCommentSectionView }) {
   return (
     <>
       {samples.map((s) => (
@@ -28,6 +28,12 @@ export default function MapSampleDetails({ samples }) {
               <span className='text-sm text-gray-400'>Date</span>
               <span className='font-medium'>13 Nov 2025</span>
             </div>
+            <button
+              onClick={() => setCommentSectionView({ isOpen: true, sample: s })}
+              className='bg-green-700 p-1 text-lg text-white font-semibold '
+            >
+              View Comments
+            </button>
           </div>
         </div>
       ))}
