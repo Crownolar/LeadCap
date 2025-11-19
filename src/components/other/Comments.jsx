@@ -18,4 +18,4 @@ export default function Comments({ comment }) {
       </div>
     </div>
   );
-}
+} 

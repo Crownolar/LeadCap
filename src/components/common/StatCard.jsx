@@ -2,7 +2,7 @@ const StatCard = ({ icon: Icon, label, value, color, subtext, theme }) => (
   <div
     className={`${theme?.card || ""} rounded-lg shadow-md p-6 border ${
       theme?.border || ""
-    }`}
+    } ${theme?.text}`}
   >
     <div className='flex items-center justify-between'>
       <div>

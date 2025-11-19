@@ -19,11 +19,11 @@ const Layout = () => {
   const logout = () => {
     dispatch(handleLogout());
     localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("refreshToken"); 
   };
 
   return (
-    <div className={`min-h-screen flex flex-col ${theme.bg}`}>
+    <div className={`min-h-screen flex flex-col ${theme.bg} ${theme.text}`}>
       <Header
         theme={theme}
         currentUser={currentUser}

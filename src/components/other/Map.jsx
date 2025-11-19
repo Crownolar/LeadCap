@@ -3,7 +3,7 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import markerIcon from "leaflet/dist/images/marker-icon-2x.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "react"; 
 import MapSampleDetailsModal from "../modals/mapSampleDetailsModal";
 
 // coordinates for LAGOS

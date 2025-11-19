@@ -6,7 +6,7 @@ export default function MapSampleDetailsModal({ setMapDetails, mapDetails }) {
   const [commentSectionView, setCommentSectionView] = useState({
     isOpen: false,
     sample: null,
-  });
+  }); 
 
   return (
     <>
