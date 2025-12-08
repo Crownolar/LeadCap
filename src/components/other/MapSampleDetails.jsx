@@ -1,6 +1,13 @@
 export default function MapSampleDetails({ samples, setCommentSectionView }) {
+  function getColorBasedOnConatamination(level) {
+    if (level == "CONTAMINATED") return "text-red-600";
+    if (level == "MODERATE") return "text-yellow-600";
+    if (level == "PENDING") return "text-blue-600";
+    if (level == "SAFE") return "text-green-600";
+    return "";
+  }
   return (
-    <>
+    <div className='grid md:grid-cols-2 sm:grid-cols-1'>
       {samples.map((s) => (
         <div
           key={s.id}
@@ -11,17 +18,28 @@ export default function MapSampleDetails({ samples, setCommentSectionView }) {
             <span className='text-xl'>🧪</span>
           </div>
           <div className='mb-2 text-gray-500'>
-            <span className='font-medium'>ID: </span>12345
+            <span className='font-medium'>ID: </span>
+            {s.sampleId}
           </div>
           <div className='flex flex-col justify-between gap-4 text-gray-700'>
             <div className='flex justify-between'>
+              <span className='text-sm text-gray-400'>Prduct Type</span>
+              <span className='font-medium'>{s.productType}</span>
+            </div>
+            <div className='flex justify-between'>
               <span className='text-sm text-gray-400'>Status</span>
-              <span className='font-medium'>Pending</span>
+              <span
+                className={`font-medium ${getColorBasedOnConatamination(
+                  s.contaminationStatus
+                )}`}
+              >
+                {s.contaminationStatus}
+              </span>
             </div>
             <div className='flex justify-between'>
               <span className='text-sm text-gray-400'>Location</span>
               <span className='font-medium'>
-                {s.coordinates.lat}| {s.coordinates.lng}
+                {s.gpsLatitude} | {s.gpsLongitude}
               </span>
             </div>
             <div className='flex justify-between'>
@@ -37,6 +55,6 @@ export default function MapSampleDetails({ samples, setCommentSectionView }) {
           </div>
         </div>
       ))}
-    </>
+    </div>
   );
 }

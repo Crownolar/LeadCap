@@ -3,7 +3,7 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import markerIcon from "leaflet/dist/images/marker-icon-2x.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
-import { useEffect, useState } from "react"; 
+import { useEffect, useState } from "react";
 import MapSampleDetailsModal from "../modals/mapSampleDetailsModal";
 
 // coordinates for LAGOS
@@ -16,9 +16,10 @@ const FitBounds = ({ markers }) => {
       try {
         const bounds = L.latLngBounds(
           markers.map((m) => {
-            return [m.coordinates.lat, m.coordinates.lng];
+            return [parseInt(m.gpsLatitude), parseInt(m.gpsLongitude)];
           })
         );
+
         map.fitBounds(bounds, { padding: [50, 50] });
       } catch (e) {
         console.error(e.message);
@@ -55,14 +56,16 @@ const iconObject = (samplesLength, position) => {
 export default function Map({ samples }) {
   const [mapDetails, setMapDetails] = useState({
     isOpen: false,
-    samples: [],
+    samples: null,
   });
 
   const sameLngAndLat = (samplesArray, LatAndLngArray) => {
+    // console.log(samplesArray);
+
     return samplesArray.filter(
       (s) =>
-        s.coordinates.lat == LatAndLngArray[0] &&
-        s.coordinates.lng == LatAndLngArray[1]
+        parseInt(s.gpsLatitude) == parseInt(LatAndLngArray[0]) &&
+        parseInt(s.gpsLongitude) == parseInt(LatAndLngArray[1])
     );
   };
 
@@ -76,6 +79,7 @@ export default function Map({ samples }) {
       samplesArray,
       LatAndLngArray
     );
+    // console.log(samplesWithSameCoordinates);
     setMapDetails({ isOpen: true, samples: samplesWithSameCoordinates });
   };
 
@@ -95,16 +99,16 @@ export default function Map({ samples }) {
             attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
           ></TileLayer>
           {samples.map((s) => {
-            if (s.coordinates.lat && s.coordinates.lng) {
-              const coord = [s.coordinates.lat, s.coordinates.lng];
+            if (s.gpsLatitude && s.gpsLongitude) {
+              const coord = [parseInt(s.gpsLatitude), parseInt(s.gpsLongitude)];
               return (
                 <Marker
                   style={{ position: "relative" }}
                   key={s.id}
-                  position={[s.coordinates.lat, s.coordinates.lng]}
+                  position={[parseInt(s.gpsLatitude), parseInt(s.gpsLongitude)]}
                   icon={getDefaultIcon(samples, [
-                    s.coordinates.lat,
-                    s.coordinates.lng,
+                    parseInt(s.gpsLatitude),
+                    parseInt(s.gpsLongitude),
                   ])}
                   eventHandlers={{
                     mouseover: (e) => e.target.openPopup(),
@@ -122,7 +126,7 @@ export default function Map({ samples }) {
                     closeButton={false}
                   >
                     <div>
-                      <h3>{s.state}</h3>
+                      <h3>{s.state.name}</h3>
                       <h4>
                         Total: {sameLngAndLat(samples, coord).length}{" "}
                         {sameLngAndLat(samples, coord).length > 1
