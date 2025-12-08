@@ -1,6 +1,5 @@
 import React from "react";
 import { FileText, BarChart3, Package, AlertTriangle } from "lucide-react";
-import { generatePDFReport } from "../../utils/helpers";
 
 const Reports = ({ theme, analytics, samples }) => {
   return (
@@ -11,8 +10,8 @@ const Reports = ({ theme, analytics, samples }) => {
       <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <button
-            onClick={() => generatePDFReport("state", analytics, samples)}
-            className="p-6 border-2 border-emerald-500 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors text-left"
+            disabled
+            className="p-6 border-2 border-emerald-500 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors text-left opacity-50 cursor-not-allowed"
           >
             <FileText className="w-8 h-8 text-emerald-500 mb-2" />
             <h3 className="font-semibold mb-1">State Summary Report</h3>
@@ -21,10 +20,8 @@ const Reports = ({ theme, analytics, samples }) => {
             </p>
           </button>
           <button
-            onClick={() =>
-              generatePDFReport("contamination", analytics, samples)
-            }
-            className="p-6 border-2 border-blue-500 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-left"
+            disabled
+            className="p-6 border-2 border-blue-500 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-left opacity-50 cursor-not-allowed"
           >
             <BarChart3 className="w-8 h-8 text-blue-500 mb-2" />
             <h3 className="font-semibold mb-1">Contamination Analysis</h3>
@@ -33,8 +30,8 @@ const Reports = ({ theme, analytics, samples }) => {
             </p>
           </button>
           <button
-            onClick={() => generatePDFReport("product", analytics, samples)}
-            className="p-6 border-2 border-purple-500 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors text-left"
+            disabled
+            className="p-6 border-2 border-purple-500 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors text-left opacity-50 cursor-not-allowed"
           >
             <Package className="w-8 h-8 text-purple-500 mb-2" />
             <h3 className="font-semibold mb-1">Product Type Report</h3>
@@ -43,8 +40,8 @@ const Reports = ({ theme, analytics, samples }) => {
             </p>
           </button>
           <button
-            onClick={() => generatePDFReport("risk", analytics, samples)}
-            className="p-6 border-2 border-orange-500 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors text-left"
+            disabled
+            className="p-6 border-2 border-orange-500 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors text-left opacity-50 cursor-not-allowed"
           >
             <AlertTriangle className="w-8 h-8 text-orange-500 mb-2" />
             <h3 className="font-semibold mb-1">Risk Assessment</h3>

@@ -1,7 +1,38 @@
 import { X, AlertTriangle } from "lucide-react";
 import { productTypes } from "../../utils/constants";
 
+// Helper to format vendor type for display
+const formatVendorType = (vendorType, vendorTypeOther) => {
+  if (vendorType === "OTHER" && vendorTypeOther) {
+    return vendorTypeOther;
+  }
+  return vendorType?.replace(/_/g, " ") || "N/A";
+};
+
+// Helper to get contamination info from heavy metal readings
+const getContaminationInfo = (heavyMetalReadings) => {
+  if (!heavyMetalReadings || heavyMetalReadings.length === 0) {
+    return { hasReadings: false, maxReading: null, contaminatedMetals: [] };
+  }
+  
+  const contaminatedMetals = heavyMetalReadings.filter(r => r.status === "CONTAMINATED");
+  const allReadings = heavyMetalReadings.map(r => ({
+    metal: r.heavyMetal,
+    xrf: r.xrfReading ? parseFloat(r.xrfReading) : null,
+    aas: r.aasReading ? parseFloat(r.aasReading) : null,
+    status: r.status
+  }));
+  
+  return { 
+    hasReadings: true, 
+    readings: allReadings,
+    contaminatedMetals 
+  };
+};
+
 const SampleDetailModal = ({ theme, sample, onClose }) => {
+  const contaminationInfo = getContaminationInfo(sample?.heavyMetalReadings);
+  
   return (
     <div
       className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50${theme.text}`}
@@ -20,7 +51,7 @@ const SampleDetailModal = ({ theme, sample, onClose }) => {
             <p
               className={`text-xs sm:text-sm ${theme.textMuted} mt-1 truncate`}
             >
-              {sample?.id}
+              {sample?.sampleId}
             </p>
           </div>
           <button
@@ -44,13 +75,17 @@ const SampleDetailModal = ({ theme, sample, onClose }) => {
                 </h3>
                 <div className="space-y-2 text-sm sm:text-base">
                   {[
-                    ["Product Type:", productTypes[sample?.productType]],
-                    ["Brand:", sample?.brand],
+                    ["Product Type:", productTypes[sample?.productType] || sample?.productType],
+                    ["Brand:", sample?.brandName || "N/A"],
+                    ["Batch Number:", sample?.batchNumber || "N/A"],
+                    ["Product Origin:", sample?.productOrigin?.replace(/_/g, " ") || "N/A"],
                     [
                       "Registered:",
-                      sample?.registered ? "Yes (NAFDAC/SON)" : "No",
+                      sample?.isRegistered ? "Yes (NAFDAC/SON)" : "No",
                     ],
-                    ["Price:", `₦${sample?.price?.toLocaleString()}`],
+                    ["NAFDAC Number:", sample?.navdacNumber || "N/A"],
+                    ["SON Number:", sample?.sonNumber || "N/A"],
+                    ["Price:", sample?.price ? `₦${sample?.price?.toLocaleString()}` : "N/A"],
                   ].map(([label, value]) => (
                     <div
                       key={label}
@@ -64,19 +99,6 @@ const SampleDetailModal = ({ theme, sample, onClose }) => {
                       </span>
                     </div>
                   ))}
-
-                  <div className="flex justify-between flex-wrap gap-x-2 text-xs sm:text-sm">
-                    <span className={theme.textMuted}>Lead Level:</span>
-                    <span
-                      className={`font-bold ${
-                        sample?.leadLevel > 1000
-                          ? "text-red-500"
-                          : "text-green-500"
-                      }`}
-                    >
-                      {sample?.leadLevel?.toLocaleString()} ppm
-                    </span>
-                  </div>
 
                   <div className="flex justify-between flex-wrap gap-x-2 text-xs sm:text-sm">
                     <span className={theme.textMuted}>Status:</span>
@@ -89,7 +111,7 @@ const SampleDetailModal = ({ theme, sample, onClose }) => {
                           : "bg-yellow-100 text-yellow-800"
                       }`}
                     >
-                      {sample?.status?.toUpperCase()}
+                      {sample?.status?.toUpperCase() || "PENDING"}
                     </span>
                   </div>
                 </div>
@@ -102,12 +124,12 @@ const SampleDetailModal = ({ theme, sample, onClose }) => {
                 </h3>
                 <div className="space-y-2 text-sm sm:text-base">
                   {[
-                    ["State:", sample?.state],
-                    ["LGA:", sample?.lga],
-                    ["Market:", sample?.market],
-                    ["Vendor Type:", sample?.vendorType],
-                    ["Collection Date:", sample?.date],
-                    ["Collected By:", sample?.collectedBy],
+                    ["State:", sample?.state?.name || "N/A"],
+                    ["LGA:", sample?.lga?.name || "N/A"],
+                    ["Market:", sample?.market?.name || "N/A"],
+                    ["Vendor Type:", formatVendorType(sample?.vendorType, sample?.vendorTypeOther)],
+                    ["Collection Date:", sample?.createdAt ? new Date(sample?.createdAt).toLocaleDateString() : "N/A"],
+                    ["Collected By:", sample?.creator?.fullName || "N/A"],
                   ].map(([label, value]) => (
                     <div
                       key={label}
@@ -122,11 +144,11 @@ const SampleDetailModal = ({ theme, sample, onClose }) => {
                     </div>
                   ))}
 
-                  {sample?.coordinates?.lat && sample?.coordinates?.lng && (
+                  {sample?.gpsLatitude && sample?.gpsLongitude && (
                     <div className="flex justify-between flex-wrap gap-x-2 text-xs sm:text-sm">
                       <span className={theme.textMuted}>GPS:</span>
                       <span className="font-medium text-xs text-right break-words">
-                        {sample?.coordinates?.lat}, {sample?.coordinates?.lng}
+                        {sample?.gpsLatitude}, {sample?.gpsLongitude}
                       </span>
                     </div>
                   )}
@@ -134,47 +156,101 @@ const SampleDetailModal = ({ theme, sample, onClose }) => {
               </div>
             </div>
 
-            {/* Photos */}
-            {(sample?.productPhoto || sample?.vendorPhoto) && (
+            {/* Heavy Metal Readings */}
+            {contaminationInfo.hasReadings && (
+              <div>
+                <h3 className="text-base sm:text-lg font-semibold mb-3 text-emerald-500">
+                  Heavy Metal Analysis
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs sm:text-sm">
+                    <thead>
+                      <tr className={`border-b ${theme.border}`}>
+                        <th className="text-left py-2 px-2">Metal</th>
+                        <th className="text-left py-2 px-2">XRF Reading</th>
+                        <th className="text-left py-2 px-2">AAS Reading</th>
+                        <th className="text-left py-2 px-2">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {contaminationInfo.readings?.map((reading, idx) => (
+                        <tr key={idx} className={`border-b ${theme.border}`}>
+                          <td className="py-2 px-2 font-medium">{reading.metal}</td>
+                          <td className="py-2 px-2">{reading.xrf ? `${reading.xrf} ppm` : "—"}</td>
+                          <td className="py-2 px-2">{reading.aas ? `${reading.aas} ppm` : "—"}</td>
+                          <td className="py-2 px-2">
+                            <span
+                              className={`px-2 py-1 text-[10px] font-semibold rounded-full ${
+                                reading.status === "SAFE"
+                                  ? "bg-green-100 text-green-800"
+                                  : reading.status === "CONTAMINATED"
+                                  ? "bg-red-100 text-red-800"
+                                  : reading.status === "MODERATE"
+                                  ? "bg-orange-100 text-orange-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              {reading.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Product Photo */}
+            {sample?.productPhotoUrl && (
               <div>
                 <h3 className="text-base sm:text-lg font-semibold mb-3 text-emerald-500">
                   Documentation
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  {sample?.productPhoto && (
-                    <div>
-                      <p
-                        className={`text-xs sm:text-sm ${theme.textMuted} mb-2`}
-                      >
-                        Product Photo
-                      </p>
-                      <img
-                        src={sample?.productPhoto}
-                        alt="Product"
-                        className="w-full h-44 sm:h-56 object-cover rounded-lg"
-                      />
+                  <div>
+                    <p className={`text-xs sm:text-sm ${theme.textMuted} mb-2`}>
+                      Product Photo
+                    </p>
+                    <img
+                      src={sample?.productPhotoUrl}
+                      alt="Product"
+                      className="w-full h-44 sm:h-56 object-cover rounded-lg"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Comments Section */}
+            {sample?.comments && sample?.comments.length > 0 && (
+              <div>
+                <h3 className="text-base sm:text-lg font-semibold mb-3 text-emerald-500">
+                  Comments ({sample?.comments.length})
+                </h3>
+                <div className="space-y-3">
+                  {sample?.comments.map((comment) => (
+                    <div 
+                      key={comment.id} 
+                      className={`p-3 rounded-lg border ${theme.border} ${theme.card}`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="font-medium text-sm">
+                          {comment.user?.fullName || "Unknown"}
+                        </span>
+                        <span className={`text-xs ${theme.textMuted}`}>
+                          {new Date(comment.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-sm">{comment.commentText}</p>
                     </div>
-                  )}
-                  {sample?.vendorPhoto && (
-                    <div>
-                      <p
-                        className={`text-xs sm:text-sm ${theme.textMuted} mb-2`}
-                      >
-                        Vendor Stall Photo
-                      </p>
-                      <img
-                        src={sample?.vendorPhoto}
-                        alt="Vendor"
-                        className="w-full h-44 sm:h-56 object-cover rounded-lg"
-                      />
-                    </div>
-                  )}
+                  ))}
                 </div>
               </div>
             )}
 
             {/* Warning Box */}
-            {sample?.leadLevel > 1000 && (
+            {sample?.status === "contaminated" && (
               <div className="bg-red-500 bg-opacity-10 border border-red-500 rounded-lg p-3 sm:p-4">
                 <div className="flex items-start gap-2 sm:gap-3">
                   <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -183,9 +259,8 @@ const SampleDetailModal = ({ theme, sample, onClose }) => {
                       Contaminated Product Alert
                     </h4>
                     <p className="text-xs sm:text-sm text-red-600 dark:text-red-400">
-                      This product exceeds safe lead levels (1000 ppm).
-                      Immediate action required. Do not use or distribute this
-                      product.
+                      This product has been found to contain heavy metals exceeding safe limits.
+                      Immediate action required. Do not use or distribute this product.
                     </p>
                   </div>
                 </div>

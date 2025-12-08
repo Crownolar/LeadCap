@@ -1,7 +1,22 @@
 import React from "react";
 import { Search, Download } from "lucide-react";
-import { statesData, productTypes } from "../../utils/constants";
-import { handleExcelExport } from "../../utils/helpers";
+import { productTypes } from "../../utils/constants";
+import axios from "axios";
+
+const API_BASE_URL = "/api";
+
+// Helper to get max heavy metal reading for display
+const getMaxReading = (heavyMetalReadings) => {
+  if (!heavyMetalReadings || heavyMetalReadings.length === 0) return null;
+  
+  let maxReading = 0;
+  heavyMetalReadings.forEach(reading => {
+    const xrf = reading.xrfReading ? parseFloat(reading.xrfReading) : 0;
+    const aas = reading.aasReading ? parseFloat(reading.aasReading) : 0;
+    maxReading = Math.max(maxReading, xrf, aas);
+  });
+  return maxReading > 0 ? maxReading : null;
+};
 
 const Database = ({
   theme,
@@ -15,7 +30,30 @@ const Database = ({
   setFilterStatus,
   filteredSamples,
   setSelectedSample,
+  states = [], // States passed from parent (fetched from API)
 }) => {
+  const handleExcelExportClick = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/samples/export`, {
+        params: { format: "excel" },
+        responseType: "blob",
+      });
+      
+      // Create a download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `samples-export-${new Date().toISOString().split('T')[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to export samples:", error);
+      alert("Failed to export samples. Please try again.");
+    }
+  };
+
   return (
     <div className={`space-y-4 ${theme?.text}`}>
       <div
@@ -42,9 +80,9 @@ const Database = ({
               className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm sm:text-base`}
             >
               <option value="all">All States</option>
-              {Object.keys(statesData).map((state) => (
-                <option key={state} value={state}>
-                  {state}
+              {states.map((state) => (
+                <option key={state.id} value={state.id}>
+                  {state.name}
                 </option>
               ))}
             </select>
@@ -81,7 +119,7 @@ const Database = ({
 
         <div className="flex justify-end mt-4">
           <button
-            onClick={() => handleExcelExport(filteredSamples)}
+            onClick={() => handleExcelExportClick()}
             className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors"
           >
             <Download className="w-4 h-4" />
@@ -105,7 +143,7 @@ const Database = ({
                   "Sample ID",
                   "Product",
                   "Location",
-                  "Lead Level (ppm)",
+                  "Max Reading (ppm)",
                   "Status",
                   "Date",
                   "Actions",
@@ -121,55 +159,61 @@ const Database = ({
             </thead>
 
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredSamples?.map((sample) => (
+              {filteredSamples?.map((sample) => {
+                const maxReading = getMaxReading(sample?.heavyMetalReadings);
+                return (
                 <tr key={sample?.id} className={theme?.hover}>
                   <td className="px-4 py-3 whitespace-nowrap font-medium">
-                    {sample?.id}
+                    {sample?.sampleId}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div>
                       <div className="font-medium">{sample?.productName}</div>
                       <div className={`text-xs ${theme?.textMuted}`}>
-                        {sample?.brand}
+                        {sample?.brandName || "N/A"}
                       </div>
                     </div>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div>
                       <div>
-                        {sample?.lga}, {sample?.state}
+                        {sample?.lga?.name}, {sample?.state?.name}
                       </div>
                       <div className={`text-xs ${theme.textMuted}`}>
-                        {sample.market}
+                        {sample?.market?.name || "N/A"}
                       </div>
                     </div>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap font-semibold">
-                    <span
-                      className={
-                        sample?.leadLevel > 1000
-                          ? "text-red-500"
-                          : "text-green-500"
-                      }
-                    >
-                      {sample?.leadLevel.toLocaleString()}
-                    </span>
+                    {maxReading !== null ? (
+                      <span
+                        className={
+                          sample?.status === "contaminated"
+                            ? "text-red-500"
+                            : "text-green-500"
+                        }
+                      >
+                        {maxReading.toLocaleString()}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span
                       className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        sample.status === "safe"
+                        sample?.status === "safe"
                           ? "bg-green-100 text-green-800"
-                          : sample.status === "contaminated"
+                          : sample?.status === "contaminated"
                           ? "bg-red-100 text-red-800"
                           : "bg-yellow-100 text-yellow-800"
                       }`}
                     >
-                      {sample?.status.toUpperCase()}
+                      {sample?.status?.toUpperCase() || "PENDING"}
                     </span>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    {sample?.date}
+                    {sample?.createdAt ? new Date(sample?.createdAt).toLocaleDateString() : "N/A"}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <button
@@ -180,13 +224,15 @@ const Database = ({
                     </button>
                   </td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         </div>
 
         <div className="block sm:hidden space-y-4 p-2">
-          {filteredSamples?.map((sample) => (
+          {filteredSamples?.map((sample) => {
+            const maxReading = getMaxReading(sample?.heavyMetalReadings);
+            return (
             <div
               key={sample?.id}
               className={`${theme?.card} border ${theme?.border} rounded-lg p-3 shadow-sm`}
@@ -195,34 +241,38 @@ const Database = ({
                 <span className="text-xs font-semibold text-gray-500">
                   Sample ID
                 </span>
-                <span className="text-sm font-medium">{sample?.id}</span>
+                <span className="text-sm font-medium">{sample?.sampleId}</span>
               </div>
 
               <div className="text-sm mb-1">
                 <span className="font-semibold">Product:</span>{" "}
                 {sample?.productName}{" "}
                 <span className={`block text-xs ${theme?.textMuted}`}>
-                  {sample?.brand}
+                  {sample?.brandName || "N/A"}
                 </span>
               </div>
 
               <div className="text-sm mb-1">
-                <span className="font-semibold">Location:</span> {sample?.lga},{" "}
-                {sample?.state}
+                <span className="font-semibold">Location:</span> {sample?.lga?.name},{" "}
+                {sample?.state?.name}
                 <div className={`text-xs ${theme?.textMuted}`}>
-                  {sample?.market}
+                  {sample?.market?.name || "N/A"}
                 </div>
               </div>
 
               <div className="text-sm mb-1">
-                <span className="font-semibold">Lead Level:</span>{" "}
-                <span
-                  className={`font-semibold ${
-                    sample?.leadLevel > 1000 ? "text-red-500" : "text-green-500"
-                  }`}
-                >
-                  {sample?.leadLevel.toLocaleString()} ppm
-                </span>
+                <span className="font-semibold">Max Reading:</span>{" "}
+                {maxReading !== null ? (
+                  <span
+                    className={`font-semibold ${
+                      sample?.status === "contaminated" ? "text-red-500" : "text-green-500"
+                    }`}
+                  >
+                    {maxReading.toLocaleString()} ppm
+                  </span>
+                ) : (
+                  <span className="text-gray-400">No readings</span>
+                )}
               </div>
 
               <div className="text-sm mb-1">
@@ -231,17 +281,18 @@ const Database = ({
                   className={`px-2 py-[2px] text-xs font-semibold rounded-full ${
                     sample?.status === "safe"
                       ? "bg-green-100 text-green-800"
-                      : sample.status === "contaminated"
+                      : sample?.status === "contaminated"
                       ? "bg-red-100 text-red-800"
                       : "bg-yellow-100 text-yellow-800"
                   }`}
                 >
-                  {sample?.status.toUpperCase()}
+                  {sample?.status?.toUpperCase() || "PENDING"}
                 </span>
               </div>
 
               <div className="text-sm mb-1">
-                <span className="font-semibold">Date:</span> {sample?.date}
+                <span className="font-semibold">Date:</span>{" "}
+                {sample?.createdAt ? new Date(sample?.createdAt).toLocaleDateString() : "N/A"}
               </div>
 
               <button
@@ -251,7 +302,7 @@ const Database = ({
                 View Details
               </button>
             </div>
-          ))}
+          )})}
         </div>
       </div>
     </div>

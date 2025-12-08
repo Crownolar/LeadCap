@@ -31,13 +31,14 @@ export const createSample = createAsyncThunk(
       const payload = {
         stateId: formData.stateId,
         lgaId: formData.lgaId,
-        marketName: formData.marketName,
+        marketId: formData.marketId,
         vendorType: formData.vendorType,
+        vendorTypeOther: formData.vendorTypeOther || null,
         productType: formData.productType,
         productName: formData.productName,
         price: parseFloat(formData.price),
-        batchNumber: formData.batchNumber || "",
-        brandName: formData.brandName || "",
+        batchNumber: formData.batchNumber || null,
+        brandName: formData.brandName || null,
         gpsLatitude: formData.gpsLatitude
           ? parseFloat(formData.gpsLatitude)
           : null,
@@ -45,14 +46,12 @@ export const createSample = createAsyncThunk(
           ? parseFloat(formData.gpsLongitude)
           : null,
         isRegistered: formData.isRegistered,
-        leadLevelPpm: formData.leadLevelPpm || 0,
-        // productPhotoUrl: formData.productPhoto || "",
-        // vendorPhotoUrl: formData.vendorPhoto || "",
+        productOrigin: formData.productOrigin || "LOCAL",
+        navdacNumber: formData.navdacNumber || null,
+        sonNumber: formData.sonNumber || null,
+        productPhotoUrl: formData.productPhotoUrl || null,
       };
 
-      // if (formData.productPhoto)
-      //   payload.productPhotoUrl = formData.productPhoto;
-      // if (formData.vendorPhoto) payload.vendorPhotoUrl = formData.vendorPhoto;
       console.log("Payload being sent:", payload);
       const response = await api.post("/samples", payload);
       return response.data.data;

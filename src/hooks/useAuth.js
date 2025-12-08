@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { initialUsers } from "../utils/constants";
 
 export const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  const [users, setUsers] = useState(initialUsers);
+  const [users, setUsers] = useState([]);
   const [authForm, setAuthForm] = useState({
     email: "",
     password: "",

@@ -1,9 +1,11 @@
-import { X, Camera, Trash2 } from "lucide-react";
+import { X, Camera, Trash2, Loader, MapPin } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { createSample } from "../../redux/slice/samplesSlice";
-import { statesData, productTypes, vendorTypes } from "../../utils/constants";
-import { generateSampleId } from "../../utils/helpers";
-import { useRef, useState } from "react";
+import { productTypes, vendorTypes } from "../../utils/constants";
+import { useRef, useState, useEffect } from "react";
+import axios from "axios";
+
+const API_BASE_URL = "/api";
 
 const SampleFormModal = ({ theme, onClose, samples }) => {
   const dispatch = useDispatch();
@@ -17,17 +19,124 @@ const SampleFormModal = ({ theme, onClose, samples }) => {
     brandName: "",
     batchNumber: "",
     price: "",
-    marketName: "",
+    marketId: "",
     vendorType: "",
+    vendorTypeOther: "",
     isRegistered: false,
     gpsLatitude: "",
     gpsLongitude: "",
+    productOrigin: "LOCAL",
+    navdacNumber: "",
+    sonNumber: "",
     productPhoto: null,
-    vendorPhoto: null,
   });
 
+  const [states, setStates] = useState([]);
+  const [lgas, setLgas] = useState([]);
+  const [markets, setMarkets] = useState([]);
+  const [allLgas, setAllLgas] = useState([]);
+  const [allMarkets, setAllMarkets] = useState([]);
+  const [loadingData, setLoadingData] = useState(false);
+  const [gettingLocation, setGettingLocation] = useState(false);
+  const [locationError, setLocationError] = useState(null);
+
   const productPhotoRef = useRef(null);
-  const vendorPhotoRef = useRef(null);
+
+  // Fetch initial data (states and all LGAs/markets for filtering)
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoadingData(true);
+      try {
+        const token = localStorage.getItem("accessToken");
+        const headers = { Authorization: `Bearer ${token}` };
+
+        const [statesRes, lgasRes, marketsRes] = await Promise.all([
+          axios.get(`${API_BASE_URL}/samples/states/all`, { headers }),
+          axios.get(`${API_BASE_URL}/samples/lgas/all`, { headers }),
+          axios.get(`${API_BASE_URL}/samples/markets/all`, { headers }),
+        ]);
+
+        setStates(statesRes.data.data || []);
+        setAllLgas(lgasRes.data.data || []);
+        setAllMarkets(marketsRes.data.data || []);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      } finally {
+        setLoadingData(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Filter LGAs based on selected state
+  useEffect(() => {
+    if (formData.stateId) {
+      const filteredLgas = allLgas.filter(
+        (lga) => lga.stateId === formData.stateId
+      );
+      setLgas(filteredLgas);
+      setFormData((prev) => ({ ...prev, lgaId: "", marketId: "" })); // Reset LGA and Market selection
+    } else {
+      setLgas([]);
+      setMarkets([]);
+    }
+  }, [formData.stateId, allLgas]);
+
+  // Filter Markets based on selected LGA
+  useEffect(() => {
+    if (formData.lgaId) {
+      const filteredMarkets = allMarkets.filter(
+        (market) => market.lgaId === formData.lgaId
+      );
+      setMarkets(filteredMarkets);
+      setFormData((prev) => ({ ...prev, marketId: "" })); // Reset Market selection
+    } else {
+      setMarkets([]);
+    }
+  }, [formData.lgaId, allMarkets]);
+
+  const handleGetCurrentLocation = () => {
+    setGettingLocation(true);
+    setLocationError(null);
+
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation is not supported by your browser");
+      setGettingLocation(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setFormData((prev) => ({
+          ...prev,
+          gpsLatitude: latitude.toFixed(6),
+          gpsLongitude: longitude.toFixed(6),
+        }));
+        setGettingLocation(false);
+        setLocationError(null);
+      },
+      (error) => {
+        let errorMessage = "Unable to get your location";
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = "Location permission denied. Please enable location access.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = "Location information is unavailable.";
+            break;
+          case error.TIMEOUT:
+            errorMessage = "Location request timed out.";
+            break;
+          default:
+            errorMessage = "An error occurred while getting your location.";
+        }
+        setLocationError(errorMessage);
+        setGettingLocation(false);
+      }
+    );
+  };
 
   const handleFileUpload = (e, field) => {
     const file = e.target.files?.[0];
@@ -41,7 +150,6 @@ const SampleFormModal = ({ theme, onClose, samples }) => {
   const removePhoto = (field) => {
     setFormData((prev) => ({ ...prev, [field]: null }));
     if (field === "productPhoto") productPhotoRef.current.value = "";
-    if (field === "vendorPhoto") vendorPhotoRef.current.value = "";
   };
 
   const handleSubmit = async (e) => {
@@ -50,13 +158,14 @@ const SampleFormModal = ({ theme, onClose, samples }) => {
     const payload = {
       stateId: formData.stateId,
       lgaId: formData.lgaId,
-      marketName: formData.marketName,
+      marketId: formData.marketId || null,
       vendorType: formData.vendorType,
+      vendorTypeOther: formData.vendorTypeOther || null,
       productType: formData.productType,
       productName: formData.productName,
       price: parseFloat(formData.price),
-      batchNumber: formData.batchNumber || "",
-      brandName: formData.brandName || "",
+      batchNumber: formData.batchNumber || null,
+      brandName: formData.brandName || null,
       gpsLatitude: formData.gpsLatitude
         ? parseFloat(formData.gpsLatitude)
         : null,
@@ -64,17 +173,19 @@ const SampleFormModal = ({ theme, onClose, samples }) => {
         ? parseFloat(formData.gpsLongitude)
         : null,
       isRegistered: formData.isRegistered,
-      productPhoto: null,
-      vendorPhoto: null,
+      productOrigin: formData.productOrigin,
+      navdacNumber: formData.navdacNumber || null,
+      sonNumber: formData.sonNumber || null,
+      productPhotoUrl: null,
     };
 
     const result = await dispatch(createSample(payload));
 
     if (createSample.fulfilled.match(result)) {
-      alert(" Sample created successfully!");
+      alert("Sample created successfully!");
       onClose();
     } else {
-      alert(` ${result.payload || "Failed to create sample"}`);
+      alert(`${result.payload || "Failed to create sample"}`);
     }
   };
 
@@ -97,10 +208,18 @@ const SampleFormModal = ({ theme, onClose, samples }) => {
           </div>
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="p-6 space-y-6 max-h-[70vh] overflow-y-auto"
-        >
+        {loadingData && (
+          <div className="flex items-center justify-center p-12">
+            <Loader className="animate-spin mr-2" />
+            <span>Loading form data...</span>
+          </div>
+        )}
+
+        {!loadingData && (
+          <form
+            onSubmit={handleSubmit}
+            className="p-6 space-y-6 max-h-[70vh] overflow-y-auto"
+          >
           <section>
             <h3 className="text-lg font-semibold mb-4 text-emerald-500">
               Location Details
@@ -125,9 +244,9 @@ const SampleFormModal = ({ theme, onClose, samples }) => {
                   className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
                 >
                   <option value="">Select State</option>
-                  {Object.keys(statesData).map((state) => (
-                    <option key={state} value={state}>
-                      {state}
+                  {states.map((state) => (
+                    <option key={state.id} value={state.id}>
+                      {state.name}
                     </option>
                   ))}
                 </select>
@@ -149,12 +268,11 @@ const SampleFormModal = ({ theme, onClose, samples }) => {
                   className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50`}
                 >
                   <option value="">Select LGA</option>
-                  {formData.stateId &&
-                    statesData[formData.stateId].map((lga) => (
-                      <option key={lga} value={lga}>
-                        {lga}
-                      </option>
-                    ))}
+                  {lgas.map((lga) => (
+                    <option key={lga.id} value={lga.id}>
+                      {lga.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -162,18 +280,24 @@ const SampleFormModal = ({ theme, onClose, samples }) => {
                 <label
                   className={`block text-sm font-medium mb-2 ${theme.text}`}
                 >
-                  Market Name *
+                  Market *
                 </label>
-                <input
-                  type="text"
+                <select
                   required
-                  value={formData.marketName}
+                  value={formData.marketId}
                   onChange={(e) =>
-                    setFormData({ ...formData, marketName: e.target.value })
+                    setFormData({ ...formData, marketId: e.target.value })
                   }
-                  className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
-                  placeholder="e.g., Oja Oba Market"
-                />
+                  disabled={!formData.lgaId}
+                  className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50`}
+                >
+                  <option value="">Select Market</option>
+                  {markets.map((market) => (
+                    <option key={market.id} value={market.id}>
+                      {market.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -185,19 +309,43 @@ const SampleFormModal = ({ theme, onClose, samples }) => {
                 <select
                   required
                   value={formData.vendorType}
-                  onChange={(e) =>
-                    setFormData({ ...formData, vendorType: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setFormData({ 
+                      ...formData, 
+                      vendorType: e.target.value,
+                      vendorTypeOther: e.target.value === "OTHER" ? formData.vendorTypeOther : ""
+                    });
+                  }}
                   className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
                 >
                   <option value="">Select Vendor Type</option>
                   {vendorTypes.map((type) => (
                     <option key={type} value={type}>
-                      {type}
+                      {type.replace(/_/g, " ")}
                     </option>
                   ))}
                 </select>
               </div>
+
+              {formData.vendorType === "OTHER" && (
+                <div className="md:col-span-1 animate-in fade-in">
+                  <label
+                    className={`block text-sm font-medium mb-2 ${theme.text}`}
+                  >
+                    Specify Vendor Type *
+                  </label>
+                  <input
+                    type="text"
+                    required={formData.vendorType === "OTHER"}
+                    value={formData.vendorTypeOther}
+                    onChange={(e) =>
+                      setFormData({ ...formData, vendorTypeOther: e.target.value })
+                    }
+                    className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
+                    placeholder="e.g., Online Store, Wholesale Distributor"
+                  />
+                </div>
+              )}
 
               <div>
                 <label
@@ -233,6 +381,30 @@ const SampleFormModal = ({ theme, onClose, samples }) => {
                   className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
                   placeholder="e.g., 4.5418"
                 />
+              </div>
+
+              <div className="md:col-span-2">
+                <button
+                  type="button"
+                  onClick={handleGetCurrentLocation}
+                  disabled={gettingLocation}
+                  className={`w-full px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
+                    gettingLocation
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-emerald-500 hover:bg-emerald-600 text-white"
+                  }`}
+                >
+                  <MapPin className="w-5 h-5" />
+                  {gettingLocation ? "Getting Location..." : "Get Current Location"}
+                </button>
+                {locationError && (
+                  <p className="text-red-500 text-sm mt-2">{locationError}</p>
+                )}
+                {formData.gpsLatitude && formData.gpsLongitude && (
+                  <p className="text-green-600 text-sm mt-2">
+                    ✓ Location captured: ({formData.gpsLatitude}, {formData.gpsLongitude})
+                  </p>
+                )}
               </div>
             </div>
           </section>
@@ -335,6 +507,59 @@ const SampleFormModal = ({ theme, onClose, samples }) => {
                 />
               </div>
 
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${theme.text}`}
+                >
+                  Product Origin *
+                </label>
+                <select
+                  required
+                  value={formData.productOrigin}
+                  onChange={(e) =>
+                    setFormData({ ...formData, productOrigin: e.target.value })
+                  }
+                  className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
+                >
+                  <option value="LOCAL">Local</option>
+                  <option value="IMPORTED">Imported</option>
+                </select>
+              </div>
+
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${theme.text}`}
+                >
+                  NAFDAC Number
+                </label>
+                <input
+                  type="text"
+                  value={formData.navdacNumber}
+                  onChange={(e) =>
+                    setFormData({ ...formData, navdacNumber: e.target.value })
+                  }
+                  className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
+                  placeholder="e.g., A7-0001-2023"
+                />
+              </div>
+
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${theme.text}`}
+                >
+                  SON Number
+                </label>
+                <input
+                  type="text"
+                  value={formData.sonNumber}
+                  onChange={(e) =>
+                    setFormData({ ...formData, sonNumber: e.target.value })
+                  }
+                  className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
+                  placeholder="e.g., SON/CL/2023-0001"
+                />
+              </div>
+
               <div className="flex items-center mt-2">
                 <input
                   type="checkbox"
@@ -368,32 +593,8 @@ const SampleFormModal = ({ theme, onClose, samples }) => {
                 onRemove={() => removePhoto("productPhoto")}
                 theme={theme}
               />
-              <PhotoUpload
-                label="Vendor Stall Photo"
-                photo={formData.vendorPhoto}
-                refInput={vendorPhotoRef}
-                onUpload={(e) => handleFileUpload(e, "vendorPhoto")}
-                onRemove={() => removePhoto("vendorPhoto")}
-                theme={theme}
-              />
             </div>
           </section>
-
-          {formData.stateId && formData.lgaId && formData.productType && (
-            <div className="bg-emerald-500 bg-opacity-10 border border-emerald-500 rounded-lg p-4">
-              <p className={`text-sm ${theme.textMuted} mb-1`}>
-                Generated Sample ID:
-              </p>
-              <p className="text-xl font-mono font-bold text-emerald-500">
-                {generateSampleId(
-                  formData.stateId,
-                  formData.lgaId,
-                  formData.productType,
-                  samples
-                )}
-              </p>
-            </div>
-          )}
 
           <div className="flex gap-4 pt-4">
             <button
@@ -416,54 +617,92 @@ const SampleFormModal = ({ theme, onClose, samples }) => {
             </button>
           </div>
 
-          {/* {error && (
+          {error && (
             <p className="text-red-500 text-sm text-center mt-2">
-              {error.toString()}
+              {error?.toString()}
             </p>
-          )} */}
-        </form>
+          )}
+          </form>
+        )}
       </div>
     </div>
   );
 };
 
-const PhotoUpload = ({ label, photo, refInput, onUpload, onRemove, theme }) => (
-  <div>
-    <label className={`block text-sm font-medium mb-2 ${theme.text}`}>
-      {label}
-    </label>
-    {photo ? (
-      <div className="relative">
-        <img
-          src={photo}
-          alt={label}
-          className="w-full h-48 object-cover rounded-lg"
-        />
-        <button
-          type="button"
-          onClick={onRemove}
-          className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
+const PhotoUpload = ({ label, photo, refInput, onUpload, onRemove, theme }) => {
+  const [previewError, setPreviewError] = useState(false);
+
+  const handleUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file");
+      e.target.value = "";
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File size must be less than 5MB");
+      e.target.value = "";
+      return;
+    }
+
+    onUpload(e);
+    setPreviewError(false);
+  };
+
+  return (
+    <div>
+      <label className={`block text-sm font-medium mb-2 ${theme.text}`}>
+        {label}
+      </label>
+      {photo ? (
+        <div className="relative group">
+          <img
+            src={photo}
+            alt={label}
+            className="w-full h-48 object-cover rounded-lg shadow-md"
+            onError={() => setPreviewError(true)}
+          />
+          {previewError && (
+            <div className="absolute inset-0 bg-red-500/20 rounded-lg flex items-center justify-center">
+              <p className="text-red-400 text-sm">Image preview error</p>
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={onRemove}
+            className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg opacity-0 group-hover:opacity-100"
+            title="Remove image"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+          <div className="absolute inset-0 bg-black/40 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <span className="text-white text-sm font-medium">Click X to remove</span>
+          </div>
+        </div>
+      ) : (
+        <div
+          onClick={() => refInput.current?.click()}
+          className={`border-2 border-dashed ${theme.border} rounded-lg p-8 text-center ${theme.hover} cursor-pointer transition-all hover:border-emerald-500`}
         >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      </div>
-    ) : (
-      <div
-        onClick={() => refInput.current?.click()}
-        className={`border-2 border-dashed ${theme.border} rounded-lg p-8 text-center ${theme.hover} cursor-pointer`}
-      >
-        <Camera className={`w-12 h-12 mx-auto mb-2 ${theme.textMuted}`} />
-        <p className={`text-sm ${theme.textMuted}`}>Click to upload</p>
-      </div>
-    )}
-    <input
-      ref={refInput}
-      type="file"
-      accept="image/*"
-      className="hidden"
-      onChange={onUpload}
-    />
-  </div>
-);
+          <Camera className={`w-12 h-12 mx-auto mb-2 ${theme.textMuted}`} />
+          <p className={`text-sm font-medium ${theme.text}`}>Click to upload image</p>
+          <p className={`text-xs ${theme.textMuted} mt-1`}>JPG, PNG up to 5MB</p>
+        </div>
+      )}
+      <input
+        ref={refInput}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleUpload}
+      />
+    </div>
+  );
+};
 
 export default SampleFormModal;
