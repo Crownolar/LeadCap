@@ -47,11 +47,11 @@ const Header = ({
       <header
         className={`${theme?.card} shadow-sm border-b ${theme?.border} sticky top-0 z-[5000]`}
       >
-        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4'>
-          <div className='flex items-center justify-between'>
-            <div className='flex items-center gap-3'>
-              <div className='bg-emerald-500 p-2 rounded-lg'>
-                <AlertTriangle className='w-6 h-6 text-white' />
+        <div className="max-w-10xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-emerald-500 p-2 rounded-lg">
+                <AlertTriangle className="w-6 h-6 text-white" />
               </div>
               <div>
                 <h1 className={`text-xl font-bold ${theme?.text}`}>LEDAcap</h1>
@@ -61,14 +61,14 @@ const Header = ({
               </div>
             </div>
 
-            <div className='flex items-center gap-3'>
+            <div className="flex items-center gap-3">
               <div
                 className={`hidden md:flex items-center gap-2 px-3 py-2 rounded-lg ${theme?.card} border ${theme?.border}`}
               >
-                <div className='w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white font-bold text-sm'>
+                <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
                   {currentUser?.fullName?.charAt(0).toUpperCase()}
                 </div>
-                <div className='text-sm'>
+                <div className="text-sm">
                   <p className={`font-medium ${theme?.text}`}>
                     {currentUser?.fullName}
                   </p>
@@ -82,9 +82,9 @@ const Header = ({
                 <button
                   onClick={handleAdminAccess}
                   className={`p-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 transition-all shadow-md hover:shadow-lg text-white`}
-                  title='invite-codes'
+                  title="invite-codes"
                 >
-                  <ShieldCheck className='w-5 h-5' />
+                  <ShieldCheck className="w-5 h-5" />
                 </button>
               )}
 
@@ -93,18 +93,18 @@ const Header = ({
                 className={`p-2 rounded-lg ${theme?.hover} transition-colors ${theme?.text}`}
               >
                 {darkMode ? (
-                  <Sun className='w-5 h-5' />
+                  <Sun className="w-5 h-5" />
                 ) : (
-                  <Moon className='w-5 h-5' />
+                  <Moon className="w-5 h-5" />
                 )}
               </button>
 
               <button
                 onClick={() => setShowLogoutConfirm(true)}
                 className={`p-2 rounded-lg ${theme?.hover} transition-colors ${theme?.text}`}
-                title='Logout'
+                title="Logout"
               >
-                <LogOut className='w-5 h-5' />
+                <LogOut className="w-5 h-5" />
               </button>
 
               <button
@@ -112,9 +112,9 @@ const Header = ({
                 className={`lg:hidden p-2 rounded-lg ${theme?.hover}`}
               >
                 {mobileMenuOpen ? (
-                  <X className='w-5 h-5' />
+                  <X className="w-5 h-5" />
                 ) : (
-                  <Menu className='w-5 h-5' />
+                  <Menu className="w-5 h-5" />
                 )}
               </button>
             </div>

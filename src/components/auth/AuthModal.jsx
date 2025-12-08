@@ -32,16 +32,21 @@ const AuthModal = ({ theme }) => {
 
       if (handleLogin.fulfilled.match(result)) {
         const { fullName, role } = result.payload.user;
-        console.log(fullName, role);
         setMessage(`Welcome back, ${fullName || "User"}!`);
-        setTimeout(() => {
-          const normalizedRole = role?.toLowerCase().replace(/[\s_]/g, "");
-          if (normalizedRole === "superadmin") {
-            navigate("/invitecodes");
-          } else {
-            navigate("/dashboard");
-          }
-        }, 1000);
+
+        const normalizedRole = role?.toLowerCase().replace(/[\s_]/g, "");
+
+        if (normalizedRole === "datacollector") {
+          navigate("/data-collector-welcome");
+        } else if (normalizedRole === "policymakerson") {
+          navigate("/policy-welcome");
+        } else if (normalizedRole === "superadmin") {
+          navigate("/invitecodes");
+        } else if (normalizedRole === "supervisor") {
+          navigate("/agents");
+        } else {
+          navigate("/dashboard");
+        }
       } else {
         setMessage(result.payload || "Login failed!");
       }
@@ -178,7 +183,6 @@ const AuthModal = ({ theme }) => {
   );
 };
 
-// Reusable IPT
 const Input = ({
   label,
   type = "text",
@@ -203,3 +207,22 @@ const Input = ({
 );
 
 export default AuthModal;
+
+// Ploicy Maker Son
+// policymaker.son@ledacap.ng
+// policy123!
+
+// Ploicy Maker Nafdac
+//policymaker.son@ledacap.ng
+
+// Head Researcher
+// headresearcher@ledacap.ng
+// researcher123!
+
+// Data Collector
+// datacollector.lagos@ledacap.ng
+// collector123!
+
+//Supervisor
+// supervisor@ledacap.ng
+// supervisor123!

@@ -7,6 +7,8 @@ import { handleLogout } from "../redux/slice/authSlice";
 import { useTheme } from "../hooks/useTheme";
 import { useState } from "react";
 import SampleFormModal from "../components/modals/SampleFormModal";
+import HeavyMetalFormModal from "../components/modals/lab-result_modal/HeavyMetalFormModal";
+import DataCollectorDashboard from "../components/views/DataCollectorDashboard";
 
 const Layout = () => {
   const dispatch = useDispatch();
@@ -14,12 +16,13 @@ const Layout = () => {
   const { theme, darkMode, toggleDarkMode } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentView, setCurrentView] = useState("dashboard");
+  const [showHeavyMetalModal, setShowHeavyMetalModal] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
   const logout = () => {
     dispatch(handleLogout());
     localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken"); 
+    localStorage.removeItem("refreshToken");
   };
 
   return (
@@ -34,7 +37,7 @@ const Layout = () => {
         setMobileMenuOpen={setMobileMenuOpen}
       />
 
-      <div className="flex flex-1">
+      <div className="flex flex-1 ">
         <Sidebar
           theme={theme}
           mobileMenuOpen={mobileMenuOpen}
@@ -43,6 +46,7 @@ const Layout = () => {
           currentView={currentView}
           setCurrentView={setCurrentView}
           setShowForm={setShowForm}
+          setShowHeavyMetalModal={setShowHeavyMetalModal}
         />
         <main className="flex-1 p-6 overflow-y-auto">
           <Outlet />
@@ -56,6 +60,13 @@ const Layout = () => {
               console.log("Form submitted:", formData);
               setShowForm(false);
             }}
+          />
+        )}
+
+        {showHeavyMetalModal && (
+          <HeavyMetalFormModal
+            theme={theme}
+            onClose={() => setShowHeavyMetalModal(false)}
           />
         )}
       </div>

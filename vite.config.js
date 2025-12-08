@@ -13,18 +13,3 @@ export default defineConfig({
     },
   },
 });
-
-// https://vite.dev/config/
-// export default defineConfig({
-//   plugins: [react()],
-//   server: {
-//     proxy: {
-//       "/api": {
-//         target: "https://193-168-173-171.cloud-xip.com",
-//         changeOrigin: true,
-//         secure: false,
-//         rewrite: (path) => path.replace(/^\/api/, "/api"),
-//       },
-//     },
-//   },
-// });
