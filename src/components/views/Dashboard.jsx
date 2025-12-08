@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -15,38 +15,47 @@ import {
 import { Package, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import StatCard from "../common/StatCard";
 import { COLORS } from "../../utils/constants";
-import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
+import { fetchSamples } from "../../redux/slice/samplesSlice";
+import { useTheme } from "../../hooks/useTheme";
 
-const Dashboard = ({ theme, darkMode }) => {
+const Dashboard = ({ theme: propTheme, darkMode: propDarkMode, samples: propSamples, loading: propLoading }) => {
   const dispatch = useDispatch();
-  const { samples, loading } = useSelector((state) => state.samples);
+  const { theme: hookTheme, darkMode: hookDarkMode } = useTheme();
+  const { samples: reduxSamples, loading: reduxLoading } = useSelector((state) => state.samples);
+  
+  // Use props if provided, otherwise fall back to Redux/hook values
+  const theme = propTheme || hookTheme;
+  const darkMode = propDarkMode ?? hookDarkMode;
+  const samples = propSamples || reduxSamples || [];
+  const loading = propLoading ?? reduxLoading;
 
-  // useEffect(() => {
-  //   dispatch(fetchSamples());
-  // }, [dispatch]);
+  // Fetch samples on mount if using Redux (no propSamples provided)
+  useEffect(() => {
+    if (!propSamples) {
+      dispatch(fetchSamples());
+    }
+  }, [dispatch, propSamples]);
 
   if (loading) {
     return <p className={`${theme?.text}`}>Loading samples...</p>;
   }
 
-  // if (!samples || samples.length === 0) {
-  //   return <p className={`${theme?.text}`}>No samples yet.</p>;
-  // }
-
+  // Compute analytics from samples with correct field names from backend
   const analytics = {
-    total: samples?.length,
-    contaminated: samples?.filter((s) => s?.contaminated).length,
-    safe: samples?.filter((s) => !s?.contaminated)?.length,
-    pending: samples?.filter((s) => s?.status === "pending")?.length,
+    total: samples?.length || 0,
+    contaminated: samples?.filter((s) => s?.status === "contaminated").length || 0,
+    safe: samples?.filter((s) => s?.status === "safe")?.length || 0,
+    pending: samples?.filter((s) => s?.status === "pending")?.length || 0,
     byState: Object?.entries(
       samples?.reduce((acc, s) => {
-        acc[s?.state] = (acc[s?.state] || 0) + 1;
+        const stateName = s?.state?.name || "Unknown";
+        acc[stateName] = (acc[stateName] || 0) + 1;
         return acc;
       }, {})
     ).map(([name, value]) => ({ name, value })),
     byProductType: Object?.entries(
-      samples.reduce((acc, s) => {
+      (samples || []).reduce((acc, s) => {
         acc[s?.productType] = (acc[s?.productType] || 0) + 1;
         return acc;
       }, {})
@@ -54,15 +63,15 @@ const Dashboard = ({ theme, darkMode }) => {
     registeredVsUnregistered: [
       {
         name: "Registered",
-        total: samples?.filter((s) => s?.registered)?.length,
-        contaminated: samples?.filter((s) => s?.registered && s?.contaminated)
-          ?.length,
+        total: samples?.filter((s) => s?.isRegistered)?.length || 0,
+        contaminated: samples?.filter((s) => s?.isRegistered && s?.status === "contaminated")
+          ?.length || 0,
       },
       {
         name: "Unregistered",
-        total: samples?.filter((s) => !s?.registered)?.length,
-        contaminated: samples?.filter((s) => !s?.registered && s?.contaminated)
-          ?.length,
+        total: samples?.filter((s) => !s?.isRegistered)?.length || 0,
+        contaminated: samples?.filter((s) => !s?.isRegistered && s?.status === "contaminated")
+          ?.length || 0,
       },
     ],
   };

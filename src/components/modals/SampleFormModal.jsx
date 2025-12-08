@@ -1,15 +1,13 @@
 import { X, Camera, Trash2, Loader, MapPin } from "lucide-react";
-import { useDispatch, useSelector } from "react-redux";
-import { createSample } from "../../redux/slice/samplesSlice";
 import { productTypes, vendorTypes } from "../../utils/constants";
 import { useRef, useState, useEffect } from "react";
 import axios from "axios";
 
 const API_BASE_URL = "/api";
 
-const SampleFormModal = ({ theme, onClose, samples }) => {
-  const dispatch = useDispatch();
-  const { loading, error } = useSelector((state) => state.samples);
+const SampleFormModal = ({ theme, onClose, onSubmit }) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const [formData, setFormData] = useState({
     stateId: "",
@@ -154,6 +152,8 @@ const SampleFormModal = ({ theme, onClose, samples }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError(null);
 
     const payload = {
       stateId: formData.stateId,
@@ -179,13 +179,15 @@ const SampleFormModal = ({ theme, onClose, samples }) => {
       productPhotoUrl: null,
     };
 
-    const result = await dispatch(createSample(payload));
-
-    if (createSample.fulfilled.match(result)) {
+    try {
+      await onSubmit(payload);
       alert("Sample created successfully!");
       onClose();
-    } else {
-      alert(`${result.payload || "Failed to create sample"}`);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to create sample");
+      alert(`${err.response?.data?.message || "Failed to create sample"}`);
+    } finally {
+      setLoading(false);
     }
   };
 

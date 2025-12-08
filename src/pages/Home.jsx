@@ -9,7 +9,7 @@ import Reports from "../components/views/Reports";
 import Agents from "../components/views/Agents";
 import SampleFormModal from "../components/modals/SampleFormModal";
 import SampleDetailModal from "../components/modals/SampleDetailModal";
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 
 const Home = () => {
   const {
@@ -28,11 +28,40 @@ const Home = () => {
   } = useAuth();
 
   const { theme } = useTheme();
-  const { analytics, filteredSamples, addSample } = useSamples(currentUser);
+  const {
+    filteredSamples,
+    addSample,
+    states,
+    loading,
+    searchTerm,
+    setSearchTerm,
+    filterState,
+    setFilterState,
+    filterProduct,
+    setFilterProduct,
+    filterStatus,
+    setFilterStatus,
+  } = useSamples(currentUser);
   const [currentView, setCurrentView] = useState("dashboard");
   const [showForm, setShowForm] = useState(false);
   const [selectedSample, setSelectedSample] = useState(null);
   const excelImportRef = useRef(null);
+
+  // Calculate analytics from samples
+  const analytics = useMemo(() => {
+    const total = filteredSamples?.length || 0;
+    const safe = filteredSamples?.filter(s => s.status === "safe").length || 0;
+    const contaminated = filteredSamples?.filter(s => s.status === "contaminated").length || 0;
+    const pending = filteredSamples?.filter(s => s.status === "pending").length || 0;
+    
+    return {
+      total,
+      safe,
+      contaminated,
+      pending,
+      complianceRate: total > 0 ? ((safe / total) * 100).toFixed(1) : 0,
+    };
+  }, [filteredSamples]);
 
   const handleFormSubmit = (formData) => addSample(formData);
 
@@ -59,12 +88,27 @@ const Home = () => {
   return (
     <>
       {currentView === "dashboard" && (
-        <Dashboard analytics={analytics} theme={theme} />
+        <Dashboard samples={filteredSamples} loading={loading} theme={theme} />
       )}
-      {currentView === "database" && <Database theme={theme} />}
-      {currentView === "map" && <MapView theme={theme} />}
-      {currentView === "reports" && <Reports theme={theme} />}
-      {currentView === "agents" && <Agents theme={theme} />}
+      {currentView === "database" && (
+        <Database
+          theme={theme}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          filterState={filterState}
+          setFilterState={setFilterState}
+          filterProduct={filterProduct}
+          setFilterProduct={setFilterProduct}
+          filterStatus={filterStatus}
+          setFilterStatus={setFilterStatus}
+          filteredSamples={filteredSamples}
+          setSelectedSample={setSelectedSample}
+          states={states}
+        />
+      )}
+      {currentView === "map" && <MapView theme={theme} samples={filteredSamples} />}
+      {currentView === "reports" && <Reports theme={theme} samples={filteredSamples} />}
+      {currentView === "agents" && <Agents theme={theme} samples={filteredSamples} />}
       {showForm && (
         <SampleFormModal
           theme={theme}

@@ -7,6 +7,8 @@ import { handleLogout } from "../redux/slice/authSlice";
 import { useTheme } from "../hooks/useTheme";
 import { useState } from "react";
 import SampleFormModal from "../components/modals/SampleFormModal";
+import { fetchSamples } from "../redux/slice/samplesSlice";
+import api from "../utils/api";
 
 const Layout = () => {
   const dispatch = useDispatch();
@@ -20,6 +22,18 @@ const Layout = () => {
     dispatch(handleLogout());
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
+  };
+
+  const handleFormSubmit = async (formData) => {
+    try {
+      await api.post("/samples", formData);
+      // Refresh samples after successful creation
+      dispatch(fetchSamples());
+      setShowForm(false);
+    } catch (error) {
+      console.error("Failed to create sample:", error);
+      throw error;
+    }
   };
 
   return (
@@ -52,10 +66,7 @@ const Layout = () => {
           <SampleFormModal
             theme={theme}
             onClose={() => setShowForm(false)}
-            onSubmit={(formData) => {
-              console.log("Form submitted:", formData);
-              setShowForm(false);
-            }}
+            onSubmit={handleFormSubmit}
           />
         )}
       </div>

@@ -1,7 +1,12 @@
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Search, Download } from "lucide-react";
 import { productTypes } from "../../utils/constants";
 import axios from "axios";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchSamples } from "../../redux/slice/samplesSlice";
+import { useTheme } from "../../hooks/useTheme";
+import { filterSamples } from "../../utils/helpers";
+import SampleDetailModal from "../modals/SampleDetailModal";
 
 const API_BASE_URL = "/api";
 
@@ -19,19 +24,75 @@ const getMaxReading = (heavyMetalReadings) => {
 };
 
 const Database = ({
-  theme,
-  searchTerm,
-  setSearchTerm,
-  filterState,
-  setFilterState,
-  filterProduct,
-  setFilterProduct,
-  filterStatus,
-  setFilterStatus,
-  filteredSamples,
-  setSelectedSample,
-  states = [], // States passed from parent (fetched from API)
+  theme: propTheme,
+  searchTerm: propSearchTerm,
+  setSearchTerm: propSetSearchTerm,
+  filterState: propFilterState,
+  setFilterState: propSetFilterState,
+  filterProduct: propFilterProduct,
+  setFilterProduct: propSetFilterProduct,
+  filterStatus: propFilterStatus,
+  setFilterStatus: propSetFilterStatus,
+  filteredSamples: propFilteredSamples,
+  setSelectedSample: propSetSelectedSample,
+  states: propStates,
 }) => {
+  const dispatch = useDispatch();
+  const { theme: hookTheme } = useTheme();
+  const { samples: reduxSamples } = useSelector((state) => state.samples);
+
+  // Local state for standalone mode
+  const [localSearchTerm, setLocalSearchTerm] = useState("");
+  const [localFilterState, setLocalFilterState] = useState("all");
+  const [localFilterProduct, setLocalFilterProduct] = useState("all");
+  const [localFilterStatus, setLocalFilterStatus] = useState("all");
+  const [localSelectedSample, setLocalSelectedSample] = useState(null);
+  const [localStates, setLocalStates] = useState([]);
+
+  // Use props if provided, otherwise fall back to local/Redux values
+  const theme = propTheme || hookTheme;
+  const searchTerm = propSearchTerm ?? localSearchTerm;
+  const setSearchTerm = propSetSearchTerm || setLocalSearchTerm;
+  const filterState = propFilterState ?? localFilterState;
+  const setFilterState = propSetFilterState || setLocalFilterState;
+  const filterProduct = propFilterProduct ?? localFilterProduct;
+  const setFilterProduct = propSetFilterProduct || setLocalFilterProduct;
+  const filterStatus = propFilterStatus ?? localFilterStatus;
+  const setFilterStatus = propSetFilterStatus || setLocalFilterStatus;
+  const setSelectedSample = propSetSelectedSample || setLocalSelectedSample;
+  const states = propStates || localStates;
+
+  // Compute filtered samples if not provided via props
+  const computedFilteredSamples = useMemo(() => {
+    if (propFilteredSamples) return propFilteredSamples;
+    return filterSamples(reduxSamples || [], searchTerm, filterState, filterProduct, filterStatus);
+  }, [propFilteredSamples, reduxSamples, searchTerm, filterState, filterProduct, filterStatus]);
+
+  const filteredSamples = computedFilteredSamples;
+
+  // Fetch samples and states on mount if standalone
+  useEffect(() => {
+    if (!propFilteredSamples) {
+      dispatch(fetchSamples());
+    }
+  }, [dispatch, propFilteredSamples]);
+
+  useEffect(() => {
+    if (!propStates) {
+      const fetchStates = async () => {
+        try {
+          const token = localStorage.getItem("accessToken");
+          const response = await axios.get(`${API_BASE_URL}/samples/states/all`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setLocalStates(response.data.data || []);
+        } catch (err) {
+          console.error("Failed to fetch states:", err);
+        }
+      };
+      fetchStates();
+    }
+  }, [propStates]);
   const handleExcelExportClick = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/samples/export`, {
@@ -305,6 +366,15 @@ const Database = ({
           )})}
         </div>
       </div>
+
+      {/* Show modal for standalone mode */}
+      {localSelectedSample && !propSetSelectedSample && (
+        <SampleDetailModal
+          theme={theme}
+          sample={localSelectedSample}
+          onClose={() => setLocalSelectedSample(null)}
+        />
+      )}
     </div>
   );
 };

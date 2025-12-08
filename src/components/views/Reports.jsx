@@ -1,7 +1,25 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { FileText, BarChart3, Package, AlertTriangle } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchSamples } from "../../redux/slice/samplesSlice";
+import { useTheme } from "../../hooks/useTheme";
 
-const Reports = ({ theme, analytics, samples }) => {
+const Reports = ({ theme: propTheme, samples: propSamples }) => {
+  const dispatch = useDispatch();
+  const { theme: hookTheme } = useTheme();
+  const { samples: reduxSamples } = useSelector((state) => state.samples);
+
+  // Use props if provided, otherwise fall back to Redux
+  const theme = propTheme || hookTheme;
+  const samples = propSamples || reduxSamples || [];
+
+  // Fetch samples on mount if not provided via props
+  useEffect(() => {
+    if (!propSamples) {
+      dispatch(fetchSamples());
+    }
+  }, [dispatch, propSamples]);
+
   return (
     <div
       className={`${theme?.card} ${theme?.text} rounded-lg shadow-md p-6 border ${theme?.border}`}

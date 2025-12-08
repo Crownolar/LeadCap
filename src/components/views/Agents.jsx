@@ -1,6 +1,24 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchSamples } from "../../redux/slice/samplesSlice";
+import { useTheme } from "../../hooks/useTheme";
 
-const Agents = ({ theme, samples }) => {
+const Agents = ({ theme: propTheme, samples: propSamples }) => {
+  const dispatch = useDispatch();
+  const { theme: hookTheme } = useTheme();
+  const { samples: reduxSamples } = useSelector((state) => state.samples);
+
+  // Use props if provided, otherwise fall back to Redux
+  const theme = propTheme || hookTheme;
+  const samples = propSamples || reduxSamples || [];
+
+  // Fetch samples on mount if not provided via props
+  useEffect(() => {
+    if (!propSamples) {
+      dispatch(fetchSamples());
+    }
+  }, [dispatch, propSamples]);
+
   return (
     <div
       className={`${theme?.card} ${theme?.text} rounded-lg shadow-md p-6 border ${theme?.border}`}
@@ -22,7 +40,7 @@ const Agents = ({ theme, samples }) => {
               <div className="flex justify-between">
                 <span className={theme?.textMuted}>Samples Collected:</span>
                 <span className="font-semibold">
-                  {samples?.filter((s) => s.state === state).length}
+                  {samples?.filter((s) => s.state?.name === state).length || 0}
                 </span>
               </div>
               <div className="flex justify-between">
