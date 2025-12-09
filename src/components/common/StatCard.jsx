@@ -1,12 +1,10 @@
-import React from "react";
-
 const StatCard = ({ icon: Icon, label, value, color, subtext, theme }) => (
   <div
     className={`${theme?.card || ""} rounded-lg shadow-md p-6 border ${
       theme?.border || ""
-    }`}
+    } ${theme?.text}`}
   >
-    <div className="flex items-center justify-between">
+    <div className='flex items-center justify-between'>
       <div>
         <p className={`text-sm ${theme?.textMuted || ""} font-medium`}>
           {label}
@@ -19,7 +17,7 @@ const StatCard = ({ icon: Icon, label, value, color, subtext, theme }) => (
         )}
       </div>
       <div className={`p-3 rounded-lg ${color}`}>
-        <Icon className="w-8 h-8 text-white" />
+        <Icon className='w-8 h-8 text-white' />
       </div>
     </div>
   </div>

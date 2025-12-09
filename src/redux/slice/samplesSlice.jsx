@@ -1,29 +1,95 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-const API_BASE_URL = "/api";
+const API_BASE_URL = "https://194-146-38-237.cloud-xip.com/api/";
 
-const api = axios.create({ baseURL: API_BASE_URL });
+export const api = axios.create({ baseURL: API_BASE_URL });
+
+// Attach token from sessionStorage
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
+  const token = sessionStorage.getItem("accessToken");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-export const fetchSamples = createAsyncThunk(
-  "samples/fetchSamples",
+// ------------------------------
+// 🔥 Universal Error Extractor
+// ------------------------------
+const extractErrorMessage = (error, fallback) => {
+  return (
+    error?.response?.data?.error || error?.response?.data?.message || fallback
+  );
+};
+
+// ------------------------------
+// Fetch States
+// ------------------------------
+export const fetchStates = createAsyncThunk(
+  "samples/fetchStates",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get("/samples");
-      return response.data.data;
-    } catch (error) {
+      const res = await api.get("/states");
+      return res.data.data;
+    } catch (err) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch samples"
+        extractErrorMessage(err, "Failed to fetch states")
       );
     }
   }
 );
 
+// ------------------------------
+// Fetch Markets
+// ------------------------------
+export const fetchMarkets = createAsyncThunk(
+  "samples/fetchMarkets",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await api.get("/markets");
+      return res.data.data;
+    } catch (err) {
+      return rejectWithValue(
+        extractErrorMessage(err, "Failed to fetch markets")
+      );
+    }
+  }
+);
+
+// ------------------------------
+// Fetch Samples with Filters
+// ------------------------------
+export const fetchSamples = createAsyncThunk(
+  "samples/fetchSamples",
+  async (filters = {}, { rejectWithValue }) => {
+    try {
+      const response = await api.get("/samples", {
+        params: {
+          page: filters.page || 1,
+          limit: filters.limit || 20,
+          stateId: filters.stateId || undefined,
+          lgaId: filters.lgaId || undefined,
+          productType: filters.productType || undefined,
+          vendorType: filters.vendorType || undefined,
+          dateFrom: filters.dateFrom || undefined,
+          dateTo: filters.dateTo || undefined,
+        },
+      });
+
+      return {
+        items: response.data.data.items || response.data.data,
+        pagination: response.data.data.pagination || null,
+      };
+    } catch (err) {
+      return rejectWithValue(
+        extractErrorMessage(err, "Failed to fetch samples")
+      );
+    }
+  }
+);
+
+// ------------------------------
+// Create Sample
+// ------------------------------
 export const createSample = createAsyncThunk(
   "samples/createSample",
   async (formData, { rejectWithValue }) => {
@@ -52,19 +118,24 @@ export const createSample = createAsyncThunk(
         productPhotoUrl: formData.productPhotoUrl || null,
       };
 
-      console.log("Payload being sent:", payload);
       const response = await api.post("/samples", payload);
       return response.data.data;
-    } catch (error) {
+    } catch (err) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to create sample"
+        extractErrorMessage(err, "Failed to create sample")
       );
     }
   }
 );
 
+// ------------------------------
+// Slice
+// ------------------------------
 const initialState = {
   samples: [],
+  pagination: null,
+  states: [],
+  markets: [],
   loading: false,
   error: null,
 };
@@ -75,19 +146,22 @@ const samplesSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
+      // FETCH SAMPLES
       .addCase(fetchSamples.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchSamples.fulfilled, (state, action) => {
         state.loading = false;
-        state.samples = action.payload;
+        state.samples = action.payload.items;
+        state.pagination = action.payload.pagination;
       })
       .addCase(fetchSamples.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
 
+      // CREATE SAMPLE
       .addCase(createSample.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -97,6 +171,34 @@ const samplesSlice = createSlice({
         state.samples.unshift(action.payload);
       })
       .addCase(createSample.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // FETCH STATES
+      .addCase(fetchStates.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchStates.fulfilled, (state, action) => {
+        state.loading = false;
+        state.states = action.payload;
+      })
+      .addCase(fetchStates.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // FETCH MARKETS
+      .addCase(fetchMarkets.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchMarkets.fulfilled, (state, action) => {
+        state.loading = false;
+        state.markets = action.payload;
+      })
+      .addCase(fetchMarkets.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

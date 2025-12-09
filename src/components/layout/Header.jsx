@@ -45,18 +45,18 @@ const Header = ({
       />
 
       <header
-        className={`${theme?.card} shadow-sm border-b ${theme?.border} sticky top-0 z-40`}
+        className={`${theme?.card} shadow-sm border-b ${theme?.border} sticky top-0 z-[5000]`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-10xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="bg-emerald-500 p-2 rounded-lg">
                 <AlertTriangle className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className={`text-xl font-bold ${theme?.text}`}>LEDAcap</h1>
+                <h1 className={`text-xl font-bold ${theme?.text}`}>LEADcap</h1>
                 <p className={`text-xs ${theme?.textMuted}`}>
-                  Lead Exposure Detection & Capacity Platform
+                  Lead Exposure & Detection Capacity Platform
                 </p>
               </div>
             </div>

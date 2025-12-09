@@ -5,13 +5,18 @@ import PrivateRoute from "./Route/PrivateRoute";
 import Layout from "./Route/Layout";
 import AuthModal from "./components/auth/AuthModal";
 import InviteCodeGenerate from "./pages/InviteCodeGenerate";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { handleLogout } from "./redux/slice/authSlice";
 import MapView from "./components/views/MapView";
 import Agents from "./components/views/Agents";
 import Reports from "./components/views/Reports";
 import Database from "./components/views/Database";
+import { fetchSamples } from "./redux/slice/samplesSlice";
+import PolicyWelcome from "./pages/PolicyWelcome";
+import HeavyMetalFormModal from "./components/modals/lab-result_modal/HeavyMetalFormModal";
+import DataCollectorDashboard from "./components/views/DataCollectorDashboard";
+import DataCollectorWelcome from "./pages/DataCollectorWelcome";
 
 const lightTheme = {
   bg: "bg-gray-100",
@@ -44,11 +49,37 @@ const App = () => {
 
   const logout = () => dispatch(handleLogout());
 
+  useEffect(() => {
+    dispatch(fetchSamples({ page: 1, limit: 5000 })); // fetch everything
+  }, [dispatch]);
+
   return (
     <div>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/auth" element={<AuthModal theme={theme} />} />{" "}
+        <Route path="/policy-welcome" element={<PolicyWelcome />} />
+        <Route
+          path="/data-collector-welcome"
+          element={
+            <PrivateRoute allowedRoles={["datacollector"]}>
+              <DataCollectorWelcome />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/data-collector"
+          element={
+            <PrivateRoute allowedRoles={["datacollector"]}>
+              <DataCollectorDashboard
+                currentUser={currentUser}
+                theme={theme}
+                darkMode={darkMode}
+                handleLogout={logout}
+              />
+            </PrivateRoute>
+          }
+        />
         <Route
           path="/invitecodes"
           element={
@@ -71,15 +102,63 @@ const App = () => {
           <Route
             path="/dashboard"
             element={
-              <PrivateRoute isAuthenticated={isAuthenticated}>
+              <PrivateRoute
+                isAuthenticated={isAuthenticated}
+                allowedRoles={[
+                  "superadmin",
+                  "supervisor",
+                  "headresearcher",
+                  "policymakerson",
+                ]}
+              >
                 <Dashboard />
               </PrivateRoute>
             }
           />
-          <Route path="database" element={<Database />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="agents" element={<Agents />} />
-          <Route path="map" element={<MapView />} />
+
+          <Route
+            path="/heavy-metal"
+            element={
+              <PrivateRoute>
+                <HeavyMetalFormModal />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="database"
+            element={
+              <PrivateRoute>
+                <Database />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="reports"
+            element={
+              <PrivateRoute>
+                <Reports />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="agents"
+            element={
+              <PrivateRoute>
+                <Agents />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="map"
+            element={
+              <PrivateRoute>
+                <MapView />
+              </PrivateRoute>
+            }
+          />
         </Route>
       </Routes>
     </div>
