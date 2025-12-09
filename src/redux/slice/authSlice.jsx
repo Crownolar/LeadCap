@@ -89,8 +89,8 @@ const savedUser = localStorage.getItem("user");
 const authSlice = createSlice({
   name: "auth",
   initialState: {
-    isAuthenticated: !!savedUser,
-    currentUser: savedUser ? JSON.parse(savedUser) : null,
+    isAuthenticated: savedUser && savedUser !== "undefined" ? true : false,
+    currentUser: savedUser && savedUser !== "undefined" ? JSON.parse(savedUser) : null,
     loading: false,
     error: null,
   },

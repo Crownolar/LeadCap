@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Search, Download } from "lucide-react";
 import { productTypes } from "../../utils/constants";
-import axios from "axios";
+import api from "../../utils/api";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchSamples } from "../../redux/slice/samplesSlice";
 import { useTheme } from "../../hooks/useTheme";
 import { filterSamples } from "../../utils/helpers";
 import SampleDetailModal from "../modals/SampleDetailModal";
-
-const API_BASE_URL = "/api";
 
 // Helper to get max heavy metal reading for display
 const getMaxReading = (heavyMetalReadings) => {
@@ -81,10 +79,7 @@ const Database = ({
     if (!propStates) {
       const fetchStates = async () => {
         try {
-          const token = localStorage.getItem("accessToken");
-          const response = await axios.get(`${API_BASE_URL}/samples/states/all`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          const response = await api.get("/samples/states/all");
           setLocalStates(response.data.data || []);
         } catch (err) {
           console.error("Failed to fetch states:", err);
@@ -95,7 +90,7 @@ const Database = ({
   }, [propStates]);
   const handleExcelExportClick = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/samples/export`, {
+      const response = await api.get("/samples/export/data", {
         params: { format: "excel" },
         responseType: "blob",
       });
