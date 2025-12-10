@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useTheme } from "../../hooks/useTheme";
 import { useSelector } from "react-redux";
 import { Lock } from "lucide-react";
-import axios from "axios";
+import api from "../../utils/api";
 
 const Agents = ({ theme: propTheme }) => {
   const { theme: hookTheme } = useTheme();
@@ -35,12 +35,7 @@ const Agents = ({ theme: propTheme }) => {
     const fetchDataCollectors = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem("authToken");
-        const response = await axios.get("/api/data-collectors", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await api.get("/data-collectors");
 
         if (response.data.success) {
           setDataCollectors(response.data.data);
