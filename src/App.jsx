@@ -59,8 +59,11 @@ const App = () => {
   const logout = () => dispatch(handleLogout());
 
   useEffect(() => {
-    dispatch(fetchSamples({ page: 1, limit: 5000 })); // fetch everything
-  }, [dispatch]);
+    // Only fetch samples if user is authenticated
+    if (isAuthenticated && currentUser) {
+      dispatch(fetchSamples({ page: 1, limit: 5000 }));
+    }
+  }, [dispatch, isAuthenticated, currentUser]);
 
   return (
     <div>

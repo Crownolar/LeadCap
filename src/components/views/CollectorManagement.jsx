@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useTheme } from "../../hooks/useTheme";
-import axios from "axios";
+import api from "../../utils/api";
 
 const CollectorManagement = ({ theme: propTheme }) => {
   const { theme: hookTheme } = useTheme();
@@ -24,10 +24,7 @@ const CollectorManagement = ({ theme: propTheme }) => {
   const fetchCollectors = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("authToken");
-      const response = await axios.get("/api/supervisor/collectors", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get("/supervisors/collectors");
 
       if (response.data.success) {
         setCollectors(response.data.data);
@@ -42,13 +39,8 @@ const CollectorManagement = ({ theme: propTheme }) => {
 
   const fetchStatesAndLGAs = async () => {
     try {
-      const token = localStorage.getItem("authToken");
-      const statesRes = await axios.get("/api/management/states", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const lgasRes = await axios.get("/api/management/lgas", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const statesRes = await api.get("/samples/states/all");
+      const lgasRes = await api.get("/samples/lgas/all");
 
       if (statesRes.data.success) setStates(statesRes.data.data);
       if (lgasRes.data.success) setLGAs(lgasRes.data.data);
@@ -84,14 +76,12 @@ const CollectorManagement = ({ theme: propTheme }) => {
 
     try {
       setUpdating(true);
-      const token = localStorage.getItem("authToken");
-      const response = await axios.put(
-        `/api/supervisor/collectors/${selectedCollector.id}/assignment`,
+      const response = await api.put(
+        `/supervisors/collectors/${selectedCollector.id}/assignment`,
         {
           assignedStates: selectedStates,
           assignedLGAs: selectedLGAs,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
+        }
       );
 
       if (response.data.success) {

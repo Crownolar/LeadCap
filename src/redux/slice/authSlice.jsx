@@ -1,19 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
-
-const API_BASE_URL = "/api";
-
-// Axios instance
-const api = axios.create({
-  baseURL: API_BASE_URL,
-});
-
-// Attach token for all requests
-api.interceptors.request.use((config) => {
-  const token = sessionStorage.getItem("accessToken");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+import api from "../../utils/api";
 
 // --- LOGIN ---
 export const handleLogin = createAsyncThunk(
