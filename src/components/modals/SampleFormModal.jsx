@@ -1,9 +1,7 @@
 import { X, Camera, Trash2, Loader, MapPin } from "lucide-react";
 import { productTypes, vendorTypes } from "../../utils/constants";
 import { useRef, useState, useEffect } from "react";
-import axios from "axios";
-
-const API_BASE_URL = "/api";
+import api from "../../utils/api";
 
 const SampleFormModal = ({ theme, onClose, onSubmit }) => {
   const [loading, setLoading] = useState(false);
@@ -45,13 +43,10 @@ const SampleFormModal = ({ theme, onClose, onSubmit }) => {
     const fetchData = async () => {
       setLoadingData(true);
       try {
-        const token = localStorage.getItem("accessToken");
-        const headers = { Authorization: `Bearer ${token}` };
-
         const [statesRes, lgasRes, marketsRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/samples/states/all`, { headers }),
-          axios.get(`${API_BASE_URL}/samples/lgas/all`, { headers }),
-          axios.get(`${API_BASE_URL}/samples/markets/all`, { headers }),
+          api.get("/samples/states/all"),
+          api.get("/samples/lgas/all"),
+          api.get("/samples/markets/all"),
         ]);
 
         setStates(statesRes.data.data || []);
@@ -192,11 +187,11 @@ const SampleFormModal = ({ theme, onClose, onSubmit }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div
-        className={`${theme.card} rounded-lg shadow-xl max-w-4xl w-full my-8 border ${theme.border} mx-auto sm:mx-2`}
+        className={`${theme.card} rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col border ${theme.border} mx-auto sm:mx-2`}
       >
-        <div className={`p-4 sm:p-6 border-b ${theme.border}`}>
+        <div className={`p-4 sm:p-6 border-b ${theme.border} sticky top-0 z-10 bg-white dark:bg-gray-800`}>
           <div className="flex items-center justify-between flex-wrap gap-2">
             <h2 className="text-xl sm:text-2xl font-bold text-center sm:text-left w-full sm:w-auto">
               New Sample Entry
@@ -220,7 +215,7 @@ const SampleFormModal = ({ theme, onClose, onSubmit }) => {
         {!loadingData && (
           <form
             onSubmit={handleSubmit}
-            className="p-6 space-y-6 max-h-[70vh] overflow-y-auto"
+            className="flex-1 overflow-y-auto p-6 space-y-6"
           >
           <section>
             <h3 className="text-lg font-semibold mb-4 text-emerald-500">

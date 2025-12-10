@@ -1,10 +1,25 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, MessageSquare, Send, Loader } from "lucide-react";
+import { ArrowLeft, MessageSquare, Send, Loader, Lock } from "lucide-react";
 import Comments from "./Comments";
-import { api } from "../../redux/slice/samplesSlice";
+import api from "../../utils/api";
+import { useSelector } from "react-redux";
 
 function CommentSection({ commentSectionView, setCommentSectionView }) {
   const { sample } = commentSectionView;
+  const { currentUser } = useSelector((state) => state.auth);
+  
+  // Only these roles can add comments
+  const COMMENT_ROLES = [
+    'SUPER_ADMIN',
+    'HEAD_RESEARCHER',
+    'SUPERVISOR',
+    'POLICY_MAKER_SON',
+    'POLICY_MAKER_NAFDAC',
+    'POLICY_MAKER_RESOLVE',
+    'POLICY_MAKER_UNIVERSITY'
+  ];
+  
+  const canComment = COMMENT_ROLES.includes(currentUser?.role);
   const [fetchedComments, setFetchedComments] = useState([]);
   const [requestMessage, setRequestMessage] = useState({
     error: false,
@@ -186,31 +201,42 @@ function CommentSection({ commentSectionView, setCommentSectionView }) {
 
           {/* Add Comment Form */}
           <div className="bg-gray-50 dark:bg-gray-900/50 p-6 border-t border-gray-200 dark:border-gray-700">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-              Add a Comment
-            </label>
-            <div className="flex gap-3">
-              <input
-                type="text"
-                placeholder="Write your comment or remark..."
-                className="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:border-blue-600 focus:outline-none font-medium transition-all"
-                value={writtenComment}
-                onChange={(e) => setWrittenComment(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === "Enter" && writtenComment.trim()) {
-                    handleSubmitComment();
-                  }
-                }}
-              />
-              <button
-                onClick={handleSubmitComment}
-                disabled={!writtenComment.trim()}
-                className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2"
-              >
-                <Send className="w-5 h-5" />
-                <span className="hidden sm:inline">Comment</span>
-              </button>
-            </div>
+            {!canComment ? (
+              <div className="flex items-center gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                <Lock className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                <p className="text-yellow-800 dark:text-yellow-200 font-medium">
+                  Only supervisors, researchers, and policy makers can add comments
+                </p>
+              </div>
+            ) : (
+              <>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                  Add a Comment
+                </label>
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    placeholder="Write your comment or remark..."
+                    className="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:border-blue-600 focus:outline-none font-medium transition-all"
+                    value={writtenComment}
+                    onChange={(e) => setWrittenComment(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter" && writtenComment.trim()) {
+                        handleSubmitComment();
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={handleSubmitComment}
+                    disabled={!writtenComment.trim()}
+                    className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2"
+                  >
+                    <Send className="w-5 h-5" />
+                    <span className="hidden sm:inline">Comment</span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

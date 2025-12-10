@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { FileText, BarChart3, Package, AlertTriangle, Loader, Download, X } from "lucide-react";
+import { FileText, BarChart3, Package, AlertTriangle, Loader, Download, X, Lock } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchSamples } from "../../redux/slice/samplesSlice";
 import { useTheme } from "../../hooks/useTheme";
@@ -9,15 +9,35 @@ const Reports = ({ theme: propTheme, samples: propSamples }) => {
   const dispatch = useDispatch();
   const { theme: hookTheme } = useTheme();
   const { samples: reduxSamples } = useSelector((state) => state.samples);
+  const { currentUser } = useSelector((state) => state.auth);
 
   // Use props if provided, otherwise fall back to Redux
   const theme = propTheme || hookTheme;
   const samples = propSamples || reduxSamples || [];
 
+  // Role-based access control
+  const normalizedRole = currentUser?.role?.toLowerCase().replace(/[\s_]/g, "");
+  const allowedRoles = ["superadmin", "headresearcher"];
+  
+  if (!allowedRoles.includes(normalizedRole)) {
+    return (
+      <div className={`${theme?.bg} min-h-screen flex items-center justify-center p-4`}>
+        <div className={`${theme?.card} rounded-lg border ${theme?.border} shadow-md p-8 text-center max-w-md`}>
+          <Lock className="w-16 h-16 mx-auto mb-4 text-yellow-600" />
+          <h2 className={`${theme?.text} text-2xl font-bold mb-2`}>Access Restricted</h2>
+          <p className={theme?.textMuted}>
+            You do not have permission to view reports. Only Super Admin and Head Researcher can access this section.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // State management
   const [loading, setLoading] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
   const [states, setStates] = useState([]);
+  const [generationProgress, setGenerationProgress] = useState(0);
   const [productTypes] = useState([
     { key: "TIRO", label: "TIRO" },
     { key: "TIRO_RGSTD", label: "TIRO RGSTD" },
@@ -54,25 +74,43 @@ const Reports = ({ theme: propTheme, samples: propSamples }) => {
     }
   };
 
-  const generateReport = async (reportType) => {
+  const generateReport = async (reportType, filters) => {
+    // Validate required filters before submitting
+    if ((reportType === "state-summary" || reportType === "product-type") && !filters.state) {
+      alert("Please select a state to generate this report");
+      return;
+    }
+
     setLoading(true);
+    setGenerationProgress(10);
+    
+    const timeoutId = setTimeout(() => {
+      setGenerationProgress(50);
+    }, 5000);
+
     try {
       const endpoint = `/reports/generate/${reportType}`;
       const payload = {
-        state: reportFilters.state,
-        states: reportFilters.states.length > 0 ? reportFilters.states : undefined,
-        productTypes: reportFilters.productTypes.length > 0 ? reportFilters.productTypes : undefined,
-        dateFrom: reportFilters.dateFrom || undefined,
-        dateTo: reportFilters.dateTo || undefined,
-        minLeadLevel: reportFilters.minLeadLevel || 10,
+        state: filters.state,
+        states: filters.states.length > 0 ? filters.states : undefined,
+        productTypes: filters.productTypes.length > 0 ? filters.productTypes : undefined,
+        dateFrom: filters.dateFrom || undefined,
+        dateTo: filters.dateTo || undefined,
+        minLeadLevel: filters.minLeadLevel || 10,
       };
+
+      setGenerationProgress(20);
 
       const response = await api.post(endpoint, payload, {
         responseType: "blob",
+        timeout: 120000, // 2 minute timeout
       });
 
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      setGenerationProgress(80);
+
+      // Create download link with optimized blob handling
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute(
@@ -81,27 +119,48 @@ const Reports = ({ theme: propTheme, samples: propSamples }) => {
       );
       document.body.appendChild(link);
       link.click();
-      link.parentNode.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      
+      // Cleanup
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
 
+      setGenerationProgress(100);
       alert("Report generated and downloaded successfully!");
       setSelectedReport(null);
     } catch (error) {
       console.error("Failed to generate report:", error);
-      alert(
-        error.response?.data?.message || "Failed to generate report. Please try again."
-      );
+      
+      let errorMessage = "Failed to generate report. Please try again.";
+      if (error.code === 'ECONNABORTED') {
+        errorMessage = "Request timeout. Large reports may take longer. Please try with more specific filters.";
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      alert(errorMessage);
+      setGenerationProgress(0);
     } finally {
       setLoading(false);
+      clearTimeout(timeoutId);
     }
   };
 
   const ReportModal = ({ report, onClose }) => {
     const [filters, setFilters] = useState(reportFilters);
 
+    // Check if required fields are filled
+    const isFormValid = () => {
+      if (report.type === "state-summary" || report.type === "product-type") {
+        return filters.state !== "";
+      }
+      return true; // Other reports don't have required fields
+    };
+
     const handleSubmit = async () => {
-      setReportFilters(filters);
-      await generateReport(report.type);
+      // Pass the local filters directly to generateReport
+      await generateReport(report.type, filters);
     };
 
     return (
@@ -252,20 +311,30 @@ const Reports = ({ theme: propTheme, samples: propSamples }) => {
             <div className="flex gap-3 pt-4">
               <button
                 onClick={handleSubmit}
-                disabled={loading}
-                className="flex-1 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white py-2 rounded-lg font-medium flex items-center justify-center gap-2"
+                disabled={loading || !isFormValid()}
+                className="flex-1 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors relative overflow-hidden"
+                title={!isFormValid() ? "Please select a state" : ""}
               >
-                {loading ? (
-                  <>
-                    <Loader className="w-4 h-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    Generate & Download
-                  </>
+                {/* Progress bar overlay */}
+                {loading && generationProgress > 0 && (
+                  <div 
+                    className="absolute left-0 top-0 h-full bg-emerald-600/50 transition-all duration-300"
+                    style={{ width: `${generationProgress}%` }}
+                  />
                 )}
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  {loading ? (
+                    <>
+                      <Loader className="w-4 h-4 animate-spin" />
+                      {generationProgress > 0 ? `${generationProgress}%` : "Generating..."}
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      Generate & Download
+                    </>
+                  )}
+                </span>
               </button>
               <button
                 onClick={onClose}

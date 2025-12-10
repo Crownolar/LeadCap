@@ -1,6 +1,8 @@
 import { X, AlertTriangle, CheckCircle, Beaker } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import api from "../../../utils/api";
+import { productTypes } from "../../../utils/constants";
 import {
   addOrUpdateHeavyMetal,
   clearHeavyMetalState,
@@ -18,14 +20,27 @@ const HeavyMetalFormModal = ({
     (state) => state.heavyMetal
   );
 
+  const [thresholds, setThresholds] = useState([]);
+  const [loadingThresholds, setLoadingThresholds] = useState(true);
+  const [selectedProductType, setSelectedProductType] = useState("TIRO");
+
   const heavyMetals = [
-    { value: "LEAD", label: "Lead (Pb)", limit: 10 },
-    { value: "MERCURY", label: "Mercury (Hg)", limit: 1 },
-    { value: "CADMIUM", label: "Cadmium (Cd)", limit: 0.3 },
-    { value: "ARSENIC", label: "Arsenic (As)", limit: 2 },
-    { value: "CHROMIUM", label: "Chromium (Cr)", limit: 50 },
-    { value: "NICKEL", label: "Nickel (Ni)", limit: 50 },
+    "LEAD",
+    "MERCURY",
+    "CADMIUM",
+    "ARSENIC",
+    "CHROMIUM",
+    "NICKEL",
   ];
+
+  const metalLabels = {
+    LEAD: "Lead (Pb)",
+    MERCURY: "Mercury (Hg)",
+    CADMIUM: "Cadmium (Cd)",
+    ARSENIC: "Arsenic (As)",
+    CHROMIUM: "Chromium (Cr)",
+    NICKEL: "Nickel (Ni)",
+  };
 
   const [formData, setFormData] = useState({
     sampleId: sampleId || existingData?.sampleId || "",
@@ -36,16 +51,41 @@ const HeavyMetalFormModal = ({
     notes: existingData?.notes || "",
   });
 
-  // Utility functions
-  const getSelectedMetalLimit = () =>
-    heavyMetals.find((m) => m.value === formData.heavyMetal)?.limit || null;
+  // Fetch thresholds from backend on component mount
+  useEffect(() => {
+    const fetchThresholds = async () => {
+      try {
+        setLoadingThresholds(true);
+        const response = await api.get("/thresholds");
+        if (response.data?.success) {
+          setThresholds(response.data.data || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch thresholds:", err);
+      } finally {
+        setLoadingThresholds(false);
+      }
+    };
+    fetchThresholds();
+  }, []);
 
-  const getContaminationLevel = (reading, limit) => {
-    if (!reading || !limit) return null;
+  // Get threshold for selected metal and product type
+  const getSelectedMetalThreshold = () => {
+    return thresholds.find(
+      (t) => t.heavyMetal === formData.heavyMetal && t.productType === selectedProductType
+    ) || null;
+  };
+
+  const getContaminationLevel = (reading, threshold) => {
+    if (!reading || !threshold) return null;
     const val = parseFloat(reading);
-    if (val <= limit * 0.5) return "safe";
-    if (val <= limit) return "acceptable";
-    if (val <= limit * 2) return "elevated";
+    const safeLimit = threshold.safeLimit;
+    const warningLimit = threshold.warningLimit || threshold.dangerLimit * 0.5;
+    const dangerLimit = threshold.dangerLimit;
+
+    if (val <= safeLimit) return "safe";
+    if (val <= warningLimit) return "acceptable";
+    if (val <= dangerLimit) return "elevated";
     return "dangerous";
   };
 
@@ -80,10 +120,10 @@ const HeavyMetalFormModal = ({
   };
 
   const getWorstContaminationLevel = () => {
-    const limit = getSelectedMetalLimit();
+    const threshold = getSelectedMetalThreshold();
     const levels = ["safe", "acceptable", "elevated", "dangerous"];
-    const xrfLevel = getContaminationLevel(formData.xrfReading, limit);
-    const aasLevel = getContaminationLevel(formData.aasReading, limit);
+    const xrfLevel = getContaminationLevel(formData.xrfReading, threshold);
+    const aasLevel = getContaminationLevel(formData.aasReading, threshold);
     return levels[
       Math.max(
         levels.indexOf(xrfLevel || "safe"),
@@ -113,14 +153,13 @@ const HeavyMetalFormModal = ({
     else alert(result.payload || "Failed to save reading");
   };
 
-  const limit = getSelectedMetalLimit();
   const worstLevel = getWorstContaminationLevel();
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[1000] overflow-y-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full my-8 border-2 border-gray-200 dark:border-gray-700">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 p-6 rounded-t-2xl">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[1000]">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col border-2 border-gray-200 dark:border-gray-700">
+        {/* Header - Sticky */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 p-6 rounded-t-2xl sticky top-0 z-10">
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
@@ -144,8 +183,8 @@ const HeavyMetalFormModal = ({
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
+        {/* Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto p-8 space-y-6">
           {/* Sample Information Section */}
           <div>
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 pb-2 border-b-2 border-blue-600 flex items-center gap-2">
@@ -200,27 +239,53 @@ const HeavyMetalFormModal = ({
                   ))}
                 </select>
               </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                  Product Type
+                </label>
+                <select
+                  value={selectedProductType}
+                  onChange={(e) => setSelectedProductType(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-600 focus:outline-none font-medium transition-all"
+                >
+                  {Object.entries(productTypes).map(([key, label]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            {limit && (
+            {getSelectedMetalThreshold() && (
               <div className="mt-4 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-600 p-4 rounded-r-lg">
-                <div className="flex items-center gap-2">
-                  <svg
-                    className="w-5 h-5 text-blue-600 flex-shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">
-                    Regulatory Limit: <span className="text-lg">{limit}</span>{" "}
-                    ppm
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <svg
+                      className="w-5 h-5 text-blue-600 flex-shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">
+                      Safe Limit: <span className="text-lg">{getSelectedMetalThreshold()?.safeLimit}</span> ppm
+                    </p>
+                  </div>
+                  {getSelectedMetalThreshold()?.warningLimit && (
+                    <p className="text-sm text-blue-800 dark:text-blue-300 ml-7">
+                      Warning Limit: <span className="font-semibold">{getSelectedMetalThreshold()?.warningLimit}</span> ppm
+                    </p>
+                  )}
+                  <p className="text-sm text-blue-800 dark:text-blue-300 ml-7">
+                    Danger Limit: <span className="font-semibold">{getSelectedMetalThreshold()?.dangerLimit}</span> ppm
                   </p>
                 </div>
               </div>
@@ -252,7 +317,8 @@ const HeavyMetalFormModal = ({
                   method === "xrfReading"
                     ? "XRF Reading (X-Ray Fluorescence)"
                     : "AAS Reading (Atomic Absorption Spectroscopy)";
-                const level = getContaminationLevel(formData[method], limit);
+                const threshold = getSelectedMetalThreshold();
+                const level = getContaminationLevel(formData[method], threshold);
                 return (
                   <div
                     key={method}
