@@ -50,7 +50,6 @@ export default function MapSampleDetailsModal({ setMapDetails, mapDetails }) {
                 />
               )}
             </div>
-          </div>
         </div>
       </div>
     </>
