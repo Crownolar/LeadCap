@@ -16,6 +16,7 @@ import {
   updateUser,
 } from "../redux/slice/userSlice";
 import { useNavigate } from "react-router-dom";
+import api from "../utils/api";
 
 const InviteCodeGenerate = ({ theme = {} }) => {
   const dispatch = useDispatch();
@@ -73,18 +74,12 @@ const InviteCodeGenerate = ({ theme = {} }) => {
     setMessage("");
 
     try {
-      const token = localStorage.getItem("accessToken");
-      const res = await fetch("/api/auth/generate-invite", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ role: role.toUpperCase() }),
+      const res = await api.post("/auth/generate-invite", {
+        role: role.toUpperCase(),
       });
-      const data = await res.json();
+      const data = res.data;
 
-      if (!res.ok)
+      if (!data.success)
         throw new Error(data.message || "Failed to generate invite code");
 
       const code = data.data?.code || data.code;

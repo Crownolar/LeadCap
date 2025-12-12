@@ -1,47 +1,12 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
-
-const API_BASE_URL = "/api";
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-});
-
-// Attach token from sessionStorage
-api.interceptors.request.use((config) => {
-  const token = sessionStorage.getItem("hMetalToken");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-
-// ---- TOKEN HELPER ---- //
-const getAuthToken = (getState) => {
-  const tokenFromRedux = getState()?.auth?.token;
-  const tokenFromSession = sessionStorage.getItem("hMetalToken");
-
-  console.log(
-    "HeavyMetal Slice -> Token from sessionStorage:",
-    tokenFromSession
-  );
-
-  return tokenFromRedux || tokenFromSession || null;
-};
+import api from "../../utils/api";
 
 // ---- Add or Update Reading ---- //
 export const addOrUpdateHeavyMetal = createAsyncThunk(
   "heavyMetal/addOrUpdate",
-  async (payload, { getState, rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
-      const token = getAuthToken(getState);
-      if (!token) throw new Error("Access token required");
-
-      const response = await axios.post("/api/heavy-metals", payload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
+      const response = await api.post("/heavy-metals", payload);
       return response.data;
     } catch (error) {
       return rejectWithValue(
@@ -56,15 +21,9 @@ export const addOrUpdateHeavyMetal = createAsyncThunk(
 // ---- Fetch readings for one sample ---- //
 export const getSampleReadings = createAsyncThunk(
   "heavyMetal/getSampleReadings",
-  async (sampleId, { getState, rejectWithValue }) => {
+  async (sampleId, { rejectWithValue }) => {
     try {
-      const token = getAuthToken(getState);
-      if (!token) throw new Error("Access token required");
-
-      const response = await axios.get(`/api/heavy-metals/sample/${sampleId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
+      const response = await api.get(`/heavy-metals/sample/${sampleId}`);
       return response.data;
     } catch (error) {
       return rejectWithValue(

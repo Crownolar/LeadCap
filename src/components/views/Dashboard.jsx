@@ -143,22 +143,12 @@ function aggregateByMonth(samples, monthsBack = 6) {
 
 function deriveLocationData(samples) {
   const byLocation = samples.reduce((acc, s) => {
-    const loc =
-      safeGet(s, "location") ??
-      safeGet(s, "campus") ??
-      safeGet(s, "site") ??
-      safeGet(s, "stateName") ??
-      "Unknown";
+    const loc = safeGet(s, "state.name") ?? safeGet(s, "market.name") ?? "Unknown";
     acc[loc] = acc[loc] || { exposure: 0, capacityValues: [], population: 0 };
     const status = (s.status || "").toLowerCase();
     if (["contaminated", "detected", "exposed"].includes(status))
       acc[loc].exposure += 1;
-    const cap = safeGet(s, "detectionCapacity");
-    if (typeof cap === "number") acc[loc].capacityValues.push(cap);
-    const pop =
-      safeGet(s, "population") ?? safeGet(s, "sitePopulation") ?? null;
-    if (typeof pop === "number")
-      acc[loc].population = Math.max(acc[loc].population, pop);
+    acc[loc].capacityValues.push(1); // Count samples instead
     return acc;
   }, {});
 
@@ -249,7 +239,7 @@ const Dashboard = ({ theme, darkMode }) => {
 
     const byState = Object.entries(
       samples.reduce((acc, s) => {
-        const stateName = s.stateName || s.state || "Unknown";
+        const stateName = s.state?.name || "Unknown";
         acc[stateName] = (acc[stateName] || 0) + 1;
         return acc;
       }, {})

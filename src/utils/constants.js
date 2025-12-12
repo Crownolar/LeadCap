@@ -1,4 +1,4 @@
-// Product types - matching backend schema
+
 export const productTypes = {
   TIRO: "Tiró/Kohl",
   TIRO_RGSTD: "Tiró/Kohl (Registered)",
@@ -10,7 +10,7 @@ export const productTypes = {
   SKIN_LOTION: "Skin Lotion",
 };
 
-// Vendor types - matching backend schema
+
 export const vendorTypes = [
   "DISTRIBUTOR",
   "MANUFACTURER",

@@ -8,7 +8,8 @@ import { useTheme } from "../hooks/useTheme";
 import { useState } from "react";
 import SampleFormModal from "../components/modals/SampleFormModal";
 import HeavyMetalFormModal from "../components/modals/lab-result_modal/HeavyMetalFormModal";
-import DataCollectorDashboard from "../components/views/DataCollectorDashboard";
+import { fetchSamples } from "../redux/slice/samplesSlice";
+import api from "../utils/api";
 
 const Layout = () => {
   const dispatch = useDispatch();
@@ -16,8 +17,8 @@ const Layout = () => {
   const { theme, darkMode, toggleDarkMode } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentView, setCurrentView] = useState("dashboard");
-  const [showHeavyMetalModal, setShowHeavyMetalModal] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [showHeavyMetalModal, setShowHeavyMetalModal] = useState(false);
 
   const logout = () => {
     dispatch(handleLogout());
@@ -25,8 +26,20 @@ const Layout = () => {
     localStorage.removeItem("refreshToken");
   };
 
+  const handleFormSubmit = async (formData) => {
+    try {
+      await api.post("/samples", formData);
+      // Refresh samples after successful creation
+      dispatch(fetchSamples());
+      setShowForm(false);
+    } catch (error) {
+      console.error("Failed to create sample:", error);
+      throw error;
+    }
+  };
+
   return (
-    <div className={`min-h-screen flex flex-col ${theme.bg} ${theme.text}`}>
+    <div className={`min-h-screen flex flex-col ${theme.bg}`}>
       <Header
         theme={theme}
         currentUser={currentUser}
@@ -37,7 +50,7 @@ const Layout = () => {
         setMobileMenuOpen={setMobileMenuOpen}
       />
 
-      <div className="flex flex-1 ">
+      <div className="flex flex-1">
         <Sidebar
           theme={theme}
           mobileMenuOpen={mobileMenuOpen}
@@ -56,10 +69,7 @@ const Layout = () => {
           <SampleFormModal
             theme={theme}
             onClose={() => setShowForm(false)}
-            onSubmit={(formData) => {
-              console.log("Form submitted:", formData);
-              setShowForm(false);
-            }}
+            onSubmit={handleFormSubmit}
           />
         )}
 

@@ -36,21 +36,10 @@ const AuthModal = ({ theme }) => {
 
         const normalizedRole = role?.toLowerCase().replace(/[\s_]/g, "");
 
-        // if (normalizedRole === "datacollector") {
-        //   navigate("/data-collector-welcome");
-        // } else if (normalizedRole === "policymakerson") {
-        //   navigate("/policy-welcome");
-        // } else if (normalizedRole === "superadmin") {
-        //   navigate("/invitecodes");
-        // } else if (normalizedRole === "supervisor") {
-        //   navigate("/agents");
-        // } else {
-        //   navigate("/dashboard");
-        // }
-        if (normalizedRole === "policymakerson") {
-          navigate("/map"); // ONLY MAP PAGE
+        if (normalizedRole && normalizedRole.startsWith("policymaker")) {
+          navigate("/map"); // Policy makers access map
         } else if (normalizedRole === "supervisor") {
-          navigate("/agents");
+          navigate("/collectors");
         } else if (normalizedRole === "datacollector") {
           navigate("/data-collector-welcome");
         } else if (normalizedRole === "superadmin") {
@@ -220,22 +209,3 @@ const Input = ({
 );
 
 export default AuthModal;
-
-// Ploicy Maker Son
-// policymaker.son@ledacap.ng
-// policy123!
-
-// Ploicy Maker Nafdac
-//policymaker.son@ledacap.ng
-
-// Head Researcher
-// headresearcher@ledacap.ng
-// researcher123!
-
-// Data Collector
-// datacollector.lagos@ledacap.ng
-// collector123!
-
-//Supervisor
-// supervisor@ledacap.ng
-// supervisor123!

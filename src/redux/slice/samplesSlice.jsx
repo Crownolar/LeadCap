@@ -1,20 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
+import api from "../../utils/api";
 
-const API_BASE_URL = "https://194-146-38-237.cloud-xip.com/api/";
-
-export const api = axios.create({ baseURL: API_BASE_URL });
-
-// Attach token from sessionStorage
-api.interceptors.request.use((config) => {
-  const token = sessionStorage.getItem("accessToken");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-
-// ------------------------------
-// 🔥 Universal Error Extractor
-// ------------------------------
+// Universal Error Extractor
 const extractErrorMessage = (error, fallback) => {
   return (
     error?.response?.data?.error || error?.response?.data?.message || fallback

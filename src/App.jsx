@@ -15,8 +15,17 @@ import Database from "./components/views/Database";
 import { fetchSamples } from "./redux/slice/samplesSlice";
 import PolicyWelcome from "./pages/PolicyWelcome";
 import HeavyMetalFormModal from "./components/modals/lab-result_modal/HeavyMetalFormModal";
-import DataCollectorDashboard from "./components/views/DataCollectorDashboard";
+import DataCollectorDashboard from "./pages/DataCollectorDashboard";
 import DataCollectorWelcome from "./pages/DataCollectorWelcome";
+import StateManagement from "./components/views/StateManagement";
+import LGAManagement from "./components/views/LGAManagement";
+import MarketManagement from "./components/views/MarketManagement";
+import UserManagement from "./components/views/UserManagement";
+import ThresholdManagement from "./components/views/ThresholdManagement";
+import InviteCodeManagement from "./components/views/InviteCodeManagement";
+import SupervisorDashboard from "./components/views/SupervisorDashboard";
+import CollectorManagement from "./components/views/CollectorManagement";
+import SampleReview from "./components/views/SampleReview";
 
 const lightTheme = {
   bg: "bg-gray-100",
@@ -50,8 +59,11 @@ const App = () => {
   const logout = () => dispatch(handleLogout());
 
   useEffect(() => {
-    dispatch(fetchSamples({ page: 1, limit: 5000 })); // fetch everything
-  }, [dispatch]);
+    // Only fetch samples if user is authenticated
+    if (isAuthenticated && currentUser) {
+      dispatch(fetchSamples({ page: 1, limit: 5000 }));
+    }
+  }, [dispatch, isAuthenticated, currentUser]);
 
   return (
     <div>
@@ -64,19 +76,6 @@ const App = () => {
           element={
             <PrivateRoute allowedRoles={["datacollector"]}>
               <DataCollectorWelcome />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/data-collector"
-          element={
-            <PrivateRoute allowedRoles={["datacollector"]}>
-              <DataCollectorDashboard
-                currentUser={currentUser}
-                theme={theme}
-                darkMode={darkMode}
-                handleLogout={logout}
-              />
             </PrivateRoute>
           }
         />
@@ -109,9 +108,24 @@ const App = () => {
                   "supervisor",
                   "headresearcher",
                   "policymakerson",
+                  "policymakernafdac",
+                  "policymakerresolve",
+                  "policymakeruniversity",
                 ]}
               >
-                <Dashboard />
+                {currentUser?.role?.toLowerCase() === "supervisor" ? 
+                  <SupervisorDashboard theme={theme} /> : 
+                  <Dashboard />
+                }
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/data-collector"
+            element={
+              <PrivateRoute allowedRoles={["datacollector"]}>
+                <DataCollectorDashboard />
               </PrivateRoute>
             }
           />
@@ -119,7 +133,7 @@ const App = () => {
           <Route
             path="/heavy-metal"
             element={
-              <PrivateRoute>
+              <PrivateRoute allowedRoles={["datacollector"]}>
                 <HeavyMetalFormModal />
               </PrivateRoute>
             }
@@ -127,7 +141,7 @@ const App = () => {
           <Route
             path="database"
             element={
-              <PrivateRoute>
+              <PrivateRoute allowedRoles={["superadmin", "headresearcher", "supervisor"]}>
                 <Database />
               </PrivateRoute>
             }
@@ -136,7 +150,7 @@ const App = () => {
           <Route
             path="reports"
             element={
-              <PrivateRoute>
+              <PrivateRoute allowedRoles={["superadmin", "headresearcher"]}>
                 <Reports />
               </PrivateRoute>
             }
@@ -145,7 +159,7 @@ const App = () => {
           <Route
             path="agents"
             element={
-              <PrivateRoute>
+              <PrivateRoute allowedRoles={["superadmin", "headresearcher"]}>
                 <Agents />
               </PrivateRoute>
             }
@@ -154,8 +168,80 @@ const App = () => {
           <Route
             path="map"
             element={
-              <PrivateRoute>
+              <PrivateRoute allowedRoles={["superadmin", "headresearcher", "supervisor", "datacollector", "policymakerson", "policymakernafdac", "policymakerresolve", "policymakeruniversity"]}>
                 <MapView />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="states"
+            element={
+              <PrivateRoute allowedRoles={["superadmin"]}>
+                <StateManagement theme={theme} darkMode={darkMode} />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="lgas"
+            element={
+              <PrivateRoute allowedRoles={["superadmin"]}>
+                <LGAManagement theme={theme} darkMode={darkMode} />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="markets"
+            element={
+              <PrivateRoute allowedRoles={["superadmin"]}>
+                <MarketManagement theme={theme} darkMode={darkMode} />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="users"
+            element={
+              <PrivateRoute allowedRoles={["superadmin"]}>
+                <UserManagement theme={theme} darkMode={darkMode} />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="thresholds"
+            element={
+              <PrivateRoute allowedRoles={["superadmin"]}>
+                <ThresholdManagement theme={theme} darkMode={darkMode} />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="invites"
+            element={
+              <PrivateRoute allowedRoles={["superadmin"]}>
+                <InviteCodeManagement theme={theme} darkMode={darkMode} />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="collectors"
+            element={
+              <PrivateRoute allowedRoles={["supervisor"]}>
+                <CollectorManagement theme={theme} darkMode={darkMode} />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="sample-review"
+            element={
+              <PrivateRoute allowedRoles={["supervisor"]}>
+                <SampleReview theme={theme} darkMode={darkMode} />
               </PrivateRoute>
             }
           />
