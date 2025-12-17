@@ -50,6 +50,11 @@ const roleConfig = {
     excelImport: false,
     navItems: ["my-samples"], // My Samples for lab results only
   },
+  labanalyst: {
+    sampleButton: false,
+    excelImport: false,
+    navItems: ["lab-samples"], // Lab analyst - view and confirm AAS readings
+  },
 };
 
 const Sidebar = ({
@@ -79,6 +84,12 @@ const Sidebar = ({
       label: "My Samples",
       route: "/data-collector",
       key: "my-samples",
+    },
+    {
+      icon: Beaker,
+      label: "Lab Samples",
+      route: "/lab-samples",
+      key: "lab-samples",
     },
     {
       icon: Database,

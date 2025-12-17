@@ -37,12 +37,15 @@ const SampleReview = ({ theme: propTheme }) => {
   const fetchSamples = async () => {
     try {
       setLoading(true);
-      const response = await api.get(
-        `/supervisor/samples?status=${filterStatus}`
-      );
+      const response = await api.get(`/supervisor/samples`);
 
       if (response.data.success) {
-        setSamples(response.data.data);
+        // Filter samples by review status on frontend since backend doesn't support status param
+        const filtered = response.data.data.filter(sample => {
+          const reviewStatus = sample.review?.status || 'PENDING';
+          return reviewStatus === filterStatus;
+        });
+        setSamples(filtered);
       }
     } catch (err) {
       console.error("Error fetching samples:", err);
@@ -76,16 +79,13 @@ const SampleReview = ({ theme: propTheme }) => {
 
     try {
       setReviewing(true);
-      const token = localStorage.getItem("authToken");
-      const response = await axios.post(
-        `/api/supervisor/samples/${selectedSample.id}/review`,
+      const response = await api.post(
+        `/supervisor/samples/${selectedSample.id}/review`,
         {
           status: reviewForm.status,
-          comments: reviewForm.comments,
+          comments: reviewForm.requestedChanges || reviewForm.comments,
           issues: reviewForm.issues,
-          requestedChanges: reviewForm.requestedChanges,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
+        }
       );
 
       if (response.data.success) {

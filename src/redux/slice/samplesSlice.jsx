@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../utils/api";
+import { buildSamplePayload } from "../../utils/formHelpers";
 
 // Universal Error Extractor
 const extractErrorMessage = (error, fallback) => {
@@ -8,14 +9,14 @@ const extractErrorMessage = (error, fallback) => {
   );
 };
 
-// ------------------------------
+// ===== FETCH OPERATIONS =====
+
 // Fetch States
-// ------------------------------
 export const fetchStates = createAsyncThunk(
   "samples/fetchStates",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await api.get("/states");
+      const res = await api.get("/samples/states/all");
       return res.data.data;
     } catch (err) {
       return rejectWithValue(
@@ -25,14 +26,27 @@ export const fetchStates = createAsyncThunk(
   }
 );
 
-// ------------------------------
+// Fetch LGAs
+export const fetchLGAs = createAsyncThunk(
+  "samples/fetchLGAs",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await api.get("/samples/lgas/all");
+      return res.data.data;
+    } catch (err) {
+      return rejectWithValue(
+        extractErrorMessage(err, "Failed to fetch LGAs")
+      );
+    }
+  }
+);
+
 // Fetch Markets
-// ------------------------------
 export const fetchMarkets = createAsyncThunk(
   "samples/fetchMarkets",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await api.get("/markets");
+      const res = await api.get("/samples/markets/all");
       return res.data.data;
     } catch (err) {
       return rejectWithValue(
@@ -42,9 +56,22 @@ export const fetchMarkets = createAsyncThunk(
   }
 );
 
-// ------------------------------
+// Fetch Calibration Curves
+export const fetchCalibrations = createAsyncThunk(
+  "samples/fetchCalibrations",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await api.get("/calibrations");
+      return res.data.data || res.data;
+    } catch (err) {
+      return rejectWithValue(
+        extractErrorMessage(err, "Failed to fetch calibration curves")
+      );
+    }
+  }
+);
+
 // Fetch Samples with Filters
-// ------------------------------
 export const fetchSamples = createAsyncThunk(
   "samples/fetchSamples",
   async (filters = {}, { rejectWithValue }) => {
@@ -55,7 +82,7 @@ export const fetchSamples = createAsyncThunk(
           limit: filters.limit || 20,
           stateId: filters.stateId || undefined,
           lgaId: filters.lgaId || undefined,
-          productType: filters.productType || undefined,
+          sampleType: filters.sampleType || undefined,
           vendorType: filters.vendorType || undefined,
           dateFrom: filters.dateFrom || undefined,
           dateTo: filters.dateTo || undefined,
@@ -63,8 +90,8 @@ export const fetchSamples = createAsyncThunk(
       });
 
       return {
-        items: response.data.data.items || response.data.data,
-        pagination: response.data.data.pagination || null,
+        items: response.data.data,
+        pagination: response.data.pagination || null,
       };
     } catch (err) {
       return rejectWithValue(
@@ -74,37 +101,12 @@ export const fetchSamples = createAsyncThunk(
   }
 );
 
-// ------------------------------
 // Create Sample
-// ------------------------------
 export const createSample = createAsyncThunk(
   "samples/createSample",
   async (formData, { rejectWithValue }) => {
     try {
-      const payload = {
-        stateId: formData.stateId,
-        lgaId: formData.lgaId,
-        marketId: formData.marketId,
-        vendorType: formData.vendorType,
-        vendorTypeOther: formData.vendorTypeOther || null,
-        productType: formData.productType,
-        productName: formData.productName,
-        price: parseFloat(formData.price),
-        batchNumber: formData.batchNumber || null,
-        brandName: formData.brandName || null,
-        gpsLatitude: formData.gpsLatitude
-          ? parseFloat(formData.gpsLatitude)
-          : null,
-        gpsLongitude: formData.gpsLongitude
-          ? parseFloat(formData.gpsLongitude)
-          : null,
-        isRegistered: formData.isRegistered,
-        productOrigin: formData.productOrigin || "LOCAL",
-        navdacNumber: formData.navdacNumber || null,
-        sonNumber: formData.sonNumber || null,
-        productPhotoUrl: formData.productPhotoUrl || null,
-      };
-
+      const payload = buildSamplePayload(formData);
       const response = await api.post("/samples", payload);
       return response.data.data;
     } catch (err) {
@@ -115,14 +117,15 @@ export const createSample = createAsyncThunk(
   }
 );
 
-// ------------------------------
-// Slice
-// ------------------------------
+// ===== SLICE =====
+
 const initialState = {
   samples: [],
   pagination: null,
   states: [],
+  lgas: [],
   markets: [],
+  calibrations: [],
   loading: false,
   error: null,
 };
@@ -176,6 +179,20 @@ const samplesSlice = createSlice({
         state.error = action.payload;
       })
 
+      // FETCH LGAs
+      .addCase(fetchLGAs.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchLGAs.fulfilled, (state, action) => {
+        state.loading = false;
+        state.lgas = action.payload;
+      })
+      .addCase(fetchLGAs.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
       // FETCH MARKETS
       .addCase(fetchMarkets.pending, (state) => {
         state.loading = true;
@@ -186,6 +203,20 @@ const samplesSlice = createSlice({
         state.markets = action.payload;
       })
       .addCase(fetchMarkets.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // FETCH CALIBRATIONS
+      .addCase(fetchCalibrations.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCalibrations.fulfilled, (state, action) => {
+        state.loading = false;
+        state.calibrations = action.payload;
+      })
+      .addCase(fetchCalibrations.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

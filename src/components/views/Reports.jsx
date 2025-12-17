@@ -4,7 +4,21 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchSamples } from "../../redux/slice/samplesSlice";
 import { useTheme } from "../../hooks/useTheme";
 import api from "../../utils/api";
-import { generatePDFFromHTML, generateTablePDF } from "../../utils/pdfGenerator";
+import {
+  getContaminationStatus,
+  getLeadLevel,
+  getProductName,
+  getCategoryName,
+  filterByDateRange,
+  filterByState,
+  filterByProductVariant,
+  filterByLeadLevel,
+  generateStateSummaryData,
+  generateProductAnalysisData,
+  generateContaminationAnalysisData,
+  generateRiskAssessmentData,
+  generateReportPDF
+} from "../../utils/reportUtils";
 
 const Reports = ({ theme: propTheme, samples: propSamples }) => {
   const dispatch = useDispatch();
@@ -38,46 +52,46 @@ const Reports = ({ theme: propTheme, samples: propSamples }) => {
   const [loading, setLoading] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
   const [states, setStates] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [generationProgress, setGenerationProgress] = useState(0);
-  const [productTypes] = useState([
-    { key: "TIRO", label: "TIRO" },
-    { key: "TIRO_RGSTD", label: "TIRO RGSTD" },
-    { key: "CULTURAL_POWDER", label: "Cultural Powder" },
-    { key: "LIPSTICK", label: "Lipstick" },
-    { key: "HAIR_DYE", label: "Hair Dye" },
-    { key: "EYE_PENCIL", label: "Eye Pencil" },
-    { key: "NAIL_POLISH", label: "Nail Polish" },
-    { key: "SKIN_LOTION", label: "Skin Lotion" },
-  ]);
   const [reportFilters, setReportFilters] = useState({
     state: "",
-    states: [],
-    productTypes: [],
+    productVariants: [],
     dateFrom: "",
     dateTo: "",
     minLeadLevel: 10,
   });
 
-  // Fetch samples and states on mount if not provided via props
+  // Fetch samples, states, and categories on mount if not provided via props
   useEffect(() => {
     if (!propSamples) {
       dispatch(fetchSamples());
     }
     fetchStates();
+    fetchCategories();
   }, [dispatch, propSamples]);
 
   const fetchStates = async () => {
     try {
-      const response = await api.get("/samples/states/all");
+      const response = await api.get("/states");
       setStates(response.data.data || []);
     } catch (err) {
       console.error("Failed to fetch states:", err);
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const response = await api.get("/product-categories");
+      setCategories(response.data.data || []);
+    } catch (err) {
+      console.error("Failed to fetch categories:", err);
+    }
+  };
+
   const generateReport = async (reportType, filters) => {
     // Validate required filters before submitting
-    if ((reportType === "state-summary" || reportType === "product-type") && !filters.state) {
+    if ((reportType === "state-summary" || reportType === "product-analysis") && !filters.state) {
       alert("Please select a state to generate this report");
       return;
     }
@@ -91,251 +105,80 @@ const Reports = ({ theme: propTheme, samples: propSamples }) => {
       // Filter samples based on criteria
       let filteredSamples = [...samples];
 
-      // Filter by state - use state.name from the included state object
+      // Filter by state
       if (filters.state) {
-        filteredSamples = filteredSamples.filter(s => {
-          const stateName = typeof s.state === 'object' ? s.state.name : s.state;
-          return stateName === filters.state;
-        });
+        filteredSamples = filterByState(filteredSamples, filters.state);
       }
 
-      // Filter by multiple states
-      if (filters.states && filters.states.length > 0) {
-        filteredSamples = filteredSamples.filter(s => {
-          const stateName = typeof s.state === 'object' ? s.state.name : s.state;
-          return filters.states.includes(stateName);
-        });
-      }
-
-      // Filter by product types
-      if (filters.productTypes && filters.productTypes.length > 0) {
-        filteredSamples = filteredSamples.filter(s => filters.productTypes.includes(s.productType));
+      // Filter by product variants
+      if (filters.productVariants && filters.productVariants.length > 0) {
+        filteredSamples = filterByProductVariant(filteredSamples, filters.productVariants);
       }
 
       // Filter by date range
-      if (filters.dateFrom) {
-        const fromDate = new Date(filters.dateFrom);
-        filteredSamples = filteredSamples.filter(s => new Date(s.createdAt) >= fromDate);
-      }
-      if (filters.dateTo) {
-        const toDate = new Date(filters.dateTo);
-        filteredSamples = filteredSamples.filter(s => new Date(s.createdAt) <= toDate);
+      if (filters.dateFrom || filters.dateTo) {
+        filteredSamples = filterByDateRange(filteredSamples, filters.dateFrom, filters.dateTo);
       }
 
-      // Filter by contamination level
+      // Filter by lead level for risk assessment
       if (reportType === "risk-assessment" && filters.minLeadLevel) {
-        filteredSamples = filteredSamples.filter(s => {
-          const leadLevel = getLeadLevel(s);
-          return leadLevel >= filters.minLeadLevel;
-        });
+        filteredSamples = filterByLeadLevel(filteredSamples, filters.minLeadLevel);
+      }
+
+      if (filteredSamples.length === 0) {
+        alert("No samples match the selected filters");
+        setLoading(false);
+        return;
       }
 
       setGenerationProgress(40);
 
       // Generate appropriate report based on type
-      const filename = `${reportType}-report-${new Date().toISOString().split("T")[0]}.pdf`;
+      const filename = `${reportType}-report-${new Date().toISOString().split("T")[0]}`;
+      let reportData;
 
       switch (reportType) {
         case "state-summary":
-          await generateStateSummaryReport(filteredSamples, filters, filename);
+          reportData = generateStateSummaryData(filteredSamples);
           break;
-        case "product-type":
-          await generateProductTypeReport(filteredSamples, filters, filename);
+        case "product-analysis":
+          reportData = generateProductAnalysisData(filteredSamples);
           break;
         case "contamination-analysis":
-          await generateContaminationAnalysisReport(filteredSamples, filters, filename);
+          reportData = generateContaminationAnalysisData(filteredSamples);
           break;
         case "risk-assessment":
-          await generateRiskAssessmentReport(filteredSamples, filters, filename);
+          reportData = generateRiskAssessmentData(filteredSamples, filters.minLeadLevel);
           break;
         default:
-          await generateGenericReport(filteredSamples, filename);
+          reportData = filteredSamples.map(s => ({
+            sampleId: s.sampleId,
+            product: getProductName(s),
+            status: getContaminationStatus(s),
+            leadLevel: `${getLeadLevel(s).toFixed(2)} ppm`
+          }));
       }
+
+      setGenerationProgress(60);
+
+      // Send to backend for PDF generation
+      await generateReportPDF(api, reportType, {
+        reportType,
+        data: reportData,
+        filters,
+        generatedAt: new Date().toLocaleString()
+      }, filename);
 
       setGenerationProgress(100);
       alert("Report generated and downloaded successfully!");
       setSelectedReport(null);
     } catch (error) {
       console.error("Failed to generate report:", error);
-      alert("Failed to generate report. Please try again.");
+      alert("Failed to generate report: " + (error.response?.data?.error || error.message));
       setGenerationProgress(0);
     } finally {
       setLoading(false);
     }
-  };
-
-  // Helper function to get lead level from heavy metal readings
-  const getLeadLevel = (sample) => {
-    if (!sample.heavyMetalReadings || sample.heavyMetalReadings.length === 0) {
-      return 0;
-    }
-    const leadReading = sample.heavyMetalReadings.find(r => r.heavyMetal === 'LEAD');
-    if (!leadReading) return 0;
-    const reading = leadReading.xrfReading || leadReading.aasReading || 0;
-    return parseFloat(reading);
-  };
-
-  // Helper function to get contamination status
-  const getContaminationStatus = (sample) => {
-    if (!sample.heavyMetalReadings || sample.heavyMetalReadings.length === 0) {
-      return 'PENDING';
-    }
-    const hasContaminated = sample.heavyMetalReadings.some(r => r.status === 'CONTAMINATED');
-    if (hasContaminated) return 'CONTAMINATED';
-    const hasModeriate = sample.heavyMetalReadings.some(r => r.status === 'MODERATE');
-    if (hasModeriate) return 'MODERATE';
-    const hasSafe = sample.heavyMetalReadings.some(r => r.status === 'SAFE');
-    if (hasSafe) return 'SAFE';
-    return 'PENDING';
-  };
-
-  const generateStateSummaryReport = async (filteredSamples, filters, filename) => {
-    const columns = [
-      { key: "sampleId", label: "Sample Code" },
-      { key: "productType", label: "Product Category" },
-      { key: "leadLevel", label: "Lead Level (ppm)" },
-      { key: "contaminationStatus", label: "Status" },
-      { key: "createdAt", label: "Collection Date" },
-    ];
-
-    const reportData = filteredSamples.map(s => ({
-      sampleId: s.sampleId || "N/A",
-      productType: s.productType || "N/A",
-      leadLevel: `${getLeadLevel(s).toFixed(2)} ppm`,
-      contaminationStatus: getContaminationStatus(s),
-      createdAt: new Date(s.createdAt).toLocaleDateString() || "N/A",
-    }));
-
-    setGenerationProgress(60);
-
-    await generateTablePDF(reportData, columns, filename, {
-      title: "State Summary Report",
-      subtitle: `State: ${filters.state} | Generated: ${new Date().toLocaleDateString()}`,
-      orientation: "landscape",
-    });
-  };
-
-  const generateProductTypeReport = async (filteredSamples, filters, filename) => {
-    // Group samples by product type
-    const groupedByProduct = {};
-    filteredSamples.forEach(s => {
-      const product = s.productType || "Unknown";
-      if (!groupedByProduct[product]) {
-        groupedByProduct[product] = [];
-      }
-      groupedByProduct[product].push(s);
-    });
-
-    setGenerationProgress(60);
-
-    // Create summary data
-    const reportData = Object.entries(groupedByProduct).map(([product, items]) => ({
-      product,
-      totalSamples: items.length,
-      contaminated: items.filter(s => getContaminationStatus(s) === "CONTAMINATED").length,
-      safe: items.filter(s => getContaminationStatus(s) === "SAFE").length,
-      avgLeadLevel: `${(items.reduce((sum, s) => sum + getLeadLevel(s), 0) / items.length).toFixed(2)} ppm`,
-    }));
-
-    const columns = [
-      { key: "product", label: "Product Type" },
-      { key: "totalSamples", label: "Total Samples" },
-      { key: "contaminated", label: "Contaminated" },
-      { key: "safe", label: "Safe" },
-      { key: "avgLeadLevel", label: "Avg Lead Level" },
-    ];
-
-    await generateTablePDF(reportData, columns, filename, {
-      title: "Product Type Analysis Report",
-      subtitle: `State: ${filters.state} | Generated: ${new Date().toLocaleDateString()}`,
-      orientation: "landscape",
-    });
-  };
-
-  const generateContaminationAnalysisReport = async (filteredSamples, filters, filename) => {
-    const columns = [
-      { key: "sampleId", label: "Sample Code" },
-      { key: "state", label: "State" },
-      { key: "productType", label: "Product" },
-      { key: "leadLevel", label: "Lead Level (ppm)" },
-      { key: "contaminationStatus", label: "Status" },
-    ];
-
-    const reportData = filteredSamples.map(s => ({
-      sampleId: s.sampleId || "N/A",
-      state: typeof s.state === 'object' ? s.state.name : s.state || "N/A",
-      productType: s.productType || "N/A",
-      leadLevel: `${getLeadLevel(s).toFixed(2)}`,
-      contaminationStatus: getContaminationStatus(s),
-    }));
-
-    setGenerationProgress(60);
-
-    await generateTablePDF(reportData, columns, filename, {
-      title: "Contamination Analysis Report",
-      subtitle: `Generated: ${new Date().toLocaleDateString()} | Total Samples: ${reportData.length}`,
-      orientation: "landscape",
-    });
-  };
-
-  const generateRiskAssessmentReport = async (filteredSamples, filters, filename) => {
-    const riskyItems = filteredSamples.filter(s => getLeadLevel(s) >= filters.minLeadLevel);
-
-    const columns = [
-      { key: "sampleId", label: "Sample Code" },
-      { key: "productType", label: "Product" },
-      { key: "leadLevel", label: "Lead Level (ppm)" },
-      { key: "riskLevel", label: "Risk Level" },
-      { key: "createdAt", label: "Date" },
-    ];
-
-    const reportData = riskyItems.map(s => {
-      const leadLevel = getLeadLevel(s);
-      let riskLevel = "Low";
-      if (leadLevel >= 100) riskLevel = "Critical";
-      else if (leadLevel >= 50) riskLevel = "High";
-      else if (leadLevel >= 10) riskLevel = "Medium";
-
-      return {
-        sampleId: s.sampleId || "N/A",
-        productType: s.productType || "N/A",
-        leadLevel: `${leadLevel.toFixed(2)} ppm`,
-        riskLevel,
-        createdAt: new Date(s.createdAt).toLocaleDateString() || "N/A",
-      };
-    });
-
-    setGenerationProgress(60);
-
-    await generateTablePDF(reportData, columns, filename, {
-      title: "Risk Assessment Report",
-      subtitle: `Minimum Lead Level: ${filters.minLeadLevel} ppm | High Risk Items: ${reportData.length}`,
-      orientation: "landscape",
-    });
-  };
-
-  const generateGenericReport = async (filteredSamples, filename) => {
-    const columns = [
-      { key: "sampleId", label: "Sample Code" },
-      { key: "productType", label: "Product" },
-      { key: "leadLevel", label: "Lead Level (ppm)" },
-      { key: "contaminationStatus", label: "Status" },
-    ];
-
-    const reportData = filteredSamples.map(s => ({
-      sampleId: s.sampleId || "N/A",
-      productType: s.productType || "N/A",
-      leadLevel: `${getLeadLevel(s).toFixed(2)}`,
-      contaminationStatus: getContaminationStatus(s),
-    }));
-
-    setGenerationProgress(60);
-
-    await generateTablePDF(reportData, columns, filename, {
-      title: "General Report",
-      subtitle: `Generated: ${new Date().toLocaleDateString()} | Total Records: ${reportData.length}`,
-      orientation: "landscape",
-    });
   };
 
   const ReportModal = ({ report, onClose }) => {
@@ -343,7 +186,7 @@ const Reports = ({ theme: propTheme, samples: propSamples }) => {
 
     // Check if required fields are filled
     const isFormValid = () => {
-      if (report.type === "state-summary" || report.type === "product-type") {
+      if (report.type === "state-summary" || report.type === "product-analysis") {
         return filters.state !== "";
       }
       return true; // Other reports don't have required fields
@@ -368,7 +211,7 @@ const Reports = ({ theme: propTheme, samples: propSamples }) => {
 
           <div className="p-6 space-y-4">
             {/* State Filter (for State Summary and Product Type) */}
-            {(report.type === "state-summary" || report.type === "product-type") && (
+            {(report.type === "state-summary" || report.type === "product-analysis") && (
               <div>
                 <label className={`block text-sm font-medium mb-2 ${theme?.text}`}>
                   Select State
@@ -422,34 +265,34 @@ const Reports = ({ theme: propTheme, samples: propSamples }) => {
               </div>
             )}
 
-            {/* Product Types Filter */}
+            {/* Product Categories Filter */}
             {report.type === "contamination-analysis" && (
               <div>
                 <label className={`block text-sm font-medium mb-2 ${theme?.text}`}>
-                  Select Product Types (optional)
+                  Select Product Categories (optional)
                 </label>
                 <div className="space-y-2 max-h-40 overflow-y-auto border rounded-lg p-3">
-                  {productTypes.map((type) => (
-                    <label key={type.key} className="flex items-center gap-2 cursor-pointer">
+                  {categories.map((category) => (
+                    <label key={category.id} className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={filters.productTypes.includes(type.key)}
+                        checked={filters.productVariants.includes(category.id)}
                         onChange={(e) => {
                           if (e.target.checked) {
                             setFilters({
                               ...filters,
-                              productTypes: [...filters.productTypes, type.key],
+                              productVariants: [...filters.productVariants, category.id],
                             });
                           } else {
                             setFilters({
                               ...filters,
-                              productTypes: filters.productTypes.filter((p) => p !== type.key),
+                              productVariants: filters.productVariants.filter((p) => p !== category.id),
                             });
                           }
                         }}
                         className="w-4 h-4"
                       />
-                      <span className="text-sm">{type.label}</span>
+                      <span className="text-sm">{category.displayName || category.name}</span>
                     </label>
                   ))}
                 </div>
@@ -557,9 +400,9 @@ const Reports = ({ theme: propTheme, samples: propSamples }) => {
       color: "border-blue-500 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20",
     },
     {
-      type: "product-type",
-      title: "Product Type Report",
-      description: "Analysis by product category",
+      type: "product-analysis",
+      title: "Product Analysis Report",
+      description: "Analysis by product variant",
       icon: Package,
       color: "border-purple-500 text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20",
     },

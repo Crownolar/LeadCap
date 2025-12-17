@@ -125,7 +125,7 @@ export default function Map({ samples }) {
             if (s.gpsLatitude && s.gpsLongitude) {
               const coord = [Number(s.gpsLatitude), Number(s.gpsLongitude)];
               const contaminationCount = sameLngAndLat(samples, coord).filter(
-                (sample) => sample.status === "contaminated"
+                (sample) => sample.status === "CONTAMINATED"
               ).length;
               return (
                 <Marker

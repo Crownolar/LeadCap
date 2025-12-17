@@ -26,6 +26,7 @@ import InviteCodeManagement from "./components/views/InviteCodeManagement";
 import SupervisorDashboard from "./components/views/SupervisorDashboard";
 import CollectorManagement from "./components/views/CollectorManagement";
 import SampleReview from "./components/views/SampleReview";
+import LabAnalystDashboard from "./components/views/LabAnalystDashboard";
 
 const lightTheme = {
   bg: "bg-gray-100",
@@ -111,6 +112,7 @@ const App = () => {
                   "policymakernafdac",
                   "policymakerresolve",
                   "policymakeruniversity",
+                  "labanalyst",
                 ]}
               >
                 {currentUser?.role?.toLowerCase() === "supervisor" ? (
@@ -256,6 +258,15 @@ const App = () => {
             element={
               <PrivateRoute allowedRoles={["supervisor"]}>
                 <SampleReview theme={theme} darkMode={darkMode} />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path='lab-samples'
+            element={
+              <PrivateRoute allowedRoles={["labanalyst"]}>
+                <LabAnalystDashboard theme={theme} darkMode={darkMode} />
               </PrivateRoute>
             }
           />

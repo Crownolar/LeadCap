@@ -1,5 +1,4 @@
 import { X, AlertTriangle } from "lucide-react";
-import { productTypes } from "../../utils/constants";
 
 // Helper to format vendor type for display
 const formatVendorType = (vendorType, vendorTypeOther) => {
@@ -79,7 +78,7 @@ const SampleDetailModal = ({ theme, sample, onClose }) => {
                   {[
                     [
                       "Product Type:",
-                      productTypes[sample?.productType] || sample?.productType,
+                      sample?.productVariant?.category?.name || "Unknown",
                     ],
                     ["Brand:", sample?.brandName || "N/A"],
                     ["Batch Number:", sample?.batchNumber || "N/A"],
@@ -117,10 +116,12 @@ const SampleDetailModal = ({ theme, sample, onClose }) => {
                     <span className={theme.textMuted}>Status:</span>
                     <span
                       className={`px-2 py-1 text-[10px] sm:text-xs font-semibold rounded-full ${
-                        sample?.status === "safe"
+                        sample?.status?.toUpperCase() === "SAFE"
                           ? "bg-green-100 text-green-800"
-                          : sample?.status === "contaminated"
+                          : sample?.status?.toUpperCase() === "CONTAMINATED"
                           ? "bg-red-100 text-red-800"
+                          : sample?.status?.toUpperCase() === "MODERATE"
+                          ? "bg-orange-100 text-orange-800"
                           : "bg-yellow-100 text-yellow-800"
                       }`}
                     >

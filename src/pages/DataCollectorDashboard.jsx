@@ -10,8 +10,8 @@ import {
 } from "lucide-react";
 import api from "../utils/api";
 import { useTheme } from "../hooks/useTheme";
-import HeavyMetalFormModal from "../components/modals/lab-result_modal/HeavyMetalFormModal";
-import { addOrUpdateHeavyMetal } from "../redux/slice/heavyMetalSlice";
+import HeavyMetalFormModalNew from "../components/modals/lab-result_modal/HeavyMetalFormModalNew";
+import { fetchSamples } from "../redux/slice/samplesSlice";
 
 const DataCollectorDashboard = () => {
   const dispatch = useDispatch();
@@ -46,64 +46,9 @@ const DataCollectorDashboard = () => {
     setLoading(true);
     setError(null);
     try {
-      try {
-        // Add delay between requests
-        await Promise.all(
-          mySamples.map(
-            async (sample) =>
-              await api
-                .get(`/heavy-metals/sample/${sample.sampleId}`)
-                .then((res) =>
-                  setSampleReadings((prev) => ({
-                    ...prev,
-                    [res.data.data[0].sampleId]: res.data.data || [],
-                  }))
-                )
-                .catch((err) => {
-                  console.log(err);
-                  throw err;
-                })
-          )
-        );
-        // result = await dispatch(getSampleReadings(sample.sampleId));
-        // await new Promise((resolve) => setTimeout(resolve, 150));
-
-        // const readingsRes = await api.get(
-        //   `/heavy-metals/sample/${sample.sampleId}`
-        // );
-        // setSampleReadings((prev) => ({
-        //   ...prev,
-        //   [sample.id]: readingsRes.data.data || [],
-        // }));
-      } catch (err) {
-        // Graceful error handling - don't block on 429 errors
-        if (err.response?.status === 429) {
-          console.warn(
-            `Rate limited fetching readings for sample ${sample.sampleId}, retrying...`
-          );
-          // Add longer delay and retry once
-          await new Promise((resolve) => setTimeout(resolve, 500));
-          try {
-            const readingsRes = await api.get(
-              `/heavy-metals/sample/${sample.sampleId}`
-            );
-            setSampleReadings((prev) => ({
-              ...prev,
-              [sample.id]: readingsRes.data.data || [],
-            }));
-          } catch (retryErr) {
-            console.error(
-              `Failed to fetch readings for sample ${sample.sampleId} after retry`
-            );
-          }
-        } else {
-          console.error(
-            `Failed to fetch readings for sample ${sample.sampleId}`
-          );
-        }
-      }
+      // Refresh samples from redux
+      await dispatch(fetchSamples({ page: 1, limit: 5000 }));
     } catch (err) {
-      // Only show error if it's not a rate limit error
       if (err.response?.status !== 429) {
         setError("Failed to fetch your samples");
       }
@@ -376,7 +321,7 @@ const DataCollectorDashboard = () => {
                           Type
                         </p>
                         <p className={`${theme?.text} font-medium text-sm`}>
-                          {sample.productType?.replace(/_/g, " ")}
+                          {sample.productVariant?.replace(/_/g, " ")}
                         </p>
                       </div>
                       <div>
@@ -444,13 +389,11 @@ const DataCollectorDashboard = () => {
 
       {/* Heavy Metal Modal */}
       {showHeavyMetalModal && selectedSample && (
-        <HeavyMetalFormModal
+        <HeavyMetalFormModalNew
           theme={theme}
-          hasAllReadings={hasAllReadings(selectedSample.id)}
           fetchMySamples={fetchMySamples}
           onClose={handleModalClose}
           sampleId={selectedSample.id}
-          productType={selectedSample.productType}
           existingReadings={selectedReadings}
         />
       )}

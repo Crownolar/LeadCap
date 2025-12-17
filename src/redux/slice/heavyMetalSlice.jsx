@@ -1,7 +1,31 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../utils/api";
 
-// ---- Add or Update Reading ---- //
+// ---- Batch Create XRF Readings ---- //
+export const batchAddXRFReadings = createAsyncThunk(
+  "heavyMetal/batchAddXRF",
+  async ({ sampleId, readings }, { rejectWithValue }) => {
+    if (!Array.isArray(readings) || readings.length === 0) {
+      return rejectWithValue("No readings provided");
+    }
+
+    try {
+      const response = await api.post("/heavy-metals/batch/xrf", {
+        sampleId,
+        readings
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.error ||
+          error.message ||
+          "Failed to save heavy metal readings"
+      );
+    }
+  }
+);
+
+// ---- Add or Update Single Reading (legacy) ---- //
 export const addOrUpdateHeavyMetal = createAsyncThunk(
   "heavyMetal/addOrUpdate",
   async (payloads, { rejectWithValue }) => {
@@ -64,7 +88,37 @@ const heavyMetalSlice = createSlice({
 
   extraReducers: (builder) => {
     builder
-      // Add/Update
+      // Batch Add XRF
+      .addCase(batchAddXRFReadings.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.successMessage = null;
+      })
+      .addCase(batchAddXRFReadings.fulfilled, (state, action) => {
+        state.loading = false;
+        state.successMessage = action.payload.message || "Readings saved!";
+        // Add all returned readings
+        if (action.payload.data && Array.isArray(action.payload.data)) {
+          action.payload.data.forEach(reading => {
+            const index = state.readings.findIndex(
+              (r) =>
+                r.sampleId === reading.sampleId &&
+                r.heavyMetal === reading.heavyMetal
+            );
+            if (index !== -1) {
+              state.readings[index] = reading;
+            } else {
+              state.readings.push(reading);
+            }
+          });
+        }
+      })
+      .addCase(batchAddXRFReadings.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to save readings";
+      })
+
+      // Add/Update (legacy)
       .addCase(addOrUpdateHeavyMetal.pending, (state) => {
         state.loading = true;
         state.error = null;

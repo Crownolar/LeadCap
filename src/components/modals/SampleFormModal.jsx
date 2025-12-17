@@ -1,35 +1,34 @@
 import { X, Camera, Trash2, Loader, MapPin } from "lucide-react";
-import { productTypes, vendorTypes } from "../../utils/constants";
+import { productCategories, vendorTypes, sampleTypes } from "../../utils/constants";
 import { useRef, useState, useEffect } from "react";
-import api from "../../utils/api";
+import {
+  getInitialSampleFormState,
+  fetchFormData,
+  filterLGAsByState,
+  filterMarketsByLGA,
+  getVariantsForCategory,
+  handleStateChange,
+  handleLGAChange,
+  handleMarketChange,
+  handleCategoryChange,
+  handleVendorTypeChange,
+  handleFileUpload,
+  removeFile,
+  getCurrentLocation,
+  buildSamplePayload,
+  validateSampleForm,
+} from "../../utils/formHelpers";
 
 const SampleFormModal = ({ theme, onClose, onSubmit }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  const [formData, setFormData] = useState({
-    stateId: "",
-    lgaId: "",
-    productType: "",
-    productName: "",
-    brandName: "",
-    batchNumber: "",
-    price: "",
-    marketId: "",
-    vendorType: "",
-    vendorTypeOther: "",
-    isRegistered: false,
-    gpsLatitude: "",
-    gpsLongitude: "",
-    productOrigin: "LOCAL",
-    navdacNumber: "",
-    sonNumber: "",
-    productPhoto: null,
-  });
+  const [formData, setFormData] = useState(getInitialSampleFormState());
 
   const [states, setStates] = useState([]);
   const [lgas, setLgas] = useState([]);
   const [markets, setMarkets] = useState([]);
+  const [variants, setVariants] = useState([]);
+  const [calibrations, setCalibrationsState] = useState([]);
   const [allLgas, setAllLgas] = useState([]);
   const [allMarkets, setAllMarkets] = useState([]);
   const [loadingData, setLoadingData] = useState(false);
@@ -38,112 +37,72 @@ const SampleFormModal = ({ theme, onClose, onSubmit }) => {
 
   const productPhotoRef = useRef(null);
 
-  // Fetch initial data (states and all LGAs/markets for filtering)
+  // Initialize form data
   useEffect(() => {
-    const fetchData = async () => {
+    const initFormData = async () => {
       setLoadingData(true);
       try {
-        const [statesRes, lgasRes, marketsRes] = await Promise.all([
-          api.get("/samples/states/all"),
-          api.get("/samples/lgas/all"),
-          api.get("/samples/markets/all"),
-        ]);
-
-        setStates(statesRes.data.data || []);
-        setAllLgas(lgasRes.data.data || []);
-        setAllMarkets(marketsRes.data.data || []);
+        const data = await fetchFormData();
+        setStates(data.states);
+        setAllLgas(data.allLgas);
+        setAllMarkets(data.allMarkets);
+        setCalibrationsState(data.calibrations);
       } catch (err) {
-        console.error("Error fetching data:", err);
+        console.error("Error fetching form data:", err);
       } finally {
         setLoadingData(false);
       }
     };
 
-    fetchData();
+    initFormData();
   }, []);
 
-  // Filter LGAs based on selected state
+  // Handle state change
   useEffect(() => {
     if (formData.stateId) {
-      const filteredLgas = allLgas.filter(
-        (lga) => lga.stateId === formData.stateId
-      );
-      setLgas(filteredLgas);
-      setFormData((prev) => ({ ...prev, lgaId: "", marketId: "" })); // Reset LGA and Market selection
+      const filtered = filterLGAsByState(formData.stateId, allLgas);
+      setLgas(filtered);
     } else {
       setLgas([]);
       setMarkets([]);
     }
   }, [formData.stateId, allLgas]);
 
-  // Filter Markets based on selected LGA
+  // Handle LGA change
   useEffect(() => {
     if (formData.lgaId) {
-      const filteredMarkets = allMarkets.filter(
-        (market) => market.lgaId === formData.lgaId
-      );
-      setMarkets(filteredMarkets);
-      setFormData((prev) => ({ ...prev, marketId: "" })); // Reset Market selection
+      const filtered = filterMarketsByLGA(formData.lgaId, allMarkets);
+      setMarkets(filtered);
     } else {
       setMarkets([]);
     }
   }, [formData.lgaId, allMarkets]);
 
-  const handleGetCurrentLocation = () => {
+  // Handle category change
+  useEffect(() => {
+    if (formData.productCategoryId) {
+      const filteredVariants = getVariantsForCategory(formData.productCategoryId);
+      setVariants(filteredVariants);
+    } else {
+      setVariants([]);
+    }
+  }, [formData.productCategoryId]);
+
+  const handleGetCurrentLocation = async () => {
     setGettingLocation(true);
     setLocationError(null);
-
-    if (!navigator.geolocation) {
-      setLocationError("Geolocation is not supported by your browser");
+    try {
+      const location = await getCurrentLocation();
+      setFormData((prev) => ({
+        ...prev,
+        gpsLatitude: location.gpsLatitude,
+        gpsLongitude: location.gpsLongitude,
+      }));
+    } catch (err) {
+      setLocationError(err.message);
+    } finally {
       setGettingLocation(false);
-      return;
     }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        setFormData((prev) => ({
-          ...prev,
-          gpsLatitude: latitude.toFixed(6),
-          gpsLongitude: longitude.toFixed(6),
-        }));
-        setGettingLocation(false);
-        setLocationError(null);
-      },
-      (error) => {
-        let errorMessage = "Unable to get your location";
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage =
-              "Location permission denied. Please enable location access.";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = "Location information is unavailable.";
-            break;
-          case error.TIMEOUT:
-            errorMessage = "Location request timed out.";
-            break;
-          default:
-            errorMessage = "An error occurred while getting your location.";
-        }
-        setLocationError(errorMessage);
-        setGettingLocation(false);
-      }
-    );
-  };
-
-  const handleFileUpload = (e, field) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () =>
-      setFormData((prev) => ({ ...prev, [field]: reader.result }));
-    reader.readAsDataURL(file);
-  };
-
-  const removePhoto = (field) => {
-    setFormData((prev) => ({ ...prev, [field]: null }));
-    if (field === "productPhoto") productPhotoRef.current.value = "";
   };
 
   const handleSubmit = async (e) => {
@@ -151,37 +110,22 @@ const SampleFormModal = ({ theme, onClose, onSubmit }) => {
     setLoading(true);
     setError(null);
 
-    const payload = {
-      stateId: formData.stateId,
-      lgaId: formData.lgaId,
-      marketId: formData.marketId || null,
-      vendorType: formData.vendorType,
-      vendorTypeOther: formData.vendorTypeOther || null,
-      productType: formData.productType,
-      productName: formData.productName,
-      price: parseFloat(formData.price),
-      batchNumber: formData.batchNumber || null,
-      brandName: formData.brandName || null,
-      gpsLatitude: formData.gpsLatitude
-        ? parseFloat(formData.gpsLatitude)
-        : null,
-      gpsLongitude: formData.gpsLongitude
-        ? parseFloat(formData.gpsLongitude)
-        : null,
-      isRegistered: formData.isRegistered,
-      productOrigin: formData.productOrigin,
-      navdacNumber: formData.navdacNumber || null,
-      sonNumber: formData.sonNumber || null,
-      productPhotoUrl: null,
-    };
+    const validation = validateSampleForm(formData);
+    if (!validation.valid) {
+      setError(Object.values(validation.errors).join(", "));
+      setLoading(false);
+      return;
+    }
 
     try {
+      const payload = buildSamplePayload(formData);
       await onSubmit(payload);
       alert("Sample created successfully!");
       onClose();
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to create sample");
-      alert(`${err.response?.data?.message || "Failed to create sample"}`);
+      const errorMsg = err.response?.data?.message || "Failed to create sample";
+      setError(errorMsg);
+      alert(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -297,8 +241,32 @@ const SampleFormModal = ({ theme, onClose, onSubmit }) => {
                         {market.name}
                       </option>
                     ))}
+                    <option value='OTHER'>Other (Manual Entry)</option>
                   </select>
                 </div>
+
+                {formData.marketId === "OTHER" && (
+                  <div className='md:col-span-1 animate-in fade-in'>
+                    <label
+                      className={`block text-sm font-medium mb-2 ${theme.text}`}
+                    >
+                      Market Name *
+                    </label>
+                    <input
+                      type='text'
+                      required={formData.marketId === "OTHER"}
+                      value={formData.marketName}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          marketName: e.target.value,
+                        })
+                      }
+                      className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
+                      placeholder='e.g., Local Market, Community Center'
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label
@@ -310,14 +278,7 @@ const SampleFormModal = ({ theme, onClose, onSubmit }) => {
                     required
                     value={formData.vendorType}
                     onChange={(e) => {
-                      setFormData({
-                        ...formData,
-                        vendorType: e.target.value,
-                        vendorTypeOther:
-                          e.target.value === "OTHER"
-                            ? formData.vendorTypeOther
-                            : "",
-                      });
+                      handleVendorTypeChange(e.target.value, formData, setFormData);
                     }}
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
                   >
@@ -427,22 +388,65 @@ const SampleFormModal = ({ theme, onClose, onSubmit }) => {
                   <label
                     className={`block text-sm font-medium mb-2 ${theme.text}`}
                   >
-                    Product Type *
+                    Product Category *
                   </label>
                   <select
                     required
-                    value={formData.productType}
+                    value={formData.productCategoryId}
                     onChange={(e) =>
-                      setFormData({ ...formData, productType: e.target.value })
+                      handleCategoryChange(e.target.value, formData, setFormData)
                     }
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
                   >
-                    <option value=''>Select Product Type</option>
-                    {Object.entries(productTypes).map(([key, value]) => (
+                    <option value=''>Select Product Category</option>
+                    {Object.entries(productCategories).map(([key, value]) => (
                       <option key={key} value={key}>
-                        {value}
+                        {value.name}
                       </option>
                     ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${theme.text}`}
+                  >
+                    Product Variant *
+                  </label>
+                  <select
+                    required
+                    disabled={!formData.productCategoryId}
+                    value={formData.productVariantId}
+                    onChange={(e) =>
+                      setFormData({ ...formData, productVariantId: e.target.value })
+                    }
+                    className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50`}
+                  >
+                    <option value=''>Select Product Variant</option>
+                    {variants.map((variant) => (
+                      <option key={variant.id} value={variant.id}>
+                        {variant.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${theme.text}`}
+                  >
+                    Sample Type *
+                  </label>
+                  <select
+                    required
+                    value={formData.sampleType}
+                    onChange={(e) =>
+                      setFormData({ ...formData, sampleType: e.target.value })
+                    }
+                    className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
+                  >
+                    <option value='SOLID'>Solid (mg/kg)</option>
+                    <option value='LIQUID'>Liquid (mg/L)</option>
                   </select>
                 </div>
 
@@ -462,6 +466,29 @@ const SampleFormModal = ({ theme, onClose, onSubmit }) => {
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
                     placeholder='e.g., Tiró Kohl'
                   />
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${theme.text}`}
+                  >
+                    Calibration Curve *
+                  </label>
+                  <select
+                    required
+                    value={formData.calibrationCurveId}
+                    onChange={(e) =>
+                      setFormData({ ...formData, calibrationCurveId: e.target.value })
+                    }
+                    className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
+                  >
+                    <option value=''>Select Calibration Curve</option>
+                    {calibrations.map((calib) => (
+                      <option key={calib.id} value={calib.id}>
+                        {calib.fileName} ({calib.calibrationDate?.split('T')[0] || 'N/A'})
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>

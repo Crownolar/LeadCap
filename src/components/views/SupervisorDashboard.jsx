@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useTheme } from "../../hooks/useTheme";
-import axios from "axios";
+import api from "../../utils/api";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 const SupervisorDashboard = ({ theme: propTheme }) => {
@@ -17,12 +17,10 @@ const SupervisorDashboard = ({ theme: propTheme }) => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem("authToken");
-        const headers = { Authorization: `Bearer ${token}` };
 
         const [statsRes, collectorsRes] = await Promise.all([
-          axios.get("/api/supervisor/stats", { headers }),
-          axios.get("/api/supervisor/collectors", { headers }),
+          api.get("/supervisor/stats"),
+          api.get("/supervisor/collectors"),
         ]);
 
         if (statsRes.data.success) setStats(statsRes.data.data);
@@ -54,13 +52,13 @@ const SupervisorDashboard = ({ theme: propTheme }) => {
     );
   }
 
-  // Prepare data for charts
+  // Prepare data for charts - map backend data structure to frontend expectations
   const reviewChartData = stats
     ? [
-        { name: "Pending", value: stats.reviewStats.pending },
-        { name: "Approved", value: stats.reviewStats.approved },
-        { name: "Rejected", value: stats.reviewStats.rejected },
-        { name: "Flagged", value: stats.reviewStats.flagged },
+        { name: "Pending", value: stats.pendingReviews || 0 },
+        { name: "Approved", value: stats.approvedSamples || 0 },
+        { name: "Rejected", value: stats.reviewBreakdown?.rejected || 0 },
+        { name: "Flagged", value: stats.flaggedSamples || 0 },
       ]
     : [];
 
@@ -88,7 +86,7 @@ const SupervisorDashboard = ({ theme: propTheme }) => {
 
         <div className={`${theme?.card} rounded-lg p-6 border ${theme?.border}`}>
           <p className={`text-sm ${theme?.textMuted} mb-2`}>Pending Review</p>
-          <p className="text-3xl font-bold text-orange-600">{stats?.reviewStats.pending || 0}</p>
+          <p className="text-3xl font-bold text-orange-600">{stats?.pendingReviews || 0}</p>
           <p className={`text-xs ${theme?.textMuted} mt-2`}>Awaiting approval</p>
         </div>
       </div>
@@ -104,35 +102,35 @@ const SupervisorDashboard = ({ theme: propTheme }) => {
                 <span className={theme?.textMuted}>Pending Review</span>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                  <span className="font-semibold">{stats.reviewStats.pending}</span>
+                  <span className="font-semibold">{stats.pendingReviews || 0}</span>
                 </div>
               </div>
               <div className="flex justify-between items-center">
                 <span className={theme?.textMuted}>Approved</span>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="font-semibold">{stats.reviewStats.approved}</span>
+                  <span className="font-semibold">{stats.approvedSamples || 0}</span>
                 </div>
               </div>
               <div className="flex justify-between items-center">
                 <span className={theme?.textMuted}>Rejected</span>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span className="font-semibold">{stats.reviewStats.rejected}</span>
+                  <span className="font-semibold">{stats.reviewBreakdown?.rejected || 0}</span>
                 </div>
               </div>
               <div className="flex justify-between items-center">
                 <span className={theme?.textMuted}>Flagged</span>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                  <span className="font-semibold">{stats.reviewStats.flagged}</span>
+                  <span className="font-semibold">{stats.flaggedSamples || 0}</span>
                 </div>
               </div>
               <div className="flex justify-between items-center">
                 <span className={theme?.textMuted}>Correction Requested</span>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  <span className="font-semibold">{stats.reviewStats.correctionRequested}</span>
+                  <span className="font-semibold">{stats.reviewBreakdown?.correction_requested || 0}</span>
                 </div>
               </div>
             </div>

@@ -1,31 +1,25 @@
 import React, { useState, useEffect } from 'react'
 import { Edit2, Save, X } from 'lucide-react'
 import api from '../../utils/api'
+import { validateThresholdLimits, formatDecimal } from '../../utils/thresholdUtils'
 
 const ThresholdManagement = ({ theme, darkMode }) => {
   const [thresholds, setThresholds] = useState([])
+  const [categories, setCategories] = useState([])
+  const [heavyMetals, setHeavyMetals] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filterMetal, setFilterMetal] = useState('all')
-  const [filterProduct, setFilterProduct] = useState('all')
+  const [filterCategory, setFilterCategory] = useState('all')
   const [editingId, setEditingId] = useState(null)
   const [editValues, setEditValues] = useState({})
 
-  const heavyMetals = [
-    'LEAD', 'CADMIUM', 'CHROMIUM', 'NICKEL', 'ARSENIC', 'MERCURY', 'COPPER', 'ZINC', 'COBALT', 'MANGANESE'
-  ]
-
-  const products = [
-    'TIRO', 'TIRO_RGSTD', 'CULTURAL_POWDER', 'LIPSTICK', 'HAIR_DYE', 'EYE_PENCIL', 'NAIL_POLISH', 'SKIN_LOTION'
-  ]
-
   useEffect(() => {
-    fetchThresholds()
+    Promise.all([fetchThresholds(), fetchCategories(), fetchHeavyMetals()])
   }, [])
 
   const fetchThresholds = async () => {
     try {
-      setLoading(true)
       const response = await api.get('/thresholds')
       setThresholds(response.data.data || [])
       setError(null)
@@ -36,11 +30,29 @@ const ThresholdManagement = ({ theme, darkMode }) => {
     }
   }
 
+  const fetchCategories = async () => {
+    try {
+      const response = await api.get('/product-categories')
+      setCategories(response.data.data || [])
+    } catch (err) {
+      console.error('Failed to fetch categories:', err)
+    }
+  }
+
+  const fetchHeavyMetals = async () => {
+    try {
+      const response = await api.get('/heavy-metals')
+      setHeavyMetals(response.data.data || [])
+    } catch (err) {
+      console.error('Failed to fetch heavy metals:', err)
+    }
+  }
+
   const handleEdit = (threshold) => {
     setEditingId(threshold.id)
     setEditValues({
       heavyMetal: threshold.heavyMetal,
-      productType: threshold.productType,
+      productCategoryId: threshold.productCategoryId || threshold.category?.id,
       safeLimit: threshold.safeLimit,
       warningLimit: threshold.warningLimit,
       dangerLimit: threshold.dangerLimit
@@ -49,44 +61,29 @@ const ThresholdManagement = ({ theme, darkMode }) => {
 
   const handleSave = async (id) => {
     try {
-      // Validate inputs
       const safeLimit = parseFloat(editValues.safeLimit)
       const warningLimit = editValues.warningLimit ? parseFloat(editValues.warningLimit) : null
       const dangerLimit = parseFloat(editValues.dangerLimit)
 
-      // Check for valid numbers
-      if (isNaN(safeLimit) || isNaN(dangerLimit) || (warningLimit && isNaN(warningLimit))) {
-        setError('All limits must be valid numbers')
+      const validation = validateThresholdLimits({
+        safeLimit,
+        warningLimit,
+        dangerLimit
+      })
+
+      if (!validation.valid) {
+        setError(validation.error)
         return
       }
 
-      // Check for negative values
-      if (safeLimit < 0 || dangerLimit < 0 || (warningLimit && warningLimit < 0)) {
-        setError('Limits must be positive numbers')
-        return
-      }
-
-      // Validate order: safe < warning (if exists) < danger
-      if (safeLimit >= (warningLimit || dangerLimit)) {
-        setError('Safe limit must be less than warning limit (if provided) and danger limit')
-        return
-      }
-
-      if (warningLimit && warningLimit >= dangerLimit) {
-        setError('Warning limit must be less than danger limit')
-        return
-      }
-
-      await api.patch('/thresholds', {
-        heavyMetal: editValues.heavyMetal,
-        productType: editValues.productType,
+      await api.patch(`/thresholds/${id}`, {
         safeLimit: safeLimit,
         warningLimit: warningLimit,
         dangerLimit: dangerLimit
       })
       fetchThresholds()
       setEditingId(null)
-      setError(null) // Clear any previous errors
+      setError(null)
     } catch (err) {
       setError('Failed to update threshold: ' + (err.response?.data?.error || err.message))
     }
@@ -94,9 +91,13 @@ const ThresholdManagement = ({ theme, darkMode }) => {
 
   const filteredThresholds = thresholds.filter(t => {
     const matchesMetal = filterMetal === 'all' || t.heavyMetal === filterMetal
-    const matchesProduct = filterProduct === 'all' || t.productType === filterProduct
-    return matchesMetal && matchesProduct
+    const matchesCategory = filterCategory === 'all' || t.productCategoryId === filterCategory
+    return matchesMetal && matchesCategory
   })
+
+  const getCategoryName = (categoryId) => {
+    return categories.find(c => c.id === categoryId)?.displayName || 'Unknown'
+  }
 
   return (
     <div className={`p-6 ${theme?.bg}`}>
@@ -129,13 +130,13 @@ const ThresholdManagement = ({ theme, darkMode }) => {
             ))}
           </select>
           <select
-            value={filterProduct}
-            onChange={(e) => setFilterProduct(e.target.value)}
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
             className={`flex-1 px-4 py-2 border ${theme?.border} rounded-lg ${theme?.input}`}
           >
-            <option value="all">All Products</option>
-            {products.map((p) => (
-              <option key={p} value={p}>{p}</option>
+            <option value="all">All Categories</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.displayName}</option>
             ))}
           </select>
         </div>
@@ -150,7 +151,7 @@ const ThresholdManagement = ({ theme, darkMode }) => {
               <thead className={theme?.card}>
                 <tr className={`border-b ${theme?.border}`}>
                   <th className={`px-6 py-3 text-left ${theme?.text}`}>Heavy Metal</th>
-                  <th className={`px-6 py-3 text-left ${theme?.text}`}>Product Type</th>
+                  <th className={`px-6 py-3 text-left ${theme?.text}`}>Product Category</th>
                   <th className={`px-6 py-3 text-center ${theme?.text}`}>Safe Limit (ppm)</th>
                   <th className={`px-6 py-3 text-center ${theme?.text}`}>Warning Limit (ppm)</th>
                   <th className={`px-6 py-3 text-center ${theme?.text}`}>Danger Limit (ppm)</th>
@@ -161,7 +162,7 @@ const ThresholdManagement = ({ theme, darkMode }) => {
                 {filteredThresholds.map((threshold) => (
                   <tr key={threshold.id} className={`border-b ${theme?.border} hover:${theme?.hover}`}>
                     <td className={`px-6 py-3 ${theme?.text} font-semibold`}>{threshold.heavyMetal}</td>
-                    <td className={`px-6 py-3 ${theme?.text}`}>{threshold.productType}</td>
+                    <td className={`px-6 py-3 ${theme?.text}`}>{getCategoryName(threshold.productCategoryId)}</td>
                     <td className={`px-6 py-3 text-center`}>
                       {editingId === threshold.id ? (
                         <input
@@ -169,12 +170,12 @@ const ThresholdManagement = ({ theme, darkMode }) => {
                           step="0.001"
                           value={editValues.safeLimit}
                           onChange={(e) =>
-                            setEditValues({ ...editValues, safeLimit: parseFloat(e.target.value) })
+                            setEditValues({ ...editValues, safeLimit: e.target.value })
                           }
                           className={`w-20 px-2 py-1 border ${theme?.border} rounded ${theme?.input} text-center`}
                         />
                       ) : (
-                        <span className={`${theme?.text}`}>{parseFloat(threshold.safeLimit).toFixed(3)}</span>
+                        <span className={`${theme?.text}`}>{formatDecimal(threshold.safeLimit)}</span>
                       )}
                     </td>
                     <td className={`px-6 py-3 text-center`}>
@@ -184,13 +185,13 @@ const ThresholdManagement = ({ theme, darkMode }) => {
                           step="0.001"
                           value={editValues.warningLimit}
                           onChange={(e) =>
-                            setEditValues({ ...editValues, warningLimit: parseFloat(e.target.value) })
+                            setEditValues({ ...editValues, warningLimit: e.target.value })
                           }
                           className={`w-20 px-2 py-1 border ${theme?.border} rounded ${theme?.input} text-center`}
                         />
                       ) : (
                         <span className={`${theme?.text}`}>
-                          {threshold.warningLimit ? parseFloat(threshold.warningLimit).toFixed(3) : '-'}
+                          {threshold.warningLimit ? formatDecimal(threshold.warningLimit) : '-'}
                         </span>
                       )}
                     </td>
@@ -201,12 +202,12 @@ const ThresholdManagement = ({ theme, darkMode }) => {
                           step="0.001"
                           value={editValues.dangerLimit}
                           onChange={(e) =>
-                            setEditValues({ ...editValues, dangerLimit: parseFloat(e.target.value) })
+                            setEditValues({ ...editValues, dangerLimit: e.target.value })
                           }
                           className={`w-20 px-2 py-1 border ${theme?.border} rounded ${theme?.input} text-center`}
                         />
                       ) : (
-                        <span className={`${theme?.text}`}>{parseFloat(threshold.dangerLimit).toFixed(3)}</span>
+                        <span className={`${theme?.text}`}>{formatDecimal(threshold.dangerLimit)}</span>
                       )}
                     </td>
                     <td className={`px-6 py-3 text-center`}>
