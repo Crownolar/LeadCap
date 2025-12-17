@@ -34,7 +34,6 @@ const InviteCodeGenerate = ({ theme = {} }) => {
     textMuted: "text-gray-400",
   };
   const currentTheme = { ...defaultTheme, ...theme };
-  console.log(theme);
 
   const [activeTab, setActiveTab] = useState("invite");
   const [inviteLoading, setInviteLoading] = useState(false);

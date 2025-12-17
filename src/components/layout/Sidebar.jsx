@@ -147,7 +147,7 @@ const Sidebar = ({
           }
         `}
       >
-        <nav className='space-y-2  '>
+        <nav className='space-y-2  max-h-[500px]  overflow-y-auto '>
           {navItemsToRender.map((item) => (
             <NavItem
               key={item.key}

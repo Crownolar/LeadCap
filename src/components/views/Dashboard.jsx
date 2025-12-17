@@ -230,6 +230,14 @@ const Dashboard = ({ theme, darkMode }) => {
     (state) => state.samples
   );
   const [localStates, setLocalStates] = useState([]);
+  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
+
+  // adjust size of charts based on window size
+  useEffect(() => {
+    const handleResize = () => setScreenWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const fetchStates = async () => {
@@ -390,13 +398,13 @@ const Dashboard = ({ theme, darkMode }) => {
     );
 
   return (
-    <>
+    <div className='max-w-screen mx-auto  '>
       {/* FILTER */}
       <div
         className={`${theme?.card} rounded-lg shadow-md mb-8 border ${theme?.border} p-4`}
       >
         <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
-          <div className='w-full max-w-full sm:max-w-[100%]'>
+          <div className='w-full max-w-full sm:max-w-[100%] '>
             <select
               value={filteredQueries.state}
               onChange={(e) =>
@@ -445,10 +453,18 @@ const Dashboard = ({ theme, darkMode }) => {
             }
             className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
           >
-            <option value='all'>All Status</option>
-            <option value='safe'>Safe</option>
-            <option value='contaminated'>Contaminated</option>
-            <option value='pending'>Pending</option>
+            <option className='w-full' value='all'>
+              All Status
+            </option>
+            <option className='w-full' value='safe'>
+              Safe
+            </option>
+            <option className='w-full' value='contaminated'>
+              Contaminated
+            </option>
+            <option className='w-full' value='pending'>
+              Pending
+            </option>
           </select>
         </div>
       </div>
@@ -496,7 +512,9 @@ const Dashboard = ({ theme, darkMode }) => {
           <div
             className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
           >
-            <h3 className='text-lg font-semibold mb-4'>Lead Exposure Trends</h3>
+            <h3 className='text-lg font-semibold mb-4 [@media(max-width:450px)]:text-base'>
+              Lead Exposure Trends
+            </h3>
             <ResponsiveContainer width='100%' height={300}>
               <AreaChart data={exposureData}>
                 <defs>
@@ -517,7 +535,7 @@ const Dashboard = ({ theme, darkMode }) => {
                 </defs>
                 <CartesianGrid strokeDasharray='3 3' stroke='#e5e7eb' />
                 <XAxis dataKey='month' stroke='#6b7280' />
-                <YAxis stroke='#6b7280' />
+                <YAxis stroke='#6b7280' width={20} />
                 <RechartsTooltip content={<CustomTooltip />} />
                 <Legend />
                 <Area
@@ -543,16 +561,33 @@ const Dashboard = ({ theme, darkMode }) => {
           <div
             className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
           >
-            <h3 className='text-lg font-semibold mb-4'>
+            <h3 className='text-lg font-semibold mb-4 [@media(max-width:450px)]:text-base'>
               Detection Capacity Metrics
             </h3>
             <ResponsiveContainer width='100%' height={300}>
-              <RadarChart data={detectionMetrics}>
+              <RadarChart
+                data={detectionMetrics}
+                outerRadius={
+                  screenWidth > 450 ? 80 : screenWidth > 350 ? 50 : 20
+                }
+              >
                 <PolarGrid stroke='#e5e7eb' />
-                <PolarAngleAxis dataKey='metric' stroke='#6b7280' />
+                <PolarAngleAxis
+                  dataKey='metric'
+                  stroke='#6b7280'
+                  tick={
+                    screenWidth > 475
+                      ? { fontSize: 12 }
+                      : screenWidth > 370
+                      ? { fontSize: 10 }
+                      : { fontSize: 8 }
+                  }
+                />
                 <PolarRadiusAxis
                   angle={90}
                   domain={[0, 100]}
+                  tickCount={3}
+                  tick={screenWidth > 450 ? { fontSize: 12 } : false}
                   stroke='#6b7280'
                 />
                 <Radar
@@ -567,19 +602,27 @@ const Dashboard = ({ theme, darkMode }) => {
             </ResponsiveContainer>
           </div>
         </div>
-
+        {/* next chart */}
         <div
-          className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
+          className={`${theme?.card} rounded-lg shadow-md p-6 border  ${theme?.border} `}
         >
-          <h3 className='text-lg font-semibold mb-4'>
+          <h3 className='text-lg font-semibold mb-4 [@media(max-width:450px)]:text-base'>
             Monthly Analysis & Critical Cases
           </h3>
           <ResponsiveContainer width='100%' height={400}>
-            <ComposedChart data={exposureData}>
+            <ComposedChart
+              data={exposureData}
+              height={screenWidth > 400 ? 200 : screenWidth > 350 ? 500 : 900}
+            >
               <CartesianGrid strokeDasharray='3 3' stroke='#e5e7eb' />
               <XAxis dataKey='month' stroke='#6b7280' />
-              <YAxis yAxisId='left' stroke='#6b7280' />
-              <YAxis yAxisId='right' orientation='right' stroke='#6b7280' />
+              <YAxis yAxisId='left' stroke='#6b7280' width={10} />
+              <YAxis
+                yAxisId='right'
+                orientation='right'
+                stroke='#6b7280'
+                width={10}
+              />
               <RechartsTooltip content={<CustomTooltip />} />
               <Legend />
               <Bar
@@ -608,22 +651,22 @@ const Dashboard = ({ theme, darkMode }) => {
             </ComposedChart>
           </ResponsiveContainer>
         </div>
-
+        {/* vertical chart */}
         <div
-          className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
+          className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border} `}
         >
-          <h3 className='text-lg font-semibold mb-4'>
+          <h3 className='text-lg font-semibold mb-4 [@media(max-width:450px)]:text-base'>
             Campus Location Analysis
           </h3>
           <ResponsiveContainer width='100%' height={400}>
-            <BarChart data={locationData} layout='vertical'>
+            <BarChart data={locationData} layout='vertical' height={300}>
               <CartesianGrid strokeDasharray='3 3' stroke='#e5e7eb' />
               <XAxis type='number' stroke='#6b7280' />
               <YAxis
                 dataKey='location'
                 type='category'
                 stroke='#6b7280'
-                width={120}
+                // width={120}
               />
               <RechartsTooltip content={<CustomTooltip />} />
               <Legend />
@@ -643,11 +686,11 @@ const Dashboard = ({ theme, darkMode }) => {
           </ResponsiveContainer>
         </div>
 
-        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 '>
           <div
             className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
           >
-            <h3 className='text-lg font-semibold mb-4'>
+            <h3 className='text-lg font-semibold mb-4 [@media(max-width:450px)]:text-base'>
               Product Type Distribution
             </h3>
             <ResponsiveContainer width='100%' height={300}>
@@ -656,7 +699,9 @@ const Dashboard = ({ theme, darkMode }) => {
                   data={analytics.byProductType}
                   cx='50%'
                   cy='50%'
-                  outerRadius={100}
+                  outerRadius={
+                    screenWidth > 450 ? 100 : screenWidth > 350 ? 80 : 60
+                  }
                   label
                   dataKey='value'
                 >
@@ -672,7 +717,7 @@ const Dashboard = ({ theme, darkMode }) => {
           <div
             className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
           >
-            <h3 className='text-lg font-semibold mb-4'>
+            <h3 className='text-lg font-semibold mb-4 [@media(max-width:450px)]:text-base'>
               Registered vs Unregistered
             </h3>
             <ResponsiveContainer width='100%' height={300}>
@@ -681,7 +726,9 @@ const Dashboard = ({ theme, darkMode }) => {
                   data={analytics.registeredVsUnregistered}
                   cx='50%'
                   cy='50%'
-                  outerRadius={100}
+                  outerRadius={
+                    screenWidth > 450 ? 100 : screenWidth > 350 ? 80 : 60
+                  }
                   label
                   dataKey='total'
                 >
@@ -695,7 +742,7 @@ const Dashboard = ({ theme, darkMode }) => {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
