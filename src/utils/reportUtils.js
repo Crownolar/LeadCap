@@ -63,28 +63,57 @@ export const getCategoryName = (sample) => {
  * Filter samples by date range
  */
 export const filterByDateRange = (samples, dateFrom, dateTo) => {
-  return samples.filter(s => {
-    const sampleDate = new Date(s.createdAt)
-    if (dateFrom && sampleDate < new Date(dateFrom)) return false
-    if (dateTo && sampleDate > new Date(dateTo)) return false
-    return true
-  })
+  console.log(`  [filterByDateRange] Filtering from ${dateFrom} to ${dateTo}`);
+  const filtered = samples.filter(s => {
+    const sampleDate = new Date(s.createdAt);
+    
+    if (dateFrom) {
+      const fromDate = new Date(dateFrom);
+      fromDate.setHours(0, 0, 0, 0); // Start of day
+      console.log(`  [filterByDateRange] Comparing sample ${s.sampleId} date ${sampleDate.toISOString()} >= ${fromDate.toISOString()}`);
+      if (sampleDate < fromDate) return false;
+    }
+    
+    if (dateTo) {
+      const toDate = new Date(dateTo);
+      toDate.setHours(23, 59, 59, 999); // End of day
+      console.log(`  [filterByDateRange] Comparing sample ${s.sampleId} date ${sampleDate.toISOString()} <= ${toDate.toISOString()}`);
+      if (sampleDate > toDate) return false;
+    }
+    
+    return true;
+  });
+  console.log(`  [filterByDateRange] Result: ${filtered.length} samples matched`);
+  return filtered;
 }
 
 /**
  * Filter samples by state
  */
-export const filterByState = (samples, stateId) => {
-  if (!stateId) return samples
-  return samples.filter(s => s.stateId === stateId)
+export const filterByState = (samples, stateName) => {
+  console.log(`  [filterByState] Filtering for state name: "${stateName}"`);
+  if (!stateName) return samples;
+  const filtered = samples.filter(s => {
+    console.log(`  [filterByState] Comparing: "${s.state?.name}" === "${stateName}"`);
+    return s.state?.name === stateName;
+  });
+  console.log(`  [filterByState] Result: ${filtered.length} samples matched`);
+  return filtered;
 }
 
 /**
  * Filter samples by product variant
  */
 export const filterByProductVariant = (samples, variantIds) => {
-  if (!variantIds || variantIds.length === 0) return samples
-  return samples.filter(s => variantIds.includes(s.productVariantId))
+  console.log(`  [filterByProductVariant] Filtering by variant IDs:`, variantIds);
+  if (!variantIds || variantIds.length === 0) return samples;
+  const filtered = samples.filter(s => {
+    const match = variantIds.includes(s.productVariant?.id);
+    if (match) console.log(`  [filterByProductVariant] Matched variant: ${s.productVariant?.id}`);
+    return match;
+  });
+  console.log(`  [filterByProductVariant] Result: ${filtered.length} samples matched`);
+  return filtered;
 }
 
 /**
@@ -99,8 +128,14 @@ export const filterByContaminationStatus = (samples, status) => {
  * Filter samples with lead level above threshold
  */
 export const filterByLeadLevel = (samples, minLevel) => {
-  if (!minLevel) return samples
-  return samples.filter(s => getLeadLevel(s) >= minLevel)
+  console.log(`  [filterByLeadLevel] Filtering for lead level >= ${minLevel}`);
+  if (!minLevel) return samples;
+  const filtered = samples.filter(s => {
+    const level = getLeadLevel(s);
+    return level >= minLevel;
+  });
+  console.log(`  [filterByLeadLevel] Result: ${filtered.length} samples matched`);
+  return filtered;
 }
 
 /**
@@ -193,7 +228,19 @@ export const generateRiskAssessmentData = (samples, minLeadLevel) => {
  */
 export const generateReportPDF = async (api, reportType, data, filename) => {
   try {
-    const response = await api.post('/reports/generate', {
+    // DEBUG: Log the exact endpoint being called
+    console.log('🔴 [generateReportPDF] Starting PDF generation');
+    console.log('   Report Type:', reportType);
+    console.log('   Filename:', filename);
+    console.log('   Data samples count:', data?.samples?.length || 0);
+    
+    // The endpoint should be specific like /reports/generate/state-summary
+    const endpoint = `/reports/generate/${reportType}`;
+    console.log('   Endpoint:', endpoint);
+    console.log('   Full URL will be:', `${api.defaults.baseURL}${endpoint}`);
+    
+    console.log('🟡 [generateReportPDF] Sending POST request...');
+    const response = await api.post(endpoint, {
       type: reportType,
       data: data,
       filename: filename
@@ -201,6 +248,8 @@ export const generateReportPDF = async (api, reportType, data, filename) => {
       responseType: 'blob'
     })
 
+    console.log('🟢 [generateReportPDF] Success! Response received:', response.status);
+    
     // Create blob URL and download
     const url = window.URL.createObjectURL(new Blob([response.data]))
     const link = document.createElement('a')
@@ -210,9 +259,17 @@ export const generateReportPDF = async (api, reportType, data, filename) => {
     link.click()
     link.parentElement.removeChild(link)
 
+    console.log('✅ [generateReportPDF] PDF downloaded successfully');
     return true
   } catch (error) {
-    console.error('Failed to generate PDF:', error)
+    console.error('❌ [generateReportPDF] Failed to generate PDF');
+    console.error('   Error Message:', error.message);
+    console.error('   Error Code:', error.code);
+    console.error('   Status:', error.response?.status);
+    console.error('   Status Text:', error.response?.statusText);
+    console.error('   URL:', error.config?.url);
+    console.error('   Method:', error.config?.method);
+    console.error('   Full Error:', error);
     throw error
   }
 }

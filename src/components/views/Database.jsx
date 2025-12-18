@@ -99,7 +99,7 @@ const Database = ({
     if (!propStates) {
       const fetchStates = async () => {
         try {
-          const response = await api.get("/samples/states/all");
+          const response = await api.get("/management/states");
           setLocalStates(response.data.data || []);
         } catch (err) {
           console.error("Failed to fetch states:", err);

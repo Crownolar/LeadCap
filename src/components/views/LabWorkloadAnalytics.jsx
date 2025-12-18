@@ -17,6 +17,14 @@ const LabWorkloadAnalytics = ({ theme: propTheme }) => {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
+        // Check if token exists before making request
+        const token = sessionStorage.getItem("accessToken");
+        if (!token) {
+          setError("Access token not found. Please log in again.");
+          setLoading(false);
+          return;
+        }
+
         setLoading(true);
 
         // Fetch my recordings

@@ -19,6 +19,14 @@ const LabConfirmationForm = ({ theme: propTheme }) => {
   useEffect(() => {
     const fetchSample = async () => {
       try {
+        // Check if token exists before making request
+        const token = sessionStorage.getItem("accessToken");
+        if (!token) {
+          setError("Access token not found. Please log in again.");
+          setLoading(false);
+          return;
+        }
+
         setLoading(true);
         const res = await api.get(`/lab/sample/${sampleId}`);
         setSample(res.data.data);

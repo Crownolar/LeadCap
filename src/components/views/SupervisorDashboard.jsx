@@ -27,7 +27,7 @@ const SupervisorDashboard = ({ theme: propTheme }) => {
         if (collectorsRes.data.success) setCollectors(collectorsRes.data.data);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
-        setError(err.message);
+        setError(err.response?.data?.message || err.message);
       } finally {
         setLoading(false);
       }

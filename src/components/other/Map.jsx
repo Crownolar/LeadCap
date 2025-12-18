@@ -4,6 +4,7 @@ import {
   Popup,
   TileLayer,
   useMap,
+  Polyline,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -21,6 +22,68 @@ const nigeriaBounds = L.latLngBounds(
   [3.5, 2.3],   // Southwest corner (Gulf of Guinea coastal area)
   [13.9, 14.7]  // Northeast corner (Niger/Chad border area)
 );
+
+// Major state boundary lines for demarcation (simplified major state borders)
+const nigeriaStateBoundaries = [
+  // Northern boundary (international border with Niger)
+  {
+    coordinates: [[13.5, 2.5], [13.8, 14.6]],
+    name: "Northern Border",
+  },
+  // Southern boundary (Gulf of Guinea coast)
+  {
+    coordinates: [[3.5, 2.3], [3.5, 14.7]],
+    name: "Southern Border",
+  },
+  // Western boundary (Benin)
+  {
+    coordinates: [[3.5, 2.3], [13.5, 2.5]],
+    name: "Western Border",
+  },
+  // Eastern boundary (Cameroon)
+  {
+    coordinates: [[3.5, 14.7], [13.8, 14.6]],
+    name: "Eastern Border",
+  },
+  // Major internal state demarcation lines (North-South)
+  {
+    coordinates: [[3.6, 5.5], [13.7, 5.6]],
+    name: "State Line 1",
+  },
+  {
+    coordinates: [[3.6, 7.0], [13.7, 7.2]],
+    name: "State Line 2",
+  },
+  {
+    coordinates: [[3.6, 8.8], [13.7, 9.0]],
+    name: "State Line 3",
+  },
+  {
+    coordinates: [[3.6, 10.5], [13.7, 10.7]],
+    name: "State Line 4",
+  },
+  // Major internal state demarcation lines (East-West)
+  {
+    coordinates: [[4.5, 2.3], [4.5, 14.7]],
+    name: "State Line 5",
+  },
+  {
+    coordinates: [[6.5, 2.3], [6.5, 14.7]],
+    name: "State Line 6",
+  },
+  {
+    coordinates: [[8.5, 2.3], [8.5, 14.7]],
+    name: "State Line 7",
+  },
+  {
+    coordinates: [[10.5, 2.3], [10.5, 14.7]],
+    name: "State Line 8",
+  },
+  {
+    coordinates: [[12.0, 2.3], [12.0, 14.7]],
+    name: "State Line 9",
+  },
+];
 
 const FitBounds = ({ markers }) => {
   const map = useMap();
@@ -112,6 +175,23 @@ export default function Map({ samples }) {
             url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
             attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
           ></TileLayer>
+          
+          {/* State Boundary Lines */}
+          {nigeriaStateBoundaries.map((boundary, idx) => (
+            <Polyline
+              key={idx}
+              positions={boundary.coordinates}
+              pathOptions={{
+                color: idx < 4 ? "#d32f2f" : "#1976d2", // Red for international borders, blue for internal borders
+                weight: idx < 4 ? 3 : 2, // Thicker international borders
+                opacity: 0.7,
+                dashArray: idx < 4 ? "5,5" : "3,3", // Dashed pattern
+                lineCap: "round",
+              }}
+            />
+          ))}
+          
+          {/* Sample Markers */}
           {samples.map((s) => {
             if (s.gpsLatitude && s.gpsLongitude) {
               const coord = [Number(s.gpsLatitude), Number(s.gpsLongitude)];

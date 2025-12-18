@@ -105,30 +105,69 @@ const Reports = ({ theme: propTheme, samples: propSamples }) => {
     try {
       setGenerationProgress(20);
 
+      console.log('\n🔵 ===== REPORT GENERATION STARTED =====');
+      console.log('🔍 Report Generation Debug:');
+      console.log('  Report Type:', reportType);
+      console.log('  Filters:', JSON.stringify(filters, null, 2));
+      console.log('  API Base URL:', api.defaults.baseURL);
+      console.log('  Total Samples Available:', samples.length);
+      if (samples.length > 0) {
+        console.log('  First Sample:', JSON.stringify(samples[0], null, 2).substring(0, 500));
+      }
+
       // Filter samples based on criteria
       let filteredSamples = [...samples];
 
+      console.log('  ✓ Initial samples count:', filteredSamples.length);
+
       // Filter by state
       if (filters.state) {
+        console.log(`  Filtering by state: "${filters.state}"`);
+        console.log('  Available states in samples:', [...new Set(samples.map(s => s.state?.name))]);
+        const beforeState = filteredSamples.length;
         filteredSamples = filterByState(filteredSamples, filters.state);
+        console.log(`  After state filter: ${beforeState} → ${filteredSamples.length}`);
       }
 
       // Filter by product variants
       if (filters.productVariants && filters.productVariants.length > 0) {
+        console.log(`  Filtering by product variants:`, filters.productVariants);
+        console.log('  Available variants in samples:', [...new Set(samples.map(s => s.productVariant?.id))]);
+        const beforeVariant = filteredSamples.length;
         filteredSamples = filterByProductVariant(filteredSamples, filters.productVariants);
+        console.log(`  After variant filter: ${beforeVariant} → ${filteredSamples.length}`);
       }
 
       // Filter by date range
       if (filters.dateFrom || filters.dateTo) {
+        console.log(`  Filtering by date range: ${filters.dateFrom} to ${filters.dateTo}`);
+        console.log('  Available dates in samples:', samples.map(s => new Date(s.createdAt).toLocaleDateString()).slice(0, 5));
+        const beforeDate = filteredSamples.length;
         filteredSamples = filterByDateRange(filteredSamples, filters.dateFrom, filters.dateTo);
+        console.log(`  After date filter: ${beforeDate} → ${filteredSamples.length}`);
       }
 
       // Filter by lead level for risk assessment
       if (reportType === "risk-assessment" && filters.minLeadLevel) {
+        console.log(`  Filtering by lead level: >= ${filters.minLeadLevel}`);
+        console.log('  Sample lead levels:', samples.map(s => getLeadLevel(s)).slice(0, 5));
+        const beforeLead = filteredSamples.length;
         filteredSamples = filterByLeadLevel(filteredSamples, filters.minLeadLevel);
+        console.log(`  After lead level filter: ${beforeLead} → ${filteredSamples.length}`);
       }
 
+      console.log('  ✓ Final filtered samples:', filteredSamples.length);
+
       if (filteredSamples.length === 0) {
+        console.error('❌ No samples match the filters!');
+        console.error('  Total samples in Redux:', samples.length);
+        console.error('  Filters applied:', JSON.stringify(filters, null, 2));
+        console.error('  Filter functions used:', {
+          filterByState: typeof filterByState,
+          filterByProductVariant: typeof filterByProductVariant,
+          filterByDateRange: typeof filterByDateRange,
+          filterByLeadLevel: typeof filterByLeadLevel
+        });
         alert("No samples match the selected filters");
         setLoading(false);
         return;
@@ -140,18 +179,23 @@ const Reports = ({ theme: propTheme, samples: propSamples }) => {
       const filename = `${reportType}-report-${new Date().toISOString().split("T")[0]}`;
       let reportData;
 
+      console.log('\n🟡 Generating report data format...');
       switch (reportType) {
         case "state-summary":
           reportData = generateStateSummaryData(filteredSamples);
+          console.log('   State Summary Data generated:', reportData.length, 'rows');
           break;
         case "product-analysis":
           reportData = generateProductAnalysisData(filteredSamples);
+          console.log('   Product Analysis Data generated:', reportData.length, 'rows');
           break;
         case "contamination-analysis":
           reportData = generateContaminationAnalysisData(filteredSamples);
+          console.log('   Contamination Analysis Data generated:', reportData.length, 'rows');
           break;
         case "risk-assessment":
           reportData = generateRiskAssessmentData(filteredSamples, filters.minLeadLevel);
+          console.log('   Risk Assessment Data generated:', reportData.length, 'rows');
           break;
         default:
           reportData = filteredSamples.map(s => ({
@@ -160,11 +204,19 @@ const Reports = ({ theme: propTheme, samples: propSamples }) => {
             status: getContaminationStatus(s),
             leadLevel: `${getLeadLevel(s).toFixed(2)} ppm`
           }));
+          console.log('   Default Report Data generated:', reportData.length, 'rows');
       }
 
+      console.log('\n🟡 Report data prepared, calling backend PDF generation...');
       setGenerationProgress(60);
 
       // Send to backend for PDF generation
+      console.log('📤 Calling generateReportPDF with:');
+      console.log('   API instance:', api.defaults.baseURL);
+      console.log('   Report Type:', reportType);
+      console.log('   Data samples:', reportData.length);
+      console.log('   Filename:', filename);
+      
       await generateReportPDF(api, reportType, {
         reportType,
         data: reportData,
@@ -173,10 +225,19 @@ const Reports = ({ theme: propTheme, samples: propSamples }) => {
       }, filename);
 
       setGenerationProgress(100);
+      console.log('\n✅ ===== REPORT GENERATION COMPLETE =====\n');
       alert("Report generated and downloaded successfully!");
       setSelectedReport(null);
     } catch (error) {
-      console.error("Failed to generate report:", error);
+      console.error("❌ Failed to generate report:", error);
+      console.error('   Error Details:', {
+        message: error.message,
+        code: error.code,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        url: error.config?.url,
+        method: error.config?.method
+      });
       alert("Failed to generate report: " + (error.response?.data?.error || error.message));
       setGenerationProgress(0);
     } finally {
