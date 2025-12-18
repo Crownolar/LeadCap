@@ -9,7 +9,7 @@ import {
   Trash2,
 } from "lucide-react";
 import api from "../../../utils/api";
-import { batchAddXRFReadings } from "../../../redux/slice/heavyMetalSlice";
+import { batchAddXRFReadings, getSampleReadings, clearHeavyMetalState } from "../../../redux/slice/heavyMetalSlice";
 
 const HeavyMetalFormModalNew = ({
   theme,
@@ -17,6 +17,7 @@ const HeavyMetalFormModalNew = ({
   sampleId,
   fetchMySamples,
   existingReadings = [],
+  sampleData = null, // Accept sample data as prop
 }) => {
   const dispatch = useDispatch();
   const { loading, error, successMessage } = useSelector(
@@ -58,10 +59,15 @@ const HeavyMetalFormModalNew = ({
         setLoadingSample(true);
         setSampleError(null);
 
-        // Fetch sample details
-        const sampleRes = await api.get(`/samples/${sampleId}`);
-        if (sampleRes.data.success) {
-          setSample(sampleRes.data.data);
+        // Use provided sample data if available, otherwise fetch from API
+        if (sampleData) {
+          setSample(sampleData);
+        } else {
+          // Fetch sample details from API
+          const sampleRes = await api.get(`/samples/${sampleId}`);
+          if (sampleRes.data.success) {
+            setSample(sampleRes.data.data);
+          }
         }
 
         // Fetch thresholds
@@ -82,14 +88,23 @@ const HeavyMetalFormModalNew = ({
         }
       } catch (err) {
         console.error("Error fetching sample:", err);
-        setSampleError(err.message || "Failed to load sample information");
+        const errorMsg = err.response?.data?.error || err.message || "Failed to load sample information";
+        setSampleError(errorMsg);
       } finally {
         setLoadingSample(false);
       }
     };
 
     fetchSampleAndThresholds();
-  }, [sampleId, existingReadings]);
+  }, [sampleId]);
+
+  // Clear success/error messages when modal mounts
+  useEffect(() => {
+    return () => {
+      // Clear messages when component unmounts
+      dispatch(clearHeavyMetalState());
+    };
+  }, [dispatch]);
 
   // Get unit based on sample type
   const getUnit = () => {
@@ -196,7 +211,7 @@ const HeavyMetalFormModalNew = ({
     }
 
     try {
-      await dispatch(
+      const result = await dispatch(
         batchAddXRFReadings({
           sampleId,
           readings: readings.map((r) => ({
@@ -207,13 +222,17 @@ const HeavyMetalFormModalNew = ({
         })
       ).unwrap();
 
-      // Refresh data and close
-      if (fetchMySamples) {
-        fetchMySamples();
-      }
+      // Success - data already updated in Redux by reducer
+      console.log(`Successfully recorded ${result.data?.length || readings.length} reading(s)`);
+      
+      // Refresh the heavy metal readings for this sample in Redux
+      await dispatch(getSampleReadings(sampleId));
+      
+      // Close modal
       onClose();
     } catch (err) {
       console.error("Error submitting readings:", err);
+      alert("Failed to save readings: " + (err?.message || "Unknown error"));
     }
   };
 

@@ -14,7 +14,7 @@ import Reports from "./components/views/Reports";
 import Database from "./components/views/Database";
 import { fetchSamples } from "./redux/slice/samplesSlice";
 import PolicyWelcome from "./pages/PolicyWelcome";
-import HeavyMetalFormModal from "./components/modals/lab-result_modal/HeavyMetalFormModal";
+import HeavyMetalFormModalNew from "./components/modals/lab-result_modal/HeavyMetalFormModalNew";
 import DataCollectorDashboard from "./pages/DataCollectorDashboard";
 import DataCollectorWelcome from "./pages/DataCollectorWelcome";
 import StateManagement from "./components/views/StateManagement";
@@ -128,7 +128,7 @@ const App = () => {
             path='/data-collector'
             element={
               <PrivateRoute allowedRoles={["datacollector"]}>
-                <DataCollectorDashboard />
+                <DataCollectorDashboard theme={theme} />
               </PrivateRoute>
             }
           />
@@ -137,7 +137,7 @@ const App = () => {
             path='/heavy-metal'
             element={
               <PrivateRoute allowedRoles={["datacollector"]}>
-                <HeavyMetalFormModal />
+                <HeavyMetalFormModalNew />
               </PrivateRoute>
             }
           />
@@ -147,7 +147,7 @@ const App = () => {
               <PrivateRoute
                 allowedRoles={["superadmin", "headresearcher", "supervisor"]}
               >
-                <Database />
+                <Database theme={theme} />
               </PrivateRoute>
             }
           />
@@ -156,7 +156,7 @@ const App = () => {
             path='reports'
             element={
               <PrivateRoute allowedRoles={["superadmin", "headresearcher"]}>
-                <Reports />
+                <Reports theme={theme} />
               </PrivateRoute>
             }
           />
@@ -185,7 +185,7 @@ const App = () => {
                   "policymakeruniversity",
                 ]}
               >
-                <MapView />
+                <MapView theme={theme} />
               </PrivateRoute>
             }
           />

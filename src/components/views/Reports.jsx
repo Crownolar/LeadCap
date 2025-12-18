@@ -56,6 +56,7 @@ const Reports = ({ theme: propTheme, samples: propSamples }) => {
   const [generationProgress, setGenerationProgress] = useState(0);
   const [reportFilters, setReportFilters] = useState({
     state: "",
+    states: [],
     productVariants: [],
     dateFrom: "",
     dateTo: "",
@@ -73,19 +74,21 @@ const Reports = ({ theme: propTheme, samples: propSamples }) => {
 
   const fetchStates = async () => {
     try {
-      const response = await api.get("/states");
-      setStates(response.data.data || []);
+      const response = await api.get("/management/states");
+      setStates(response.data.data || response.data || []);
     } catch (err) {
       console.error("Failed to fetch states:", err);
+      setStates([]);
     }
   };
 
   const fetchCategories = async () => {
     try {
-      const response = await api.get("/product-categories");
-      setCategories(response.data.data || []);
+      const response = await api.get("/products/categories");
+      setCategories(response.data.data || response.data || []);
     } catch (err) {
       console.error("Failed to fetch categories:", err);
+      setCategories([]);
     }
   };
 
@@ -272,29 +275,45 @@ const Reports = ({ theme: propTheme, samples: propSamples }) => {
                   Select Product Categories (optional)
                 </label>
                 <div className="space-y-2 max-h-40 overflow-y-auto border rounded-lg p-3">
-                  {categories.map((category) => (
-                    <label key={category.id} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={filters.productVariants.includes(category.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setFilters({
-                              ...filters,
-                              productVariants: [...filters.productVariants, category.id],
-                            });
-                          } else {
-                            setFilters({
-                              ...filters,
-                              productVariants: filters.productVariants.filter((p) => p !== category.id),
-                            });
-                          }
-                        }}
-                        className="w-4 h-4"
-                      />
-                      <span className="text-sm">{category.displayName || category.name}</span>
-                    </label>
-                  ))}
+                  {categories.map((category) => {
+                    // Get all variant IDs for this category
+                    const categoryVariantIds = category.variants?.map(v => v.id) || [];
+                    // Check if all variants for this category are selected
+                    const isAllSelected = categoryVariantIds.length > 0 && 
+                      categoryVariantIds.every(id => filters.productVariants.includes(id));
+                    
+                    return (
+                      <label key={category.id} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isAllSelected}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              // Add all variant IDs from this category
+                              const newVariants = [
+                                ...filters.productVariants,
+                                ...categoryVariantIds.filter(id => !filters.productVariants.includes(id))
+                              ];
+                              setFilters({
+                                ...filters,
+                                productVariants: newVariants,
+                              });
+                            } else {
+                              // Remove all variant IDs from this category
+                              setFilters({
+                                ...filters,
+                                productVariants: filters.productVariants.filter(
+                                  (p) => !categoryVariantIds.includes(p)
+                                ),
+                              });
+                            }
+                          }}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm">{category.displayName || category.name}</span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             )}

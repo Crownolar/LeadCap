@@ -1,5 +1,5 @@
-import { X, Camera, Trash2, Loader, MapPin } from "lucide-react";
-import { productCategories, vendorTypes, sampleTypes } from "../../utils/constants";
+import { X, Camera, Trash2, Loader, MapPin, File } from "lucide-react";
+import { vendorTypes, sampleTypes } from "../../utils/constants";
 import { useRef, useState, useEffect } from "react";
 import {
   getInitialSampleFormState,
@@ -7,6 +7,7 @@ import {
   filterLGAsByState,
   filterMarketsByLGA,
   getVariantsForCategory,
+  fetchVariantsForCategory,
   handleStateChange,
   handleLGAChange,
   handleMarketChange,
@@ -28,27 +29,44 @@ const SampleFormModal = ({ theme, onClose, onSubmit }) => {
   const [lgas, setLgas] = useState([]);
   const [markets, setMarkets] = useState([]);
   const [variants, setVariants] = useState([]);
-  const [calibrations, setCalibrationsState] = useState([]);
   const [allLgas, setAllLgas] = useState([]);
   const [allMarkets, setAllMarkets] = useState([]);
+  const [categories, setCategories] = useState([]); // Add categories state
   const [loadingData, setLoadingData] = useState(false);
+  const [loadingVariants, setLoadingVariants] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [locationError, setLocationError] = useState(null);
 
   const productPhotoRef = useRef(null);
+  const calibrationCurveRef = useRef(null);
 
   // Initialize form data
   useEffect(() => {
     const initFormData = async () => {
+      // Check if user is authenticated
+      const token = sessionStorage.getItem("accessToken");
+      if (!token) {
+        console.warn("No authentication token found. User must be logged in.");
+        setError("Please log in first to create a sample.");
+        setLoadingData(false);
+        return;
+      }
+
       setLoadingData(true);
       try {
         const data = await fetchFormData();
-        setStates(data.states);
-        setAllLgas(data.allLgas);
-        setAllMarkets(data.allMarkets);
-        setCalibrationsState(data.calibrations);
+        console.log("Fetched data:", data);
+        setStates(data.states || []);
+        setAllLgas(data.allLgas || []);
+        setAllMarkets(data.allMarkets || []);
+        setCategories(data.categories || []); // Store categories from API
       } catch (err) {
         console.error("Error fetching form data:", err);
+        setError(`Failed to load form data: ${err.message || "Please check your internet connection"}`);
+        setStates([]);
+        setAllLgas([]);
+        setAllMarkets([]);
+        setCategories([]);
       } finally {
         setLoadingData(false);
       }
@@ -78,14 +96,31 @@ const SampleFormModal = ({ theme, onClose, onSubmit }) => {
     }
   }, [formData.lgaId, allMarkets]);
 
-  // Handle category change
+  // Handle category change - fetch variants from API
   useEffect(() => {
-    if (formData.productCategoryId) {
-      const filteredVariants = getVariantsForCategory(formData.productCategoryId);
-      setVariants(filteredVariants);
-    } else {
-      setVariants([]);
-    }
+    const loadVariants = async () => {
+      if (formData.productCategoryId) {
+        setLoadingVariants(true);
+        setError(null);
+        try {
+          const fetchedVariants = await fetchVariantsForCategory(formData.productCategoryId);
+          if (fetchedVariants.length === 0) {
+            setError("No product variants found for this category. Please try again or select a different category.");
+          }
+          setVariants(fetchedVariants);
+        } catch (err) {
+          console.error("Error loading variants:", err);
+          setError("Failed to load product variants. Please try again.");
+          setVariants([]);
+        } finally {
+          setLoadingVariants(false);
+        }
+      } else {
+        setVariants([]);
+      }
+    };
+
+    loadVariants();
   }, [formData.productCategoryId]);
 
   const handleGetCurrentLocation = async () => {
@@ -159,7 +194,19 @@ const SampleFormModal = ({ theme, onClose, onSubmit }) => {
           </div>
         )}
 
-        {!loadingData && (
+        {!loadingData && error && (
+          <div className='p-6 text-center'>
+            <p className='text-red-600 font-semibold text-lg mb-4'>{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className='px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors'
+            >
+              Refresh Page
+            </button>
+          </div>
+        )}
+
+        {!loadingData && !error && (
           <form
             onSubmit={handleSubmit}
             className='flex-1 overflow-y-auto p-6 space-y-6'
@@ -394,16 +441,21 @@ const SampleFormModal = ({ theme, onClose, onSubmit }) => {
                     required
                     value={formData.productCategoryId}
                     onChange={(e) =>
-                      handleCategoryChange(e.target.value, formData, setFormData)
+                      setFormData({ ...formData, productCategoryId: e.target.value, productVariantId: "" })
                     }
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
+                    disabled={categories.length === 0}
                   >
                     <option value=''>Select Product Category</option>
-                    {Object.entries(productCategories).map(([key, value]) => (
-                      <option key={key} value={key}>
-                        {value.name}
-                      </option>
-                    ))}
+                    {categories.length > 0 ? (
+                      categories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.displayName || category.name}
+                        </option>
+                      ))
+                    ) : (
+                      <option disabled>No categories available</option>
+                    )}
                   </select>
                 </div>
 
@@ -415,17 +467,17 @@ const SampleFormModal = ({ theme, onClose, onSubmit }) => {
                   </label>
                   <select
                     required
-                    disabled={!formData.productCategoryId}
+                    disabled={!formData.productCategoryId || loadingVariants}
                     value={formData.productVariantId}
                     onChange={(e) =>
                       setFormData({ ...formData, productVariantId: e.target.value })
                     }
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50`}
                   >
-                    <option value=''>Select Product Variant</option>
+                    <option value=''>{loadingVariants ? 'Loading variants...' : 'Select Product Variant'}</option>
                     {variants.map((variant) => (
                       <option key={variant.id} value={variant.id}>
-                        {variant.name}
+                        {variant.name || variant.displayName}
                       </option>
                     ))}
                   </select>
@@ -466,29 +518,6 @@ const SampleFormModal = ({ theme, onClose, onSubmit }) => {
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
                     placeholder='e.g., Tiró Kohl'
                   />
-                </div>
-
-                <div>
-                  <label
-                    className={`block text-sm font-medium mb-2 ${theme.text}`}
-                  >
-                    Calibration Curve *
-                  </label>
-                  <select
-                    required
-                    value={formData.calibrationCurveId}
-                    onChange={(e) =>
-                      setFormData({ ...formData, calibrationCurveId: e.target.value })
-                    }
-                    className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
-                  >
-                    <option value=''>Select Calibration Curve</option>
-                    {calibrations.map((calib) => (
-                      <option key={calib.id} value={calib.id}>
-                        {calib.fileName} ({calib.calibrationDate?.split('T')[0] || 'N/A'})
-                      </option>
-                    ))}
-                  </select>
                 </div>
 
                 <div>
@@ -631,9 +660,23 @@ const SampleFormModal = ({ theme, onClose, onSubmit }) => {
                   label='Product Photo'
                   photo={formData.productPhoto}
                   refInput={productPhotoRef}
-                  onUpload={(e) => handleFileUpload(e, "productPhoto")}
-                  onRemove={() => removePhoto("productPhoto")}
+                  onUpload={(e) => handleFileUpload(e, "productPhoto", setFormData)}
+                  onRemove={() => removeFile("productPhoto", setFormData, productPhotoRef)}
                   theme={theme}
+                />
+                <FileUpload
+                  label='Calibration Curve Photo'
+                  file={formData.calibrationCurveFile}
+                  refInput={calibrationCurveRef}
+                  onUpload={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setFormData({ ...formData, calibrationCurveFile: file });
+                    }
+                  }}
+                  onRemove={() => setFormData({ ...formData, calibrationCurveFile: null })}
+                  theme={theme}
+                  acceptType='.png,.jpg,.jpeg'
                 />
               </div>
             </section>
@@ -746,6 +789,73 @@ const PhotoUpload = ({ label, photo, refInput, onUpload, onRemove, theme }) => {
         ref={refInput}
         type='file'
         accept='image/*'
+        className='hidden'
+        onChange={handleUpload}
+      />
+    </div>
+  );
+};
+
+const FileUpload = ({ label, file, refInput, onUpload, onRemove, theme, acceptType = '*' }) => {
+  const handleUpload = (e) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+
+    // Validate file size (max 10MB)
+    if (selectedFile.size > 10 * 1024 * 1024) {
+      alert("File size must be less than 10MB");
+      e.target.value = "";
+      return;
+    }
+
+    onUpload(e);
+  };
+
+  return (
+    <div>
+      <label className={`block text-sm font-medium mb-2 ${theme.text}`}>
+        {label}
+      </label>
+      {file ? (
+        <div className='relative group'>
+          <div className={`border rounded-lg p-4 ${theme.border} flex items-center gap-3 bg-emerald-50 dark:bg-emerald-900/20`}>
+            <File className='w-6 h-6 text-emerald-600 flex-shrink-0' />
+            <div className='flex-1 min-w-0'>
+              <p className='text-sm font-medium text-emerald-700 dark:text-emerald-400 truncate'>
+                {file.name}
+              </p>
+              <p className='text-xs text-emerald-600 dark:text-emerald-500'>
+                {(file.size / 1024).toFixed(2)} KB
+              </p>
+            </div>
+            <button
+              type='button'
+              onClick={onRemove}
+              className='bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg opacity-0 group-hover:opacity-100'
+              title='Remove file'
+            >
+              <Trash2 className='w-4 h-4' />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div
+          onClick={() => refInput.current?.click()}
+          className={`border-2 border-dashed ${theme.border} rounded-lg p-8 text-center ${theme.hover} cursor-pointer transition-all hover:border-emerald-500`}
+        >
+          <File className={`w-12 h-12 mx-auto mb-2 ${theme.textMuted}`} />
+          <p className={`text-sm font-medium ${theme.text}`}>
+            Click to upload calibration curve photo
+          </p>
+          <p className={`text-xs ${theme.textMuted} mt-1`}>
+            PNG or JPG up to 10MB
+          </p>
+        </div>
+      )}
+      <input
+        ref={refInput}
+        type='file'
+        accept={acceptType}
         className='hidden'
         onChange={handleUpload}
       />

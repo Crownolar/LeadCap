@@ -23,7 +23,7 @@ export const getInitialSampleFormState = () => ({
   marketId: "",
   marketName: "",
   sampleType: "SOLID",
-  calibrationCurveId: "",
+  calibrationCurveFile: null,
   vendorType: "",
   vendorTypeOther: "",
   isRegistered: false,
@@ -42,37 +42,72 @@ export const getInitialSampleFormState = () => ({
  */
 export const fetchFormData = async () => {
   try {
-    const [statesRes, lgasRes, marketsRes, calibrationsRes, categoriesRes] = await Promise.all([
-      api.get("/samples/states/all"),
-      api.get("/samples/lgas/all"),
-      api.get("/samples/markets/all"),
-      api.get("/calibrations"),
-      api.get("/products/categories"), // Assuming this endpoint exists
+    const [statesRes, lgasRes, marketsRes, categoriesRes] = await Promise.all([
+      api.get("/management/states"),
+      api.get("/management/lgas"),
+      api.get("/management/markets"),
+      api.get("/products/categories"),
     ]);
 
+    // Log responses for debugging
+    console.log("States response:", statesRes.data);
+    console.log("LGAs response:", lgasRes.data);
+    console.log("Markets response:", marketsRes.data);
+    console.log("Categories response:", categoriesRes.data);
+
+    const states = statesRes.data?.data || statesRes.data || [];
+    const allLgas = lgasRes.data?.data || lgasRes.data || [];
+    const allMarkets = marketsRes.data?.data || marketsRes.data || [];
+    const categories = categoriesRes.data?.data || categoriesRes.data || [];
+
+    console.log("Processed data:", { states: states?.length, allLgas: allLgas?.length, allMarkets: allMarkets?.length, categories: categories?.length });
+
     return {
-      states: statesRes.data.data || [],
-      allLgas: lgasRes.data.data || [],
-      allMarkets: marketsRes.data.data || [],
-      calibrations: calibrationsRes.data.data || [],
-      categories: categoriesRes.data.data || Object.entries(productCategories).map(([key, value]) => ({
-        id: key,
-        name: value.name
-      }))
+      states: Array.isArray(states) ? states : [],
+      allLgas: Array.isArray(allLgas) ? allLgas : [],
+      allMarkets: Array.isArray(allMarkets) ? allMarkets : [],
+      categories: Array.isArray(categories) ? categories : [],
     };
   } catch (error) {
-    console.error("Error fetching form data:", error);
-    // Fallback to local constants if API fails
+    console.error("Error fetching form data:", {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      config: error.config?.url
+    });
     return {
       states: [],
       allLgas: [],
       allMarkets: [],
-      calibrations: [],
-      categories: Object.entries(productCategories).map(([key, value]) => ({
-        id: key,
-        name: value.name
-      }))
+      categories: [],
     };
+  }
+};
+
+/**
+ * Fetch variants for a specific product category
+ */
+export const fetchVariantsForCategory = async (categoryId) => {
+  try {
+    const response = await api.get(`/products/categories/${categoryId}/variants`);
+    const variants = response.data?.data || response.data || [];
+    
+    console.log(`Fetched variants for category ${categoryId}:`, variants);
+    
+    if (!Array.isArray(variants)) {
+      console.warn("Variants response is not an array:", variants);
+      return [];
+    }
+    
+    return variants;
+  } catch (error) {
+    console.error("Error fetching variants:", {
+      categoryId,
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    throw error;
   }
 };
 
@@ -266,7 +301,6 @@ export const buildSamplePayload = (formData) => {
     productVariantId: formData.productVariantId,
     productName: formData.productName,
     sampleType: formData.sampleType,
-    calibrationCurveId: formData.calibrationCurveId,
     price: parseFloat(formData.price),
     batchNumber: formData.batchNumber || null,
     brandName: formData.brandName || null,
@@ -290,7 +324,11 @@ export const validateSampleForm = (formData) => {
 
   if (!formData.stateId) errors.stateId = "State is required";
   if (!formData.lgaId) errors.lgaId = "LGA is required";
-  if (!formData.marketId) errors.marketId = "Market is required";
+  
+  // Market validation: either select from dropdown OR enter manual name
+  if (!formData.marketId && !formData.marketName) {
+    errors.marketId = "Either select a market from the list or enter a custom market name";
+  }
   if (formData.marketId === "OTHER" && !formData.marketName) {
     errors.marketName = "Market name is required when selecting 'Other'";
   }
@@ -298,7 +336,6 @@ export const validateSampleForm = (formData) => {
   if (!formData.productVariantId) errors.productVariantId = "Product variant is required";
   if (!formData.productName) errors.productName = "Product name is required";
   if (!formData.sampleType) errors.sampleType = "Sample type is required";
-  if (!formData.calibrationCurveId) errors.calibrationCurveId = "Calibration curve is required";
   if (!formData.vendorType) errors.vendorType = "Vendor type is required";
   if (formData.vendorType === "OTHER" && !formData.vendorTypeOther) {
     errors.vendorTypeOther = "Vendor type specification is required";

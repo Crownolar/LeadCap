@@ -32,7 +32,7 @@ const ThresholdManagement = ({ theme, darkMode }) => {
 
   const fetchCategories = async () => {
     try {
-      const response = await api.get('/product-categories')
+      const response = await api.get('/products/categories')
       setCategories(response.data.data || [])
     } catch (err) {
       console.error('Failed to fetch categories:', err)
@@ -41,18 +41,22 @@ const ThresholdManagement = ({ theme, darkMode }) => {
 
   const fetchHeavyMetals = async () => {
     try {
-      const response = await api.get('/heavy-metals')
-      setHeavyMetals(response.data.data || [])
+      // Fetch all thresholds to extract unique heavy metals
+      const response = await api.get('/thresholds')
+      const metals = [...new Set(response.data.data.map(t => t.heavyMetal))].sort()
+      setHeavyMetals(metals)
     } catch (err) {
       console.error('Failed to fetch heavy metals:', err)
+      setHeavyMetals(['LEAD', 'CADMIUM', 'CHROMIUM', 'NICKEL', 'ARSENIC', 'MERCURY', 'COPPER', 'ZINC', 'COBALT', 'MANGANESE'])
     }
   }
 
   const handleEdit = (threshold) => {
     setEditingId(threshold.id)
+    const categoryId = threshold.productCategoryId || threshold.productCategory?.id
     setEditValues({
       heavyMetal: threshold.heavyMetal,
-      productCategoryId: threshold.productCategoryId || threshold.category?.id,
+      productCategoryId: categoryId,
       safeLimit: threshold.safeLimit,
       warningLimit: threshold.warningLimit,
       dangerLimit: threshold.dangerLimit
@@ -91,11 +95,18 @@ const ThresholdManagement = ({ theme, darkMode }) => {
 
   const filteredThresholds = thresholds.filter(t => {
     const matchesMetal = filterMetal === 'all' || t.heavyMetal === filterMetal
-    const matchesCategory = filterCategory === 'all' || t.productCategoryId === filterCategory
+    const categoryId = t.productCategoryId || t.productCategory?.id
+    const matchesCategory = filterCategory === 'all' || categoryId === filterCategory
     return matchesMetal && matchesCategory
   })
 
-  const getCategoryName = (categoryId) => {
+  const getCategoryName = (threshold) => {
+    // Check if productCategory object is included in response
+    if (threshold.productCategory?.displayName) {
+      return threshold.productCategory.displayName
+    }
+    // Fallback to finding category from categories list by ID
+    const categoryId = threshold.productCategoryId || threshold.productCategory?.id
     return categories.find(c => c.id === categoryId)?.displayName || 'Unknown'
   }
 
@@ -162,7 +173,7 @@ const ThresholdManagement = ({ theme, darkMode }) => {
                 {filteredThresholds.map((threshold) => (
                   <tr key={threshold.id} className={`border-b ${theme?.border} hover:${theme?.hover}`}>
                     <td className={`px-6 py-3 ${theme?.text} font-semibold`}>{threshold.heavyMetal}</td>
-                    <td className={`px-6 py-3 ${theme?.text}`}>{getCategoryName(threshold.productCategoryId)}</td>
+                    <td className={`px-6 py-3 ${theme?.text}`}>{getCategoryName(threshold)}</td>
                     <td className={`px-6 py-3 text-center`}>
                       {editingId === threshold.id ? (
                         <input

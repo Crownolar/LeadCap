@@ -15,6 +15,11 @@ import {
   Area,
   ComposedChart,
   Line,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
 } from "recharts";
 import { Package, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import StatCard from "../common/StatCard";
@@ -27,6 +32,7 @@ import {
   aggregateProductRisk,
   aggregateGeographicRisk,
   aggregateHeavyMetalHeatmap,
+  aggregateHeavyMetalProfileByProduct,
   deriveLocationData,
   calculateKPIs,
   getContaminationStatus,
@@ -41,6 +47,7 @@ const Dashboard = ({ theme, darkMode }) => {
   );
   const [localStates, setLocalStates] = useState([]);
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
+  const [selectedProductForRadar, setSelectedProductForRadar] = useState("all");
 
   // adjust size of charts based on window size
   useEffect(() => {
@@ -120,6 +127,16 @@ const Dashboard = ({ theme, darkMode }) => {
     () => aggregateHeavyMetalHeatmap(filteredSamples),
     [filteredSamples]
   );
+  
+  // NEW: Heavy metal profile radar data (respects filters + product selection)
+  const radarData = useMemo(
+    () => aggregateHeavyMetalProfileByProduct(
+      filteredSamples, 
+      selectedProductForRadar !== "all" ? selectedProductForRadar : null
+    ),
+    [filteredSamples, selectedProductForRadar]
+  );
+  
   if (!navigator.onLine) {
     return (
       <div className='w-full flex justify-center mt-10'>
@@ -365,21 +382,60 @@ const Dashboard = ({ theme, darkMode }) => {
             className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
           >
             <h3 className='text-lg font-semibold mb-4 [@media(max-width:450px)]:text-base'>
-              Heavy Metal Contamination Levels
+              Heavy Metal Contamination Profile by Product
             </h3>
-            <ResponsiveContainer width='100%' height={300}>
-              <BarChart data={heavyMetalData} layout='vertical'>
-                <CartesianGrid strokeDasharray='3 3' stroke='#e5e7eb' />
-                <XAxis type='number' stroke='#6b7280' />
-                <YAxis dataKey='metal' type='category' stroke='#6b7280' width={80} />
-                <RechartsTooltip content={<CustomTooltip />} />
+            <div className='mb-4'>
+              <label className='text-sm font-medium mb-2 block'>Select Product Variant:</label>
+              <select
+                value={selectedProductForRadar}
+                onChange={(e) => setSelectedProductForRadar(e.target.value)}
+                className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500 text-sm`}
+              >
+                <option value='all'>All Products (Combined)</option>
+                {[...new Set(filteredSamples.map((s) => s.productVariant?.id))].filter(Boolean).map((variantId) => {
+                  const variant = filteredSamples.find(s => s.productVariant?.id === variantId)?.productVariant;
+                  return (
+                    <option key={variantId} value={variantId}>
+                      {variant?.displayName || variant?.name || "Unknown"}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+            <ResponsiveContainer width='100%' height={350}>
+              <RadarChart data={radarData}>
+                <PolarGrid stroke='#d1d5db' />
+                <PolarAngleAxis dataKey='metal' stroke='#6b7280' tick={{ fontSize: 12 }} />
+                <PolarRadiusAxis angle={90} domain={[0, 100]} stroke='#6b7280' />
+                <Radar 
+                  name='Contamination Rate (%)'
+                  dataKey='concentration' 
+                  stroke='#ef4444'
+                  fill='#ef4444'
+                  fillOpacity={0.6}
+                />
+                <RechartsTooltip 
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload;
+                      return (
+                        <div className='bg-white p-3 border border-gray-300 rounded shadow-lg'>
+                          <p className='font-semibold text-gray-800'>{data.metal}</p>
+                          <p className='text-sm text-red-600'>Contamination: {data.concentration}%</p>
+                          <p className='text-xs text-gray-600'>Contaminated: {data.contaminated}</p>
+                          <p className='text-xs text-gray-600'>Moderate: {data.moderate}</p>
+                          <p className='text-xs text-gray-600'>Safe: {data.safe}</p>
+                          <p className='text-xs text-gray-600'>Total: {data.total}</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }} 
+                />
                 <Legend />
-                <Bar dataKey='safe' fill={CONTAMINATION_COLORS.safe} stackId='a' name='Safe' />
-                <Bar dataKey='moderate' fill={CONTAMINATION_COLORS.moderate} stackId='a' name='Moderate' />
-                <Bar dataKey='contaminated' fill={CONTAMINATION_COLORS.contaminated} stackId='a' name='Contaminated' />
-              </BarChart>
+              </RadarChart>
             </ResponsiveContainer>
-            <p className='text-xs text-gray-500 mt-2'>Data respects current filters (State, Product, Status)</p>
+            <p className='text-xs text-gray-500 mt-2'>Shows concentration levels (0-100%) for all 10 heavy metals. Each axis represents a metal type. Data respects current filters.</p>
           </div>
         </div>
 

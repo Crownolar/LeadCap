@@ -36,7 +36,7 @@ export default function MapSampleDetails({ samples, setCommentSectionView }) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {getStatusIcon(s.status)}
-                  <span className="font-bold text-sm uppercase tracking-wide">{s.status}</span>
+                  <span className="font-bold text-sm uppercase tracking-wide">{s.status || 'PENDING'}</span>
                 </div>
                 <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">{s.sampleId}</span>
               </div>
@@ -52,7 +52,7 @@ export default function MapSampleDetails({ samples, setCommentSectionView }) {
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   <span className="inline-block bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-3 py-1 rounded-full text-xs font-semibold">
-                    {s.productVariant?.replace(/_/g, " ") || "Unknown"}
+                    {s.productVariant?.displayName || s.productVariant?.name || "Unknown"}
                   </span>
                   {s.isRegistered && (
                     <span className="inline-block bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-3 py-1 rounded-full text-xs font-semibold">

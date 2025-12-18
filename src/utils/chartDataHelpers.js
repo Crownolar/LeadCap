@@ -452,3 +452,80 @@ export const aggregateHeavyMetalHeatmap = (samples) => {
 
   return { data: result, metals };
 };
+
+// ============================================
+// RADAR CHART (Heavy Metal Profile by Product)
+// ============================================
+
+/**
+ * Aggregate heavy metal concentration levels by product variant
+ * Shows all 10 heavy metals relative to safe limits for radar visualization
+ * @param {Array} samples - Filtered samples
+ * @param {String} productVariantId - Specific product variant ID (null for all)
+ * @returns {Array} Radar chart data with all metals and concentration rates
+ */
+export const aggregateHeavyMetalProfileByProduct = (samples, productVariantId = null) => {
+  const allHeavyMetals = [
+    "Lead",
+    "Cadmium",
+    "Chromium",
+    "Nickel",
+    "Arsenic",
+    "Mercury",
+    "Copper",
+    "Zinc",
+    "Cobalt",
+    "Manganese",
+  ];
+
+  // Filter samples by product variant if specified
+  const relevantSamples = productVariantId
+    ? samples.filter((s) => s.productVariant?.id === productVariantId)
+    : samples;
+
+  // Initialize metal data structure
+  const metalData = {};
+  allHeavyMetals.forEach((metal) => {
+    metalData[metal] = {
+      safe: 0,
+      moderate: 0,
+      contaminated: 0,
+      total: 0,
+    };
+  });
+
+  // Aggregate readings
+  relevantSamples.forEach((s) => {
+    if (!s.heavyMetalReadings || s.heavyMetalReadings.length === 0) return;
+
+    s.heavyMetalReadings.forEach((reading) => {
+      const metal = reading.heavyMetal || "Unknown";
+      
+      if (metalData[metal]) {
+        const status = reading.finalStatus || "PENDING";
+        if (status === "SAFE") metalData[metal].safe += 1;
+        else if (status === "MODERATE") metalData[metal].moderate += 1;
+        else if (status === "CONTAMINATED") metalData[metal].contaminated += 1;
+        metalData[metal].total += 1;
+      }
+    });
+  });
+
+  // Transform to radar chart format (concentration rate relative to safe limit)
+  return allHeavyMetals.map((metal) => {
+    const data = metalData[metal];
+    const total = data.total || 1;
+    const contaminationRate = Math.round(
+      ((data.contaminated + data.moderate) / total) * 100
+    );
+    
+    return {
+      metal,
+      concentration: contaminationRate, // 0-100 scale for radar chart
+      safe: data.safe,
+      moderate: data.moderate,
+      contaminated: data.contaminated,
+      total: data.total,
+    };
+  });
+};

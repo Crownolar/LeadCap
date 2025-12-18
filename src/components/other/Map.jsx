@@ -4,7 +4,6 @@ import {
   Popup,
   TileLayer,
   useMap,
-  GeoJSON,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -12,19 +11,16 @@ import markerIcon from "leaflet/dist/images/marker-icon-2x.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import { useEffect, useState } from "react";
 import MapSampleDetailsModal from "../modals/MapSampleDetailsModal";
-import nigeriaGeoLocation from "../../assets/ng.json";
 
-// coordinates for LAGOS
-const defaultPosition = [6.5244, 3.3792];
-const padding = 0.5;
-const nigeriaBounds = [
-  [3.0, 2.0],
-  [14.0, 15.0],
-];
-const nigeriaBoundsWithAllowance = [
-  [-6, -4],
-  [18.0 + padding, 20.0 + padding],
-];
+// Nigeria's precise center and bounds
+// Nigeria: 9.0820° N, 8.6753° E (center)
+// Borders: West - Benin (773 km), East - Cameroon (1,690 km), North - Niger (1,497 km), South - Gulf of Guinea
+const nigeriaCenter = [9.0820, 8.6753]; // Nigeria's precise center
+const defaultPosition = nigeriaCenter;
+const nigeriaBounds = L.latLngBounds(
+  [3.5, 2.3],   // Southwest corner (Gulf of Guinea coastal area)
+  [13.9, 14.7]  // Northeast corner (Niger/Chad border area)
+);
 
 const FitBounds = ({ markers }) => {
   const map = useMap();
@@ -37,7 +33,12 @@ const FitBounds = ({ markers }) => {
         console.error(e.message);
       }
     }
-  }, []);
+    // Restrict panning/zooming to Nigeria bounds
+    map.setMaxBounds(nigeriaBounds);
+    map.on('drag', function() {
+      map.panInsideBounds(nigeriaBounds, { animate: false });
+    });
+  }, [map]);
 };
 
 const iconObject = (samplesLength) => {
@@ -95,14 +96,12 @@ export default function Map({ samples }) {
 
   return (
     <>
-      <div className='border-2 border-red-950 relative h-[700px]  '>
+      <div className='relative h-[700px]  '>
         <MapContainer
           center={defaultPosition}
-          zoom={8}
+          zoom={6}
           minZoom={6}
           maxZoom={18}
-          maxBounds={nigeriaBoundsWithAllowance}
-          maxBoundsViscosity={1.0}
           scrollWheelZoom={false}
           style={{
             height: "600px",
@@ -113,14 +112,6 @@ export default function Map({ samples }) {
             url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
             attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
           ></TileLayer>
-          <GeoJSON
-            data={nigeriaGeoLocation}
-            style={{
-              color: "black",
-              weight: 3,
-              fillColor: "green",
-            }}
-          />
           {samples.map((s) => {
             if (s.gpsLatitude && s.gpsLongitude) {
               const coord = [Number(s.gpsLatitude), Number(s.gpsLongitude)];
@@ -147,7 +138,7 @@ export default function Map({ samples }) {
                 >
                   <Popup
                     closeOnClick={false}
-                    // autoPan={false}
+                    autoPan={false}
                     autoClose={false}
                     closeButton={false}
                     className='custom-popup'

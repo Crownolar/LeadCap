@@ -58,7 +58,7 @@ export const getSampleReadings = createAsyncThunk(
   async (sampleId, { rejectWithValue }) => {
     try {
       const response = await api.get(`/heavy-metals/sample/${sampleId}`);
-      return response.data;
+      return { sampleId, readings: response.data.data || [] };
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.error ||
@@ -69,11 +69,39 @@ export const getSampleReadings = createAsyncThunk(
   }
 );
 
+// ---- Fetch readings for multiple samples ---- //
+export const getMultipleSampleReadings = createAsyncThunk(
+  "heavyMetal/getMultipleSampleReadings", 
+  async (sampleIds, { rejectWithValue }) => {
+    try {
+      const promises = sampleIds.map(async (sampleId) => {
+        try {
+          const response = await api.get(`/heavy-metals/sample/${sampleId}`);
+          return { sampleId, readings: response.data.data || [] };
+        } catch (error) {
+          // Return empty readings if sample has no readings yet
+          return { sampleId, readings: [] };
+        }
+      });
+      
+      const results = await Promise.all(promises);
+      return results;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.error ||
+          error.message ||
+          "Failed to fetch multiple sample readings"
+      );
+    }
+  }
+);
+
 // ---- SLICE ---- //
 const heavyMetalSlice = createSlice({
   name: "heavyMetal",
   initialState: {
-    readings: [],
+    readings: [], // Array of individual readings
+    readingsBySample: {}, // Object: { sampleId: [readings] }
     loading: false,
     error: null,
     successMessage: null,
@@ -97,8 +125,13 @@ const heavyMetalSlice = createSlice({
       .addCase(batchAddXRFReadings.fulfilled, (state, action) => {
         state.loading = false;
         state.successMessage = action.payload.message || "Readings saved!";
+        // Ensure readingsBySample is initialized
+        if (!state.readingsBySample) {
+          state.readingsBySample = {};
+        }
         // Add all returned readings
         if (action.payload.data && Array.isArray(action.payload.data)) {
+          // Update readings array
           action.payload.data.forEach(reading => {
             const index = state.readings.findIndex(
               (r) =>
@@ -110,6 +143,36 @@ const heavyMetalSlice = createSlice({
             } else {
               state.readings.push(reading);
             }
+          });
+          
+          // Group readings by sample and update readingsBySample
+          const readingsBySampleUpdate = {};
+          action.payload.data.forEach(reading => {
+            if (!readingsBySampleUpdate[reading.sampleId]) {
+              readingsBySampleUpdate[reading.sampleId] = [];
+            }
+            readingsBySampleUpdate[reading.sampleId].push(reading);
+          });
+          
+          // Merge with existing readings for each sample
+          Object.keys(readingsBySampleUpdate).forEach(sampleId => {
+            const existingReadings = state.readingsBySample[sampleId] || [];
+            const newReadings = readingsBySampleUpdate[sampleId];
+            
+            // Combine and deduplicate readings by heavyMetal
+            const combinedReadings = [...existingReadings];
+            newReadings.forEach(newReading => {
+              const existingIndex = combinedReadings.findIndex(
+                r => r.heavyMetal === newReading.heavyMetal
+              );
+              if (existingIndex !== -1) {
+                combinedReadings[existingIndex] = newReading;
+              } else {
+                combinedReadings.push(newReading);
+              }
+            });
+            
+            state.readingsBySample[sampleId] = combinedReadings;
           });
         }
       })
@@ -147,18 +210,46 @@ const heavyMetalSlice = createSlice({
         state.error = action.payload || "Failed to save reading";
       })
 
-      // Fetch readings
+      // Fetch readings for single sample
       .addCase(getSampleReadings.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(getSampleReadings.fulfilled, (state, action) => {
         state.loading = false;
-        state.readings = action.payload.data || [];
+        const { sampleId, readings } = action.payload;
+        // Ensure readingsBySample is initialized
+        if (!state.readingsBySample) {
+          state.readingsBySample = {};
+        }
+        state.readingsBySample[sampleId] = readings;
+        // Also add to readings array for backwards compatibility
+        state.readings = readings;
       })
       .addCase(getSampleReadings.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Failed to fetch readings";
+      })
+
+      // Fetch readings for multiple samples
+      .addCase(getMultipleSampleReadings.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getMultipleSampleReadings.fulfilled, (state, action) => {
+        state.loading = false;
+        // Ensure readingsBySample is initialized
+        if (!state.readingsBySample) {
+          state.readingsBySample = {};
+        }
+        // action.payload is array of { sampleId, readings }
+        action.payload.forEach(({ sampleId, readings }) => {
+          state.readingsBySample[sampleId] = readings;
+        });
+      })
+      .addCase(getMultipleSampleReadings.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to fetch multiple readings";
       });
   },
 });

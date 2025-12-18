@@ -228,7 +228,7 @@ const InviteCodeGenerate = ({ theme = {} }) => {
           className={`${currentTheme.card} rounded-2xl shadow-xl border ${currentTheme.border} p-6`}
         >
           {activeTab === "invite" && (
-            <div className='border border-red-500'>
+            <div>
               <h2 className='text-xl font-bold mb-4 flex items-center gap-2'>
                 <KeyRound className='text-emerald-500' /> Generate Invite Codes
               </h2>
