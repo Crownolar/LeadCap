@@ -62,6 +62,7 @@ const Database = ({
   // Local state for standalone mode
   const [localSearchTerm, setLocalSearchTerm] = useState("");
   const [localFilterState, setLocalFilterState] = useState("all");
+  const [localFilterCategory, setLocalFilterCategory] = useState("all");
   const [localFilterProduct, setLocalFilterProduct] = useState("all");
   const [localFilterStatus, setLocalFilterStatus] = useState("all");
   const [localSelectedSample, setLocalSelectedSample] = useState(null);
@@ -73,6 +74,8 @@ const Database = ({
   const setSearchTerm = propSetSearchTerm || setLocalSearchTerm;
   const filterState = propFilterState ?? localFilterState;
   const setFilterState = propSetFilterState || setLocalFilterState;
+  const filterCategory = localFilterCategory; // Category is local only for now
+  const setFilterCategory = setLocalFilterCategory;
   const filterProduct = propFilterProduct ?? localFilterProduct;
   const setFilterProduct = propSetFilterProduct || setLocalFilterProduct;
   const filterStatus = propFilterStatus ?? localFilterStatus;
@@ -83,8 +86,8 @@ const Database = ({
   // Compute filtered samples if not provided via props
   const computedFilteredSamples = useMemo(() => {
     if (propFilteredSamples) return propFilteredSamples;
-    return filterSamples(reduxSamples || [], searchTerm, filterState, filterProduct, filterStatus);
-  }, [propFilteredSamples, reduxSamples, searchTerm, filterState, filterProduct, filterStatus]);
+    return filterSamples(reduxSamples || [], searchTerm, filterState, filterCategory, filterProduct, filterStatus);
+  }, [propFilteredSamples, reduxSamples, searchTerm, filterState, filterCategory, filterProduct, filterStatus]);
 
   const filteredSamples = computedFilteredSamples;
 
@@ -138,7 +141,7 @@ const Database = ({
       <div
         className={`${theme?.card} rounded-lg shadow-md border ${theme?.border} p-4`}
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="relative">
             <Search
               className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${theme?.textMuted}`}
@@ -166,6 +169,22 @@ const Database = ({
               ))}
             </select>
           </div>
+
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
+          >
+            <option value="all">All Categories</option>
+            {[...new Set(reduxSamples.map((s) => s.productVariant?.categoryId))].filter(Boolean).map((categoryId) => {
+              const category = reduxSamples.find(s => s.productVariant?.categoryId === categoryId)?.productVariant?.category;
+              return (
+                <option key={categoryId} value={categoryId}>
+                  {category?.name || "Unknown"}
+                </option>
+              );
+            })}
+          </select>
 
           <select
             value={filterProduct}

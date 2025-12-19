@@ -24,7 +24,13 @@ const SupervisorDashboard = ({ theme: propTheme }) => {
         ]);
 
         if (statsRes.data.success) setStats(statsRes.data.data);
-        if (collectorsRes.data.success) setCollectors(collectorsRes.data.data);
+        
+        // Handle collectors response - data might be nested or be the array directly
+        if (collectorsRes.data.success) {
+          const collectorsData = collectorsRes.data.data || collectorsRes.data;
+          const collectorsList = Array.isArray(collectorsData) ? collectorsData : collectorsData?.data || [];
+          setCollectors(collectorsList);
+        }
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
         setError(err.response?.data?.message || err.message);
@@ -166,7 +172,7 @@ const SupervisorDashboard = ({ theme: propTheme }) => {
 
       {/* Top Collectors */}
       <div className={`${theme?.card} rounded-lg p-6 border ${theme?.border}`}>
-        <h3 className="text-lg font-semibold mb-4">Your Data Collectors</h3>
+        <h3 className="text-lg font-semibold mb-4">Your Data Collectors ({collectors.length})</h3>
         {collectors.length === 0 ? (
           <p className={`${theme?.textMuted} text-center py-8`}>
             No data collectors assigned yet
@@ -178,9 +184,9 @@ const SupervisorDashboard = ({ theme: propTheme }) => {
                 <tr className={`border-b ${theme?.border}`}>
                   <th className="text-left py-3 px-4 font-semibold">Name</th>
                   <th className="text-left py-3 px-4 font-semibold">Email</th>
-                  <th className="text-center py-3 px-4 font-semibold">Samples</th>
-                  <th className="text-center py-3 px-4 font-semibold">States</th>
-                  <th className="text-center py-3 px-4 font-semibold">Pending Review</th>
+                  <th className="text-center py-3 px-4 font-semibold">Total Samples</th>
+                  <th className="text-center py-3 px-4 font-semibold">This Month</th>
+                  <th className="text-center py-3 px-4 font-semibold">States Covered</th>
                   <th className="text-center py-3 px-4 font-semibold">Status</th>
                 </tr>
               </thead>
@@ -195,24 +201,22 @@ const SupervisorDashboard = ({ theme: propTheme }) => {
                       {collector.email}
                     </td>
                     <td className="py-3 px-4 text-center font-semibold">
-                      {collector.totalSamples}
+                      {collector.totalSamples || 0}
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                        {collector.assignedStates.length}
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold">
+                        {collector.samplesThisMonth || 0}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-center">
-                      {collector.reviewStats.pending > 0 ? (
-                        <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-semibold">
-                          {collector.reviewStats.pending}
-                        </span>
-                      ) : (
-                        <span className={theme?.textMuted}>-</span>
-                      )}
+                      <span className="text-xs px-2 py-1">
+                        {collector.samplesByState ? Object.keys(collector.samplesByState).length : 0} states
+                      </span>
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span className="text-green-600 font-semibold">Active</span>
+                      <span className={`font-semibold ${collector.isActive ? 'text-green-600' : 'text-red-600'}`}>
+                        {collector.isActive ? 'Active' : 'Inactive'}
+                      </span>
                     </td>
                   </tr>
                 ))}

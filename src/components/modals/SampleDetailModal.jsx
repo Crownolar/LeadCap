@@ -14,14 +14,17 @@ const getContaminationInfo = (heavyMetalReadings) => {
     return { hasReadings: false, maxReading: null, contaminatedMetals: [] };
   }
 
+  // Determine status with priority: finalStatus > aasStatus > xrfStatus > PENDING
+  const getReadingStatus = (r) => r.finalStatus || r.aasStatus || r.xrfStatus || "PENDING";
+
   const contaminatedMetals = heavyMetalReadings.filter(
-    (r) => r.status === "CONTAMINATED"
+    (r) => getReadingStatus(r) === "CONTAMINATED"
   );
   const allReadings = heavyMetalReadings.map((r) => ({
     metal: r.heavyMetal,
     xrf: r.xrfReading ? parseFloat(r.xrfReading) : null,
     aas: r.aasReading ? parseFloat(r.aasReading) : null,
-    status: r.status,
+    status: getReadingStatus(r),
   }));
 
   return {
@@ -77,8 +80,12 @@ const SampleDetailModal = ({ theme, sample, onClose }) => {
                 <div className='space-y-2 text-sm sm:text-base'>
                   {[
                     [
-                      "Product Type:",
+                      "Product Category:",
                       sample?.productVariant?.category?.name || "Unknown",
+                    ],
+                    [
+                      "Product Variant:",
+                      sample?.productVariant?.name || sample?.productVariant?.displayName || "N/A",
                     ],
                     ["Brand:", sample?.brandName || "N/A"],
                     ["Batch Number:", sample?.batchNumber || "N/A"],
@@ -226,7 +233,7 @@ const SampleDetailModal = ({ theme, sample, onClose }) => {
                                   : "bg-yellow-100 text-yellow-800"
                               }`}
                             >
-                              {reading.status}
+                              {reading.status || "PENDING"}
                             </span>
                           </td>
                         </tr>

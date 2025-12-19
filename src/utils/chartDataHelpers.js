@@ -32,11 +32,17 @@ export const getContaminationStatus = (sample) => {
   if (!sample.heavyMetalReadings || sample.heavyMetalReadings.length === 0) {
     return "PENDING";
   }
-  const statuses = sample.heavyMetalReadings.map(r => r.finalStatus || "PENDING");
+  // Use finalStatus if available, fall back to aasStatus, then xrfStatus
+  const statuses = sample.heavyMetalReadings.map(r => {
+    // Priority: finalStatus > aasStatus > xrfStatus > PENDING
+    return r.finalStatus || r.aasStatus || r.xrfStatus || "PENDING";
+  });
   if (statuses.includes("CONTAMINATED")) return "CONTAMINATED";
   if (statuses.includes("MODERATE")) return "MODERATE";
   if (statuses.every(s => s === "SAFE")) return "SAFE";
-  return "PENDING";
+  // If any status is PENDING, the overall sample is PENDING
+  if (statuses.includes("PENDING")) return "PENDING";
+  return "SAFE";
 };
 
 // ============================================

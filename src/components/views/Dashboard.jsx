@@ -33,11 +33,11 @@ import {
 } from "../../utils/chartDataHelpers";
 
 
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = ({ active, payload, label, theme }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white p-4 rounded-lg shadow-lg border border-gray-200">
-        <p className="font-semibold text-gray-800 mb-2">{label}</p>
+      <div className={`${theme?.card || 'bg-white'} p-4 rounded-lg shadow-lg border ${theme?.border || 'border-gray-200'}`}>
+        <p className={`font-semibold ${theme?.text || 'text-gray-800'} mb-2`}>{label}</p>
         {payload.map((entry, index) => (
           <p key={index} className="text-sm" style={{ color: entry.color }}>
             {entry.name}: {entry.value}
@@ -303,7 +303,7 @@ const Dashboard = ({ theme, darkMode }) => {
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="month" stroke="#6b7280" />
               <YAxis stroke="#6b7280" />
-              <RechartsTooltip content={<CustomTooltip />} />
+              <RechartsTooltip content={<CustomTooltip theme={theme} />} />
               <Legend />
               <Area
                 type="monotone"
@@ -343,7 +343,7 @@ const Dashboard = ({ theme, darkMode }) => {
                 fill="#3b82f6"
                 fillOpacity={0.6}
               />
-              <RechartsTooltip content={<CustomTooltip />} />
+              <RechartsTooltip content={<CustomTooltip theme={theme} />} />
             </RadarChart>
           </ResponsiveContainer>
         </div>
@@ -361,7 +361,7 @@ const Dashboard = ({ theme, darkMode }) => {
             <XAxis dataKey="month" stroke="#6b7280" />
             <YAxis yAxisId="left" stroke="#6b7280" />
             <YAxis yAxisId="right" orientation="right" stroke="#6b7280" />
-            <RechartsTooltip content={<CustomTooltip />} />
+            <RechartsTooltip content={<CustomTooltip theme={theme} />} />
             <Legend />
             <Bar
               yAxisId="left"
@@ -404,7 +404,7 @@ const Dashboard = ({ theme, darkMode }) => {
               stroke="#6b7280"
               width={120}
             />
-            <RechartsTooltip content={<CustomTooltip />} />
+            <RechartsTooltip content={<CustomTooltip theme={theme} />} />
             <Legend />
             <Bar
               dataKey="exposure"
