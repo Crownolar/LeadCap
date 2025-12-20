@@ -25,15 +25,21 @@ import { Package, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import StatCard from "../common/StatCard";
 import { COLORS } from "../../utils/constants";
 import { useSelector } from "react-redux";
-import api from "../../utils/api";
+import {
+  aggregateByMonth,
+  deriveLocationData,
+  deriveDetectionMetrics,
+  getContaminationStatus,
+} from "../../utils/chartDataHelpers";
 
-const CustomTooltip = ({ active, payload, label }) => {
+
+const CustomTooltip = ({ active, payload, label, theme }) => {
   if (active && payload && payload.length) {
     return (
-      <div className='bg-white p-4 rounded-lg shadow-lg border border-gray-200'>
-        <p className='font-semibold text-gray-800 mb-2'>{label}</p>
+      <div className={`${theme?.card || 'bg-white'} p-4 rounded-lg shadow-lg border ${theme?.border || 'border-gray-200'}`}>
+        <p className={`font-semibold ${theme?.text || 'text-gray-800'} mb-2`}>{label}</p>
         {payload.map((entry, index) => (
-          <p key={index} className='text-sm' style={{ color: entry.color }}>
+          <p key={index} className="text-sm" style={{ color: entry.color }}>
             {entry.name}: {entry.value}
           </p>
         ))}
@@ -43,201 +49,25 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-const monthNamesShort = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
-function safeGet(obj, path, fallback = undefined) {
-  try {
-    return (
-      path
-        .split(".")
-        .reduce((a, b) => (a && a[b] !== undefined ? a[b] : undefined), obj) ??
-      fallback
-    );
-  } catch {
-    return fallback;
-  }
-}
-
-function aggregateByMonth(samples, monthsBack = 6) {
-  const now = new Date();
-  const months = [];
-  for (let i = monthsBack - 1; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push({
-      key: `${d.getFullYear()}-${d.getMonth() + 1}`,
-      label: monthNamesShort[d.getMonth()],
-      detected: 0,
-      safe: 0,
-      critical: 0,
-      capacity: 0,
-      count: 0,
-    });
-  }
-  const monthIndex = (year, month) => `${year}-${month}`;
-
-  samples.forEach((s) => {
-    const dateStr =
-      safeGet(s, "createdAt") ??
-      safeGet(s, "sampleDate") ??
-      safeGet(s, "date") ??
-      null;
-    let d;
-    if (dateStr) {
-      d = new Date(dateStr);
-      if (isNaN(d)) d = null;
-    }
-    const placeKey = d
-      ? monthIndex(d.getFullYear(), d.getMonth() + 1)
-      : months[months.length - 1].key;
-    const monthObj =
-      months.find((m) => m.key === placeKey) ?? months[months.length - 1];
-
-    const status = (s.status || "").toLowerCase();
-    if (["contaminated", "detected", "exposed"].includes(status)) {
-      monthObj.detected += 1;
-    } else if (status === "safe") {
-      monthObj.safe += 1;
-    } else if (status === "critical" || s.isCritical) {
-      monthObj.critical += 1;
-    } else {
-      const lvl = safeGet(s, "leadLevel");
-      if (typeof lvl === "number") {
-        if (lvl > 70) monthObj.critical += 1;
-        else if (lvl > 30) monthObj.detected += 1;
-        else monthObj.safe += 1;
-      }
-    }
-
-    const cap = safeGet(s, "detectionCapacity");
-    if (typeof cap === "number") {
-      monthObj.capacity += cap;
-      monthObj.count += 1;
-    }
-  });
-
-  return months.map((m) => ({
-    month: m.label,
-    detected: m.detected,
-    safe: m.safe,
-    critical: m.critical,
-    capacity:
-      m.count > 0
-        ? Math.round(m.capacity / m.count)
-        : Math.round(
-            (m.detected / Math.max(1, m.detected + m.safe + m.critical)) * 100
-          ) || 80,
-  }));
-}
-
-function deriveLocationData(samples) {
-  const byLocation = samples.reduce((acc, s) => {
-    const loc =
-      safeGet(s, "state.name") ?? safeGet(s, "market.name") ?? "Unknown";
-    acc[loc] = acc[loc] || { exposure: 0, capacityValues: [], population: 0 };
-    const status = (s.status || "").toLowerCase();
-    if (["contaminated", "detected", "exposed"].includes(status))
-      acc[loc].exposure += 1;
-    acc[loc].capacityValues.push(1); // Count samples instead
-    return acc;
-  }, {});
-
-  return Object.entries(byLocation).map(([location, v]) => ({
-    location,
-    exposure: v.exposure,
-    capacity: v.capacityValues.length
-      ? Math.round(
-          v.capacityValues.reduce((a, b) => a + b, 0) / v.capacityValues.length
-        )
-      : 80,
-    population: v.population || Math.max(50, v.exposure * 10),
-  }));
-}
-
-function deriveDetectionMetrics(samples) {
-  const metrics = {
-    "Response Time": null,
-    Accuracy: null,
-    Coverage: null,
-    Equipment: null,
-    Training: null,
-  };
-  let counts = 0;
-
-  samples.forEach((s) => {
-    if (typeof safeGet(s, "responseTime") === "number") {
-      metrics["Response Time"] =
-        (metrics["Response Time"] || 0) + safeGet(s, "responseTime");
-      counts++;
-    }
-    if (typeof safeGet(s, "accuracy") === "number") {
-      metrics["Accuracy"] = (metrics["Accuracy"] || 0) + safeGet(s, "accuracy");
-      counts++;
-    }
-    if (typeof safeGet(s, "coverage") === "number") {
-      metrics["Coverage"] = (metrics["Coverage"] || 0) + safeGet(s, "coverage");
-      counts++;
-    }
-    if (typeof safeGet(s, "equipment") === "number") {
-      metrics["Equipment"] =
-        (metrics["Equipment"] || 0) + safeGet(s, "equipment");
-      counts++;
-    }
-    if (typeof safeGet(s, "training") === "number") {
-      metrics["Training"] = (metrics["Training"] || 0) + safeGet(s, "training");
-      counts++;
-    }
-  });
-
-  Object.keys(metrics).forEach((k) => {
-    if (typeof metrics[k] === "number")
-      metrics[k] = Math.round(metrics[k] / Math.max(1, counts));
-    else metrics[k] = null;
-  });
-
-  const total = samples.length || 1;
-  const contaminated = samples.filter(
-    (s) => (s.status || "").toLowerCase() === "contaminated"
-  ).length;
-  if (!metrics["Accuracy"])
-    metrics["Accuracy"] = Math.max(
-      50,
-      100 - Math.round((contaminated / total) * 100)
-    );
-  if (!metrics["Coverage"])
-    metrics["Coverage"] = Math.min(100, 60 + Math.round(total / 50));
-  if (!metrics["Equipment"]) metrics["Equipment"] = 75;
-  if (!metrics["Training"]) metrics["Training"] = 80;
-  if (!metrics["Response Time"]) metrics["Response Time"] = 85;
-
-  return Object.entries(metrics).map(([metric, value]) => ({ metric, value }));
-}
 
 const Dashboard = ({ theme, darkMode }) => {
   const { samples, loading, error, errorCode } = useSelector(
     (state) => state.samples
   );
-  const [localStates, setLocalStates] = useState([]);
+  
+  // Filter states
+  const [filterState, setFilterState] = useState("all");
+  const [filterProduct, setFilterProduct] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [states, setStates] = useState([]);
 
+  // Fetch states on mount
   useEffect(() => {
     const fetchStates = async () => {
       try {
-        const response = await api.get("/samples/states/all");
-        if (response.data.success) {
-          return setLocalStates(response.data.data);
-        }
+        const api = await import("../../utils/api").then(m => m.default);
+        const response = await api.get("/management/states");
+        setStates(response.data.data || []);
       } catch (err) {
         console.error("Failed to fetch states:", err);
       }
@@ -245,31 +75,25 @@ const Dashboard = ({ theme, darkMode }) => {
     fetchStates();
   }, []);
 
-  const [filteredQueries, setFilteredQueries] = useState({
-    state: "all",
-    productType: "all",
-    status: "all",
-  });
-  const filteredSamples = samples.filter((s) => {
-    return (
-      (filteredQueries.state == "all" ||
-        s.state.name == filteredQueries.state) &&
-      (filteredQueries.productType == "all" ||
-        s.productType == filteredQueries.productType) &&
-      (filteredQueries.status == "all" || s.status == filteredQueries.status)
-    );
-  });
+  // Filter samples based on filters
+  const filteredSamples = useMemo(() => {
+    if (!samples) return [];
+    return samples.filter(s => {
+      if (filterState !== "all" && s.state?.id !== filterState) return false;
+      if (filterProduct !== "all" && s.productVariant?.id !== filterProduct) return false;
+      if (filterStatus !== "all" && getContaminationStatus(s).toLowerCase() !== filterStatus.toLowerCase()) return false;
+      return true;
+    });
+  }, [samples, filterState, filterProduct, filterStatus]);
 
   const analytics = useMemo(() => {
     if (!filteredSamples) return {};
     const total = filteredSamples.length;
     const contaminated = filteredSamples.filter(
-      (s) => s.status === "contaminated"
+      (s) => getContaminationStatus(s).toLowerCase() === "contaminated"
     ).length;
-    const safe = filteredSamples.filter((s) => s.status === "safe").length;
-    const pending = filteredSamples.filter(
-      (s) => s.status === "pending"
-    ).length;
+    const safe = filteredSamples.filter((s) => getContaminationStatus(s).toLowerCase() === "safe").length;
+    const pending = filteredSamples.filter((s) => getContaminationStatus(s).toLowerCase() === "pending").length;
 
     const byState = Object.entries(
       filteredSamples.reduce((acc, s) => {
@@ -281,7 +105,7 @@ const Dashboard = ({ theme, darkMode }) => {
 
     const byProductType = Object.entries(
       filteredSamples.reduce((acc, s) => {
-        const type = s.productType || "Unknown";
+        const type = s.productVariant?.category?.name || s.productVariant?.displayName || "Unknown";
         acc[type] = (acc[type] || 0) + 1;
         return acc;
       }, {})
@@ -290,17 +114,13 @@ const Dashboard = ({ theme, darkMode }) => {
     const registeredVsUnregistered = [
       {
         name: "Registered",
-        total: filteredSamples.filter((s) => s.isRegistered)?.length,
-        contaminated: filteredSamples.filter(
-          (s) => s.isRegistered && s.status === "contaminated"
-        )?.length,
+        total: samples.length,
+        contaminated: contaminated,
       },
       {
         name: "Unregistered",
-        total: filteredSamples.filter((s) => !s.isRegistered)?.length,
-        contaminated: filteredSamples.filter(
-          (s) => !s.isRegistered && s.status === "contaminated"
-        )?.length,
+        total: 0,
+        contaminated: 0,
       },
     ];
 
@@ -315,10 +135,7 @@ const Dashboard = ({ theme, darkMode }) => {
     };
   }, [filteredSamples]);
 
-  const exposureData = useMemo(
-    () => aggregateByMonth(filteredSamples, 6),
-    [filteredSamples]
-  );
+  const exposureData = useMemo(() => aggregateByMonth(filteredSamples, 6), [filteredSamples]);
   const locationData = useMemo(
     () => deriveLocationData(filteredSamples).slice(0, 8),
     [filteredSamples]
@@ -327,23 +144,10 @@ const Dashboard = ({ theme, darkMode }) => {
     () => deriveDetectionMetrics(filteredSamples),
     [filteredSamples]
   );
-  if (!navigator.onLine) {
-    return (
-      <div className='w-full flex justify-center mt-10'>
-        <div
-          className={`border-l-4 border-red-600 bg-red-50 text-red-700 p-4 rounded shadow max-w-xl`}
-        >
-          <h2 className='font-semibold text-lg flex items-center gap-2'>
-            <AlertTriangle size={20} />
-          </h2>
-          <p className='mt-1 text-sm'>Check your Network Connection </p>
-        </div>
-      </div>
-    );
-  }
+
   if (error) {
     return (
-      <div className='w-full flex justify-center mt-10'>
+      <div className="w-full flex justify-center mt-10">
         <div
           className={`border-l-4 ${
             errorCode === 401
@@ -351,7 +155,7 @@ const Dashboard = ({ theme, darkMode }) => {
               : "border-yellow-500 bg-yellow-50 text-yellow-700"
           } p-4 rounded shadow max-w-xl`}
         >
-          <h2 className='font-semibold text-lg flex items-center gap-2'>
+          <h2 className="font-semibold text-lg flex items-center gap-2">
             {errorCode === 401 ? (
               <>
                 <AlertTriangle size={20} /> Authentication Error
@@ -362,11 +166,11 @@ const Dashboard = ({ theme, darkMode }) => {
               </>
             )}
           </h2>
-          <p className='mt-1 text-sm'>{error}</p>
+          <p className="mt-1 text-sm">{error}</p>
           {error?.status === 401 && (
             <button
               onClick={() => (window.location.href = "/login")}
-              className='mt-3 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition'
+              className="mt-3 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
             >
               Login Again
             </button>
@@ -390,312 +194,290 @@ const Dashboard = ({ theme, darkMode }) => {
     );
 
   return (
-    <>
-      {/* FILTER */}
+    <div className={`space-y-6 px-10 ${theme?.text}`}>
+      {/* Filters Section */}
       <div
-        className={`${theme?.card} rounded-lg shadow-md mb-8 border ${theme?.border} p-4`}
+        className={`${theme?.card} rounded-lg shadow-md border ${theme?.border} p-4`}
       >
-        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
-          <div className='w-full max-w-full sm:max-w-[100%]'>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="w-full">
             <select
-              value={filteredQueries.state}
-              onChange={(e) =>
-                setFilteredQueries((prev) => ({
-                  ...prev,
-                  state: e.target.value,
-                }))
-              }
-              className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm sm:text-base`}
+              value={filterState}
+              onChange={(e) => setFilterState(e.target.value)}
+              className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm`}
             >
-              <option value='all'>All States</option>
-              {localStates.length > 0 &&
-                localStates.map((state) => (
-                  <option key={state.id} value={state.name}>
-                    {state.name}
-                  </option>
-                ))}
+              <option value="all">All States</option>
+              {states.map((state) => (
+                <option key={state.id} value={state.id}>
+                  {state.name}
+                </option>
+              ))}
             </select>
           </div>
 
           <select
-            value={filteredQueries.productType}
-            onChange={(e) =>
-              setFilteredQueries((prev) => ({
-                ...prev,
-                productType: e.target.value,
-              }))
-            }
+            value={filterProduct}
+            onChange={(e) => setFilterProduct(e.target.value)}
             className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
           >
-            <option value='all'>All Products</option>
-            {[...new Set(samples.map((s) => s.productType))].map((prod) => (
-              <option key={prod} value={prod}>
-                {prod}
-              </option>
-            ))}
+            <option value="all">All Products</option>
+            {[...new Set(filteredSamples.map((s) => s.productVariant?.id))].filter(Boolean).map((variantId) => {
+              const variant = filteredSamples.find(s => s.productVariant?.id === variantId)?.productVariant;
+              return (
+                <option key={variantId} value={variantId}>
+                  {variant?.displayName || variant?.name || "Unknown"}
+                </option>
+              );
+            })}
           </select>
 
           <select
-            value={filteredQueries.status}
-            onChange={(e) =>
-              setFilteredQueries((prev) => ({
-                ...prev,
-                status: e.target.value,
-              }))
-            }
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
             className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
           >
-            <option value='all'>All Status</option>
-            <option value='safe'>Safe</option>
-            <option value='contaminated'>Contaminated</option>
-            <option value='pending'>Pending</option>
+            <option value="all">All Status</option>
+            <option value="safe">Safe</option>
+            <option value="moderate">Moderate</option>
+            <option value="contaminated">Contaminated</option>
+            <option value="pending">Pending</option>
           </select>
         </div>
       </div>
-      {/* STATS */}
-      <div className={`space-y-6 px-10 ${theme?.text}`}>
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
-          <StatCard
-            icon={Package}
-            label='Total Samples'
-            value={analytics.total}
-            color='bg-blue-600'
-            theme={theme}
-          />
-          <StatCard
-            icon={AlertTriangle}
-            label='Contaminated'
-            value={analytics.contaminated}
-            color='bg-red-600'
-            subtext={`${(
-              (analytics.contaminated / analytics.total) *
-              100
-            ).toFixed(1)}% of total`}
-            theme={theme}
-          />
-          <StatCard
-            icon={CheckCircle}
-            label='Safe'
-            value={analytics.safe}
-            color='bg-green-600'
-            subtext={`${((analytics.safe / analytics.total) * 100).toFixed(
-              1
-            )}% of total`}
-            theme={theme}
-          />
-          <StatCard
-            icon={Clock}
-            label='Pending'
-            value={analytics.pending}
-            color='bg-yellow-500'
-            theme={theme}
-          />
-        </div>
 
-        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
-          <div
-            className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
-          >
-            <h3 className='text-lg font-semibold mb-4'>Lead Exposure Trends</h3>
-            <ResponsiveContainer width='100%' height={300}>
-              <AreaChart data={exposureData}>
-                <defs>
-                  <linearGradient
-                    id='colorDetected'
-                    x1='0'
-                    y1='0'
-                    x2='0'
-                    y2='1'
-                  >
-                    <stop offset='5%' stopColor='#ef4444' stopOpacity={0.8} />
-                    <stop offset='95%' stopColor='#ef4444' stopOpacity={0.1} />
-                  </linearGradient>
-                  <linearGradient id='colorSafe' x1='0' y1='0' x2='0' y2='1'>
-                    <stop offset='5%' stopColor='#10b981' stopOpacity={0.8} />
-                    <stop offset='95%' stopColor='#10b981' stopOpacity={0.1} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray='3 3' stroke='#e5e7eb' />
-                <XAxis dataKey='month' stroke='#6b7280' />
-                <YAxis stroke='#6b7280' />
-                <RechartsTooltip content={<CustomTooltip />} />
-                <Legend />
-                <Area
-                  type='monotone'
-                  dataKey='safe'
-                  stroke='#10b981'
-                  fillOpacity={1}
-                  fill='url(#colorSafe)'
-                  name='Safe Levels'
-                />
-                <Area
-                  type='monotone'
-                  dataKey='detected'
-                  stroke='#ef4444'
-                  fillOpacity={1}
-                  fill='url(#colorDetected)'
-                  name='Elevated Exposure'
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          icon={Package}
+          label="Total Samples"
+          value={analytics.total}
+          color="bg-blue-600"
+          theme={theme}
+        />
+        <StatCard
+          icon={AlertTriangle}
+          label="Contaminated"
+          value={analytics.contaminated}
+          color="bg-red-600"
+          subtext={`${(
+            (analytics.contaminated / analytics.total) *
+            100
+          ).toFixed(1)}% of total`}
+          theme={theme}
+        />
+        <StatCard
+          icon={CheckCircle}
+          label="Safe"
+          value={analytics.safe}
+          color="bg-green-600"
+          subtext={`${((analytics.safe / analytics.total) * 100).toFixed(
+            1
+          )}% of total`}
+          theme={theme}
+        />
+        <StatCard
+          icon={Clock}
+          label="Pending"
+          value={analytics.pending}
+          color="bg-yellow-500"
+          theme={theme}
+        />
+      </div>
 
-          <div
-            className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
-          >
-            <h3 className='text-lg font-semibold mb-4'>
-              Detection Capacity Metrics
-            </h3>
-            <ResponsiveContainer width='100%' height={300}>
-              <RadarChart data={detectionMetrics}>
-                <PolarGrid stroke='#e5e7eb' />
-                <PolarAngleAxis dataKey='metric' stroke='#6b7280' />
-                <PolarRadiusAxis
-                  angle={90}
-                  domain={[0, 100]}
-                  stroke='#6b7280'
-                />
-                <Radar
-                  name='Capacity Score'
-                  dataKey='value'
-                  stroke='#3b82f6'
-                  fill='#3b82f6'
-                  fillOpacity={0.6}
-                />
-                <RechartsTooltip content={<CustomTooltip />} />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div
           className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
         >
-          <h3 className='text-lg font-semibold mb-4'>
-            Monthly Analysis & Critical Cases
-          </h3>
-          <ResponsiveContainer width='100%' height={400}>
-            <ComposedChart data={exposureData}>
-              <CartesianGrid strokeDasharray='3 3' stroke='#e5e7eb' />
-              <XAxis dataKey='month' stroke='#6b7280' />
-              <YAxis yAxisId='left' stroke='#6b7280' />
-              <YAxis yAxisId='right' orientation='right' stroke='#6b7280' />
-              <RechartsTooltip content={<CustomTooltip />} />
+          <h3 className="text-lg font-semibold mb-4">Contamination Status Trends</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={exposureData}>
+              <defs>
+                <linearGradient id="colorDetected" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1} />
+                </linearGradient>
+                <linearGradient id="colorSafe" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0.1} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="month" stroke="#6b7280" />
+              <YAxis stroke="#6b7280" />
+              <RechartsTooltip content={<CustomTooltip theme={theme} />} />
               <Legend />
-              <Bar
-                yAxisId='left'
-                dataKey='detected'
-                fill='#f59e0b'
-                name='Total Detected'
-                radius={[8, 8, 0, 0]}
+              <Area
+                type="monotone"
+                dataKey="safe"
+                stroke="#10b981"
+                fillOpacity={1}
+                fill="url(#colorSafe)"
+                name="Safe Levels"
               />
-              <Bar
-                yAxisId='left'
-                dataKey='critical'
-                fill='#ef4444'
-                name='Critical Cases'
-                radius={[8, 8, 0, 0]}
+              <Area
+                type="monotone"
+                dataKey="detected"
+                stroke="#ef4444"
+                fillOpacity={1}
+                fill="url(#colorDetected)"
+                name="Contaminated"
               />
-              <Line
-                yAxisId='right'
-                type='monotone'
-                dataKey='capacity'
-                stroke='#3b82f6'
-                strokeWidth={3}
-                name='Detection Capacity %'
-                dot={{ r: 6, fill: "#3b82f6" }}
-              />
-            </ComposedChart>
+            </AreaChart>
           </ResponsiveContainer>
         </div>
 
         <div
           className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
         >
-          <h3 className='text-lg font-semibold mb-4'>
-            Campus Location Analysis
+          <h3 className="text-lg font-semibold mb-4">
+            Detection Capacity Metrics
           </h3>
-          <ResponsiveContainer width='100%' height={400}>
-            <BarChart data={locationData} layout='vertical'>
-              <CartesianGrid strokeDasharray='3 3' stroke='#e5e7eb' />
-              <XAxis type='number' stroke='#6b7280' />
-              <YAxis
-                dataKey='location'
-                type='category'
-                stroke='#6b7280'
-                width={120}
+          <ResponsiveContainer width="100%" height={300}>
+            <RadarChart data={detectionMetrics}>
+              <PolarGrid stroke="#e5e7eb" />
+              <PolarAngleAxis dataKey="metric" stroke="#6b7280" />
+              <PolarRadiusAxis angle={90} domain={[0, 100]} stroke="#6b7280" />
+              <Radar
+                name="Capacity Score"
+                dataKey="value"
+                stroke="#3b82f6"
+                fill="#3b82f6"
+                fillOpacity={0.6}
               />
-              <RechartsTooltip content={<CustomTooltip />} />
-              <Legend />
-              <Bar
-                dataKey='exposure'
-                fill='#8b5cf6'
-                name='Exposure Cases'
-                radius={[0, 8, 8, 0]}
-              />
-              <Bar
-                dataKey='capacity'
-                fill='#10b981'
-                name='Capacity Score'
-                radius={[0, 8, 8, 0]}
-              />
-            </BarChart>
+              <RechartsTooltip content={<CustomTooltip theme={theme} />} />
+            </RadarChart>
           </ResponsiveContainer>
-        </div>
-
-        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
-          <div
-            className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
-          >
-            <h3 className='text-lg font-semibold mb-4'>
-              Product Type Distribution
-            </h3>
-            <ResponsiveContainer width='100%' height={300}>
-              <PieChart>
-                <Pie
-                  data={analytics.byProductType}
-                  cx='50%'
-                  cy='50%'
-                  outerRadius={100}
-                  label
-                  dataKey='value'
-                >
-                  {analytics.byProductType.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Pie>
-                <RechartsTooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div
-            className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
-          >
-            <h3 className='text-lg font-semibold mb-4'>
-              Registered vs Unregistered
-            </h3>
-            <ResponsiveContainer width='100%' height={300}>
-              <PieChart>
-                <Pie
-                  data={analytics.registeredVsUnregistered}
-                  cx='50%'
-                  cy='50%'
-                  outerRadius={100}
-                  label
-                  dataKey='total'
-                >
-                  {analytics.registeredVsUnregistered.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Pie>
-                <RechartsTooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
         </div>
       </div>
-    </>
+
+      <div
+        className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
+      >
+        <h3 className="text-lg font-semibold mb-4">
+          Monthly Analysis & Critical Cases
+        </h3>
+        <ResponsiveContainer width="100%" height={400}>
+          <ComposedChart data={exposureData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <XAxis dataKey="month" stroke="#6b7280" />
+            <YAxis yAxisId="left" stroke="#6b7280" />
+            <YAxis yAxisId="right" orientation="right" stroke="#6b7280" />
+            <RechartsTooltip content={<CustomTooltip theme={theme} />} />
+            <Legend />
+            <Bar
+              yAxisId="left"
+              dataKey="detected"
+              fill="#f59e0b"
+              name="Contaminated"
+              radius={[8, 8, 0, 0]}
+            />
+            <Bar
+              yAxisId="left"
+              dataKey="critical"
+              fill="#ef4444"
+              name="Critical Cases"
+              radius={[8, 8, 0, 0]}
+            />
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="capacity"
+              stroke="#3b82f6"
+              strokeWidth={3}
+              name="Contamination Rate %"
+              dot={{ r: 6, fill: "#3b82f6" }}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div
+        className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
+      >
+        <h3 className="text-lg font-semibold mb-4">Location Analysis</h3>
+        <ResponsiveContainer width="100%" height={400}>
+          <BarChart data={locationData} layout="vertical">
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <XAxis type="number" stroke="#6b7280" />
+            <YAxis
+              dataKey="location"
+              type="category"
+              stroke="#6b7280"
+              width={120}
+            />
+            <RechartsTooltip content={<CustomTooltip theme={theme} />} />
+            <Legend />
+            <Bar
+              dataKey="exposure"
+              fill="#8b5cf6"
+              name="Contaminated Cases"
+              radius={[0, 8, 8, 0]}
+            />
+            <Bar
+              dataKey="capacity"
+              fill="#10b981"
+              name="Detection Rate"
+              radius={[0, 8, 8, 0]}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div
+          className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
+        >
+          <h3 className="text-lg font-semibold mb-4">
+            Product Type Distribution
+          </h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={analytics.byProductType}
+                cx="50%"
+                cy="50%"
+                outerRadius={100}
+                label
+                dataKey="value"
+              >
+                {analytics.byProductType.map((_, i) => (
+                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                ))}
+              </Pie>
+              <RechartsTooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div
+          className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
+        >
+          <h3 className="text-lg font-semibold mb-4">
+            Contamination Distribution
+          </h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={[
+                  { name: "Safe", value: analytics.safe },
+                  { name: "Contaminated", value: analytics.contaminated },
+                  { name: "Pending", value: analytics.pending }
+                ]}
+                cx="50%"
+                cy="50%"
+                outerRadius={100}
+                label
+                dataKey="value"
+              >
+                <Cell fill="#10b981" />
+                <Cell fill="#ef4444" />
+                <Cell fill="#f59e0b" />
+              </Pie>
+              <RechartsTooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
   );
 };
 

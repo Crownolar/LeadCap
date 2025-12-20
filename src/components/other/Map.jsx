@@ -4,7 +4,7 @@ import {
   Popup,
   TileLayer,
   useMap,
-  GeoJSON,
+  Polyline,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -12,18 +12,77 @@ import markerIcon from "leaflet/dist/images/marker-icon-2x.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import { useEffect, useState } from "react";
 import MapSampleDetailsModal from "../modals/MapSampleDetailsModal";
-import nigeriaGeoLocation from "../../assets/ng.json";
 
-// coordinates for LAGOS
-const defaultPosition = [6.5244, 3.3792];
-const padding = 0.5;
-const nigeriaBounds = [
-  [3.0, 2.0],
-  [14.0, 15.0],
-];
-const nigeriaBoundsWithAllowance = [
-  [-6, -4],
-  [18.0 + padding, 20.0 + padding],
+// Nigeria's precise center and bounds
+// Nigeria: 9.0820° N, 8.6753° E (center)
+// Borders: West - Benin (773 km), East - Cameroon (1,690 km), North - Niger (1,497 km), South - Gulf of Guinea
+const nigeriaCenter = [9.0820, 8.6753]; // Nigeria's precise center
+const defaultPosition = nigeriaCenter;
+const nigeriaBounds = L.latLngBounds(
+  [3.5, 2.3],   // Southwest corner (Gulf of Guinea coastal area)
+  [13.9, 14.7]  // Northeast corner (Niger/Chad border area)
+);
+
+// Major state boundary lines for demarcation (simplified major state borders)
+const nigeriaStateBoundaries = [
+  // Northern boundary (international border with Niger)
+  {
+    coordinates: [[13.5, 2.5], [13.8, 14.6]],
+    name: "Northern Border",
+  },
+  // Southern boundary (Gulf of Guinea coast)
+  {
+    coordinates: [[3.5, 2.3], [3.5, 14.7]],
+    name: "Southern Border",
+  },
+  // Western boundary (Benin)
+  {
+    coordinates: [[3.5, 2.3], [13.5, 2.5]],
+    name: "Western Border",
+  },
+  // Eastern boundary (Cameroon)
+  {
+    coordinates: [[3.5, 14.7], [13.8, 14.6]],
+    name: "Eastern Border",
+  },
+  // Major internal state demarcation lines (North-South)
+  {
+    coordinates: [[3.6, 5.5], [13.7, 5.6]],
+    name: "State Line 1",
+  },
+  {
+    coordinates: [[3.6, 7.0], [13.7, 7.2]],
+    name: "State Line 2",
+  },
+  {
+    coordinates: [[3.6, 8.8], [13.7, 9.0]],
+    name: "State Line 3",
+  },
+  {
+    coordinates: [[3.6, 10.5], [13.7, 10.7]],
+    name: "State Line 4",
+  },
+  // Major internal state demarcation lines (East-West)
+  {
+    coordinates: [[4.5, 2.3], [4.5, 14.7]],
+    name: "State Line 5",
+  },
+  {
+    coordinates: [[6.5, 2.3], [6.5, 14.7]],
+    name: "State Line 6",
+  },
+  {
+    coordinates: [[8.5, 2.3], [8.5, 14.7]],
+    name: "State Line 7",
+  },
+  {
+    coordinates: [[10.5, 2.3], [10.5, 14.7]],
+    name: "State Line 8",
+  },
+  {
+    coordinates: [[12.0, 2.3], [12.0, 14.7]],
+    name: "State Line 9",
+  },
 ];
 
 const FitBounds = ({ markers }) => {
@@ -37,7 +96,12 @@ const FitBounds = ({ markers }) => {
         console.error(e.message);
       }
     }
-  }, []);
+    // Restrict panning/zooming to Nigeria bounds
+    map.setMaxBounds(nigeriaBounds);
+    map.on('drag', function() {
+      map.panInsideBounds(nigeriaBounds, { animate: false });
+    });
+  }, [map]);
 };
 
 const iconObject = (samplesLength) => {
@@ -95,14 +159,12 @@ export default function Map({ samples }) {
 
   return (
     <>
-      <div className='border-2 border-red-950 relative h-[700px]  '>
+      <div className='relative h-[700px]  '>
         <MapContainer
           center={defaultPosition}
-          zoom={8}
+          zoom={6}
           minZoom={6}
           maxZoom={18}
-          maxBounds={nigeriaBoundsWithAllowance}
-          maxBoundsViscosity={1.0}
           scrollWheelZoom={false}
           style={{
             height: "600px",
@@ -113,19 +175,28 @@ export default function Map({ samples }) {
             url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
             attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
           ></TileLayer>
-          <GeoJSON
-            data={nigeriaGeoLocation}
-            style={{
-              color: "black",
-              weight: 3,
-              fillColor: "green",
-            }}
-          />
+          
+          {/* State Boundary Lines */}
+          {nigeriaStateBoundaries.map((boundary, idx) => (
+            <Polyline
+              key={idx}
+              positions={boundary.coordinates}
+              pathOptions={{
+                color: idx < 4 ? "#d32f2f" : "#1976d2", // Red for international borders, blue for internal borders
+                weight: idx < 4 ? 3 : 2, // Thicker international borders
+                opacity: 0.7,
+                dashArray: idx < 4 ? "5,5" : "3,3", // Dashed pattern
+                lineCap: "round",
+              }}
+            />
+          ))}
+          
+          {/* Sample Markers */}
           {samples.map((s) => {
             if (s.gpsLatitude && s.gpsLongitude) {
               const coord = [Number(s.gpsLatitude), Number(s.gpsLongitude)];
               const contaminationCount = sameLngAndLat(samples, coord).filter(
-                (sample) => sample.status === "contaminated"
+                (sample) => sample.status === "CONTAMINATED"
               ).length;
               return (
                 <Marker
@@ -147,7 +218,7 @@ export default function Map({ samples }) {
                 >
                   <Popup
                     closeOnClick={false}
-                    // autoPan={false}
+                    autoPan={false}
                     autoClose={false}
                     closeButton={false}
                     className='custom-popup'
@@ -209,32 +280,7 @@ export default function Map({ samples }) {
           })}
           {samples && <FitBounds markers={samples} />}
         </MapContainer>
-        {/* Map Legend */}
-        <div className='bg-gray-50 dark:bg-gray-900/50 px-6 py-4 border-t border-gray-200 dark:border-gray-700'>
-          <div className='flex flex-wrap gap-6 items-center text-sm'>
-            <div className='flex items-center gap-2'>
-              <div className='w-4 h-4 bg-red-500 rounded-full border-2 border-red-600'></div>
-              <span className='text-gray-700 dark:text-gray-300 font-medium'>
-                Contaminated Samples
-              </span>
-            </div>
-            <div className='flex items-center gap-2'>
-              <div className='w-4 h-4 bg-blue-500 rounded-full border-2 border-blue-600'></div>
-              <span className='text-gray-700 dark:text-gray-300 font-medium'>
-                Safe/Pending Samples
-              </span>
-            </div>
-            <div className='flex items-center gap-2'>
-              <div className='w-6 h-6 bg-red-800 text-white text-xs flex items-center justify-center rounded-full font-bold'>
-                2
-              </div>
-              <span className='text-gray-700 dark:text-gray-300 font-medium'>
-                Multiple at Location
-              </span>
-            </div>
-          </div>
-        </div>
-        {/* Overlay */}
+
         {mapDetails.isOpen && (
           <MapSampleDetailsModal
             setMapDetails={setMapDetails}

@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Search, Download, Lock } from "lucide-react";
-import { productTypes } from "../../utils/constants";
 import api from "../../utils/api";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchSamples } from "../../redux/slice/samplesSlice";
 import { useTheme } from "../../hooks/useTheme";
 import { filterSamples } from "../../utils/helpers";
+import { getContaminationStatus } from "../../utils/chartDataHelpers";
 import SampleDetailModal from "../modals/SampleDetailModal";
 
 // Helper to get max heavy metal reading for display
@@ -56,9 +56,13 @@ const Database = ({
     );
   }
 
+  // Check if user is HEAD_RESEARCHER (only role that can see Collected By column)
+  const isHeadResearcher = currentUser?.role?.toLowerCase().replace(/[\s_]/g, "") === "headresearcher";
+
   // Local state for standalone mode
   const [localSearchTerm, setLocalSearchTerm] = useState("");
   const [localFilterState, setLocalFilterState] = useState("all");
+  const [localFilterCategory, setLocalFilterCategory] = useState("all");
   const [localFilterProduct, setLocalFilterProduct] = useState("all");
   const [localFilterStatus, setLocalFilterStatus] = useState("all");
   const [localSelectedSample, setLocalSelectedSample] = useState(null);
@@ -70,6 +74,8 @@ const Database = ({
   const setSearchTerm = propSetSearchTerm || setLocalSearchTerm;
   const filterState = propFilterState ?? localFilterState;
   const setFilterState = propSetFilterState || setLocalFilterState;
+  const filterCategory = localFilterCategory; // Category is local only for now
+  const setFilterCategory = setLocalFilterCategory;
   const filterProduct = propFilterProduct ?? localFilterProduct;
   const setFilterProduct = propSetFilterProduct || setLocalFilterProduct;
   const filterStatus = propFilterStatus ?? localFilterStatus;
@@ -80,8 +86,8 @@ const Database = ({
   // Compute filtered samples if not provided via props
   const computedFilteredSamples = useMemo(() => {
     if (propFilteredSamples) return propFilteredSamples;
-    return filterSamples(reduxSamples || [], searchTerm, filterState, filterProduct, filterStatus);
-  }, [propFilteredSamples, reduxSamples, searchTerm, filterState, filterProduct, filterStatus]);
+    return filterSamples(reduxSamples || [], searchTerm, filterState, filterCategory, filterProduct, filterStatus);
+  }, [propFilteredSamples, reduxSamples, searchTerm, filterState, filterCategory, filterProduct, filterStatus]);
 
   const filteredSamples = computedFilteredSamples;
 
@@ -96,7 +102,7 @@ const Database = ({
     if (!propStates) {
       const fetchStates = async () => {
         try {
-          const response = await api.get("/samples/states/all");
+          const response = await api.get("/management/states");
           setLocalStates(response.data.data || []);
         } catch (err) {
           console.error("Failed to fetch states:", err);
@@ -135,7 +141,7 @@ const Database = ({
       <div
         className={`${theme?.card} rounded-lg shadow-md border ${theme?.border} p-4`}
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="relative">
             <Search
               className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${theme?.textMuted}`}
@@ -165,16 +171,35 @@ const Database = ({
           </div>
 
           <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
+          >
+            <option value="all">All Categories</option>
+            {[...new Set(reduxSamples.map((s) => s.productVariant?.categoryId))].filter(Boolean).map((categoryId) => {
+              const category = reduxSamples.find(s => s.productVariant?.categoryId === categoryId)?.productVariant?.category;
+              return (
+                <option key={categoryId} value={categoryId}>
+                  {category?.name || "Unknown"}
+                </option>
+              );
+            })}
+          </select>
+
+          <select
             value={filterProduct}
             onChange={(e) => setFilterProduct(e.target.value)}
             className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
           >
             <option value="all">All Products</option>
-            {Object.entries(productTypes).map(([key, value]) => (
-              <option key={key} value={key}>
-                {value}
-              </option>
-            ))}
+            {[...new Set(reduxSamples.map((s) => s.productVariant?.id))].filter(Boolean).map((variantId) => {
+              const variant = reduxSamples.find(s => s.productVariant?.id === variantId)?.productVariant;
+              return (
+                <option key={variantId} value={variantId}>
+                  {variant?.displayName || variant?.name || "Unknown"}
+                </option>
+              );
+            })}
           </select>
 
           <select
@@ -184,6 +209,7 @@ const Database = ({
           >
             <option value="all">All Status</option>
             <option value="safe">Safe</option>
+            <option value="moderate">Moderate</option>
             <option value="contaminated">Contaminated</option>
             <option value="pending">Pending</option>
           </select>
@@ -215,6 +241,7 @@ const Database = ({
                   "Sample ID",
                   "Product",
                   "Location",
+                  ...(isHeadResearcher ? ["Collected By"] : []),
                   "Max Reading (ppm)",
                   "Status",
                   "Date",
@@ -233,6 +260,7 @@ const Database = ({
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {filteredSamples?.map((sample) => {
                 const maxReading = getMaxReading(sample?.heavyMetalReadings);
+                const sampleStatus = getContaminationStatus(sample).toLowerCase();
                 return (
                   <tr key={sample?.id} className={theme?.hover}>
                     <td className="px-4 py-3 whitespace-nowrap font-medium">
@@ -256,12 +284,24 @@ const Database = ({
                         </div>
                       </div>
                     </td>
+                    {isHeadResearcher && (
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="font-medium text-sm">
+                          {sample?.creator?.fullName || sample?.creator?.email || "Unknown"}
+                        </div>
+                        <div className={`text-xs ${theme?.textMuted}`}>
+                          {sample?.creator?.role?.replace(/_/g, " ") || "N/A"}
+                        </div>
+                      </td>
+                    )}
                     <td className="px-4 py-3 whitespace-nowrap font-semibold">
                       {maxReading !== null ? (
                         <span
                           className={
-                            sample?.status === "contaminated"
+                            sampleStatus === "contaminated"
                               ? "text-red-500"
+                              : sampleStatus === "moderate"
+                              ? "text-amber-500"
                               : "text-green-500"
                           }
                         >
@@ -275,14 +315,16 @@ const Database = ({
                     <td className="px-4 py-3">
                       <span
                         className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          sample?.status === "safe"
+                          sampleStatus === "safe"
                             ? "bg-green-100 text-green-800"
-                            : sample?.status === "contaminated"
+                            : sampleStatus === "moderate"
+                            ? "bg-amber-100 text-amber-800"
+                            : sampleStatus === "contaminated"
                             ? "bg-red-100 text-red-800"
                             : "bg-yellow-100 text-yellow-800"
                         }`}
                       >
-                        {sample?.status?.toUpperCase() || "PENDING"}
+                        {sampleStatus?.toUpperCase() || "PENDING"}
                       </span>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
@@ -308,6 +350,7 @@ const Database = ({
         <div className="block sm:hidden space-y-4 p-2">
           {filteredSamples?.map((sample) => {
             const maxReading = getMaxReading(sample?.heavyMetalReadings);
+            const sampleStatus = getContaminationStatus(sample).toLowerCase();
             return (
               <div
                 key={sample.id}
@@ -338,13 +381,25 @@ const Database = ({
                   </div>
                 </div>
 
+                {isHeadResearcher && (
+                  <div className="text-sm mb-1">
+                    <span className="font-semibold">Collected By:</span>{" "}
+                    {sample?.creator?.fullName || sample?.creator?.email || "Unknown"}
+                    <div className={`text-xs ${theme?.textMuted}`}>
+                      {sample?.creator?.role?.replace(/_/g, " ") || "N/A"}
+                    </div>
+                  </div>
+                )}
+
                 <div className="text-sm mb-1">
                   <span className="font-semibold">Max Reading:</span>{" "}
                   {maxReading !== null ? (
                     <span
                       className={`font-semibold ${
-                        sample?.status === "contaminated"
+                        sampleStatus === "contaminated"
                           ? "text-red-500"
+                          : sampleStatus === "moderate"
+                          ? "text-amber-500"
                           : "text-green-500"
                       }`}
                     >
@@ -359,14 +414,16 @@ const Database = ({
                   <span className="font-semibold">Status:</span>{" "}
                   <span
                     className={`px-2 py-[2px] text-xs font-semibold rounded-full ${
-                      sample?.status === "safe"
+                      sampleStatus === "safe"
                         ? "bg-green-100 text-green-800"
-                        : sample?.status === "contaminated"
+                        : sampleStatus === "moderate"
+                        ? "bg-amber-100 text-amber-800"
+                        : sampleStatus === "contaminated"
                         ? "bg-red-100 text-red-800"
                         : "bg-yellow-100 text-yellow-800"
                     }`}
                   >
-                    {sample?.status?.toUpperCase() || "PENDING"}
+                    {sampleStatus?.toUpperCase() || "PENDING"}
                   </span>
                 </div>
 

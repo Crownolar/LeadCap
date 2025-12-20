@@ -4,8 +4,8 @@ const StatCard = ({ icon: Icon, label, value, color, subtext, theme }) => (
       theme?.border || ""
     } ${theme?.text}`}
   >
-    <div className='flex items-center justify-between'>
-      <div>
+    <div className='flex items-center justify-between [@media(max-width:400px)]:flex-col '>
+      <div className='[@media(max-width:400px)]:text-center [@media(max-width:400px)]:mb-3'>
         <p className={`text-sm ${theme?.textMuted || ""} font-medium`}>
           {label}
         </p>

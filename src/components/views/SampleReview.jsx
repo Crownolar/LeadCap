@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useTheme } from "../../hooks/useTheme";
 import api from "../../utils/api";
+import { CheckCircle } from "lucide-react";
 
 const SampleReview = ({ theme: propTheme }) => {
   const { theme: hookTheme } = useTheme();
@@ -10,6 +11,8 @@ const SampleReview = ({ theme: propTheme }) => {
   const [error, setError] = useState(null);
   const [filterStatus, setFilterStatus] = useState("PENDING");
   const [reviewing, setReviewing] = useState(false);
+  const [bulkSelection, setBulkSelection] = useState(new Set());
+  const [bulkProcessing, setBulkProcessing] = useState(false);
   const [reviewForm, setReviewForm] = useState({
     status: "APPROVED",
     comments: "",
@@ -37,12 +40,15 @@ const SampleReview = ({ theme: propTheme }) => {
   const fetchSamples = async () => {
     try {
       setLoading(true);
-      const response = await api.get(
-        `/supervisor/samples?status=${filterStatus}`
-      );
+      const response = await api.get(`/supervisor/samples`);
 
       if (response.data.success) {
-        setSamples(response.data.data);
+        // Filter samples by review status on frontend since backend doesn't support status param
+        const filtered = response.data.data.filter(sample => {
+          const reviewStatus = sample.review?.status || 'PENDING';
+          return reviewStatus === filterStatus;
+        });
+        setSamples(filtered);
       }
     } catch (err) {
       console.error("Error fetching samples:", err);
@@ -76,16 +82,13 @@ const SampleReview = ({ theme: propTheme }) => {
 
     try {
       setReviewing(true);
-      const token = localStorage.getItem("authToken");
-      const response = await axios.post(
-        `/api/supervisor/samples/${selectedSample.id}/review`,
+      const response = await api.post(
+        `/supervisor/samples/${selectedSample.id}/review`,
         {
           status: reviewForm.status,
-          comments: reviewForm.comments,
+          comments: reviewForm.requestedChanges || reviewForm.comments,
           issues: reviewForm.issues,
-          requestedChanges: reviewForm.requestedChanges,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
+        }
       );
 
       if (response.data.success) {
@@ -98,6 +101,63 @@ const SampleReview = ({ theme: propTheme }) => {
       alert("Failed to submit review: " + err.message);
     } finally {
       setReviewing(false);
+    }
+  };
+
+  const handleToggleBulkSelection = (sampleId) => {
+    const newSelection = new Set(bulkSelection);
+    if (newSelection.has(sampleId)) {
+      newSelection.delete(sampleId);
+    } else {
+      newSelection.add(sampleId);
+    }
+    setBulkSelection(newSelection);
+  };
+
+  const handleSelectAll = () => {
+    if (bulkSelection.size === samples.length) {
+      setBulkSelection(new Set());
+    } else {
+      setBulkSelection(new Set(samples.map(s => s.id)));
+    }
+  };
+
+  const handleBulkAction = async (status) => {
+    if (bulkSelection.size === 0) {
+      alert("Please select at least one sample");
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to mark ${bulkSelection.size} sample(s) as ${status}?`)) {
+      return;
+    }
+
+    try {
+      setBulkProcessing(true);
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const sampleId of bulkSelection) {
+        try {
+          await api.post(`/supervisor/samples/${sampleId}/review`, {
+            status,
+            comments: "",
+            issues: [],
+          });
+          successCount++;
+        } catch (err) {
+          errorCount++;
+        }
+      }
+
+      alert(`Completed: ${successCount} approved, ${errorCount} failed`);
+      setBulkSelection(new Set());
+      fetchSamples();
+    } catch (err) {
+      console.error("Error in bulk action:", err);
+      alert("Error processing bulk action");
+    } finally {
+      setBulkProcessing(false);
     }
   };
 
@@ -117,29 +177,84 @@ const SampleReview = ({ theme: propTheme }) => {
         </div>
       )}
 
-      {/* Filter Tabs */}
-      <div className="flex gap-2 flex-wrap">
-        {["PENDING", "APPROVED", "REJECTED", "FLAGGED"].map((status) => (
-          <button
-            key={status}
-            onClick={() => setFilterStatus(status)}
-            className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-              filterStatus === status
-                ? "bg-emerald-600 text-white"
-                : `${theme?.card} border ${theme?.border} hover:bg-opacity-50`
-            }`}
-          >
-            {status}
-          </button>
-        ))}
+      {/* Filter Tabs & Bulk Actions */}
+      <div className="space-y-4">
+        <div className="flex gap-2 flex-wrap">
+          {["PENDING", "APPROVED", "REJECTED", "FLAGGED"].map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilterStatus(status)}
+              className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                filterStatus === status
+                  ? "bg-emerald-600 text-white"
+                  : `${theme?.card} border ${theme?.border} hover:bg-opacity-50`
+              }`}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+
+        {/* Bulk Actions Bar */}
+        {bulkSelection.size > 0 && (
+          <div className={`${theme?.card} border ${theme?.border} rounded-lg p-4 flex items-center justify-between flex-wrap gap-3`}>
+            <div className="flex items-center gap-3">
+              <CheckCircle size={20} className="text-emerald-600" />
+              <span className="font-semibold">{bulkSelection.size} sample(s) selected</span>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => handleBulkAction("APPROVED")}
+                disabled={bulkProcessing}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-sm"
+              >
+                ✓ Approve All
+              </button>
+              <button
+                onClick={() => handleBulkAction("REJECTED")}
+                disabled={bulkProcessing}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-sm"
+              >
+                ✗ Reject All
+              </button>
+              <button
+                onClick={() => handleBulkAction("FLAGGED")}
+                disabled={bulkProcessing}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-sm"
+              >
+                ⚠ Flag All
+              </button>
+              <button
+                onClick={() => setBulkSelection(new Set())}
+                disabled={bulkProcessing}
+                className="px-4 py-2 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-sm"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Samples List */}
         <div className={`${theme?.card} rounded-lg p-6 border ${theme?.border}`}>
-          <h3 className="text-lg font-semibold mb-4">
-            {filterStatus} Samples ({samples.length})
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">
+              {filterStatus} Samples ({samples.length})
+            </h3>
+            {samples.length > 0 && (
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={bulkSelection.size === samples.length}
+                  onChange={handleSelectAll}
+                  className="w-4 h-4 rounded text-emerald-600"
+                />
+                <span>Select All</span>
+              </label>
+            )}
+          </div>
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {samples.length === 0 ? (
               <p className={`${theme?.textMuted} text-center py-8`}>
@@ -147,15 +262,25 @@ const SampleReview = ({ theme: propTheme }) => {
               </p>
             ) : (
               samples.map((sample) => (
-                <button
+                <div
                   key={sample.id}
-                  onClick={() => handleSelectSample(sample)}
-                  className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                  className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
                     selectedSample?.id === sample.id
                       ? `${theme?.card} border-emerald-500 bg-emerald-50`
                       : `border ${theme?.border} hover:bg-opacity-50`
                   }`}
                 >
+                  <input
+                    type="checkbox"
+                    checked={bulkSelection.has(sample.id)}
+                    onChange={() => handleToggleBulkSelection(sample.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-4 h-4 rounded text-emerald-600 mt-1 flex-shrink-0"
+                  />
+                  <button
+                    onClick={() => handleSelectSample(sample)}
+                    className="flex-1 text-left"
+                  >
                   <p className="font-semibold text-sm">{sample.productName}</p>
                   <p className={`text-xs ${theme?.textMuted}`}>
                     {sample.sampleId}
@@ -177,7 +302,8 @@ const SampleReview = ({ theme: propTheme }) => {
                   <p className={`text-xs ${theme?.textMuted} mt-2`}>
                     by {sample.creator?.fullName}
                   </p>
-                </button>
+                  </button>
+                </div>
               ))
             )}
           </div>

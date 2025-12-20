@@ -1,5 +1,4 @@
 import { X, AlertTriangle } from "lucide-react";
-import { productTypes } from "../../utils/constants";
 
 // Helper to format vendor type for display
 const formatVendorType = (vendorType, vendorTypeOther) => {
@@ -15,14 +14,17 @@ const getContaminationInfo = (heavyMetalReadings) => {
     return { hasReadings: false, maxReading: null, contaminatedMetals: [] };
   }
 
+  // Determine status with priority: finalStatus > aasStatus > xrfStatus > PENDING
+  const getReadingStatus = (r) => r.finalStatus || r.aasStatus || r.xrfStatus || "PENDING";
+
   const contaminatedMetals = heavyMetalReadings.filter(
-    (r) => r.status === "CONTAMINATED"
+    (r) => getReadingStatus(r) === "CONTAMINATED"
   );
   const allReadings = heavyMetalReadings.map((r) => ({
     metal: r.heavyMetal,
     xrf: r.xrfReading ? parseFloat(r.xrfReading) : null,
     aas: r.aasReading ? parseFloat(r.aasReading) : null,
-    status: r.status,
+    status: getReadingStatus(r),
   }));
 
   return {
@@ -78,8 +80,12 @@ const SampleDetailModal = ({ theme, sample, onClose }) => {
                 <div className='space-y-2 text-sm sm:text-base'>
                   {[
                     [
-                      "Product Type:",
-                      productTypes[sample?.productType] || sample?.productType,
+                      "Product Category:",
+                      sample?.productVariant?.category?.name || "Unknown",
+                    ],
+                    [
+                      "Product Variant:",
+                      sample?.productVariant?.name || sample?.productVariant?.displayName || "N/A",
                     ],
                     ["Brand:", sample?.brandName || "N/A"],
                     ["Batch Number:", sample?.batchNumber || "N/A"],
@@ -117,10 +123,12 @@ const SampleDetailModal = ({ theme, sample, onClose }) => {
                     <span className={theme.textMuted}>Status:</span>
                     <span
                       className={`px-2 py-1 text-[10px] sm:text-xs font-semibold rounded-full ${
-                        sample?.status === "safe"
+                        sample?.status?.toUpperCase() === "SAFE"
                           ? "bg-green-100 text-green-800"
-                          : sample?.status === "contaminated"
+                          : sample?.status?.toUpperCase() === "CONTAMINATED"
                           ? "bg-red-100 text-red-800"
+                          : sample?.status?.toUpperCase() === "MODERATE"
+                          ? "bg-orange-100 text-orange-800"
                           : "bg-yellow-100 text-yellow-800"
                       }`}
                     >
@@ -139,7 +147,12 @@ const SampleDetailModal = ({ theme, sample, onClose }) => {
                   {[
                     ["State:", sample?.state?.name || "N/A"],
                     ["LGA:", sample?.lga?.name || "N/A"],
-                    ["Market:", sample?.market?.name || "N/A"],
+                    [
+                      "Market:",
+                      sample?.marketId 
+                        ? sample?.market?.name 
+                        : sample?.marketName || "N/A"
+                    ],
                     [
                       "Vendor Type:",
                       formatVendorType(
@@ -210,7 +223,7 @@ const SampleDetailModal = ({ theme, sample, onClose }) => {
                           </td>
                           <td className='py-2 px-2'>
                             <span
-                              className={`px-2 py-1 text-[10px] font-semibold rounded-full ${
+                              className={`px-3 py-1 text-xs sm:text-sm font-semibold rounded-full ${
                                 reading.status === "SAFE"
                                   ? "bg-green-100 text-green-800"
                                   : reading.status === "CONTAMINATED"
@@ -220,7 +233,7 @@ const SampleDetailModal = ({ theme, sample, onClose }) => {
                                   : "bg-yellow-100 text-yellow-800"
                               }`}
                             >
-                              {reading.status}
+                              {reading.status || "PENDING"}
                             </span>
                           </td>
                         </tr>
@@ -231,23 +244,37 @@ const SampleDetailModal = ({ theme, sample, onClose }) => {
               </div>
             )}
 
-            {/* Product Photo */}
-            {sample?.productPhotoUrl && (
+            {/* Product Photo & Calibration Curve */}
+            {(sample?.productPhotoUrl || sample?.calibrationCurve?.fileUrl) && (
               <div>
                 <h3 className='text-base sm:text-lg font-semibold mb-3 text-emerald-500'>
                   Documentation
                 </h3>
                 <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4'>
-                  <div>
-                    <p className={`text-xs sm:text-sm ${theme.textMuted} mb-2`}>
-                      Product Photo
-                    </p>
-                    <img
-                      src={sample?.productPhotoUrl}
-                      alt='Product'
-                      className='w-full h-44 sm:h-56 object-cover rounded-lg'
-                    />
-                  </div>
+                  {sample?.productPhotoUrl && (
+                    <div>
+                      <p className={`text-xs sm:text-sm ${theme.textMuted} mb-2`}>
+                        Product Photo
+                      </p>
+                      <img
+                        src={sample?.productPhotoUrl}
+                        alt='Product'
+                        className='w-full h-44 sm:h-56 object-cover rounded-lg'
+                      />
+                    </div>
+                  )}
+                  {sample?.calibrationCurve?.fileUrl && (
+                    <div>
+                      <p className={`text-xs sm:text-sm ${theme.textMuted} mb-2`}>
+                        Calibration Curve ({sample?.calibrationCurve?.fileType})
+                      </p>
+                      <img
+                        src={sample?.calibrationCurve?.fileUrl}
+                        alt='Calibration Curve'
+                        className='w-full h-44 sm:h-56 object-cover rounded-lg'
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             )}

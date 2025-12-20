@@ -32,11 +32,11 @@ export default function MapSampleDetails({ samples, setCommentSectionView }) {
             className="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700 overflow-hidden"
           >
             {/* Top Status Bar */}
-            <div className={`px-5 py-3 border-b-2 ${getColorBasedOnContamination(s.contaminationStatus)}`}>
+            <div className={`px-5 py-3 border-b-2 ${getColorBasedOnContamination(s.status)}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  {getStatusIcon(s.contaminationStatus)}
-                  <span className="font-bold text-sm uppercase tracking-wide">{s.contaminationStatus}</span>
+                  {getStatusIcon(s.status)}
+                  <span className="font-bold text-sm uppercase tracking-wide">{s.status || 'PENDING'}</span>
                 </div>
                 <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">{s.sampleId}</span>
               </div>
@@ -52,7 +52,7 @@ export default function MapSampleDetails({ samples, setCommentSectionView }) {
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   <span className="inline-block bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-3 py-1 rounded-full text-xs font-semibold">
-                    {s.productType?.replace(/_/g, " ") || "Unknown"}
+                    {s.productVariant?.displayName || s.productVariant?.name || "Unknown"}
                   </span>
                   {s.isRegistered && (
                     <span className="inline-block bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-3 py-1 rounded-full text-xs font-semibold">

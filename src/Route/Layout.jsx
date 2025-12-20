@@ -7,7 +7,7 @@ import { handleLogout } from "../redux/slice/authSlice";
 import { useTheme } from "../hooks/useTheme";
 import { useState } from "react";
 import SampleFormModal from "../components/modals/SampleFormModal";
-import HeavyMetalFormModal from "../components/modals/lab-result_modal/HeavyMetalFormModal";
+import HeavyMetalFormModalNew from "../components/modals/lab-result_modal/HeavyMetalFormModalNew";
 import { fetchSamples } from "../redux/slice/samplesSlice";
 import api from "../utils/api";
 
@@ -32,6 +32,8 @@ const Layout = () => {
       // Refresh samples after successful creation
       dispatch(fetchSamples());
       setShowForm(false);
+      // Optional: Show success message
+      // Toast or notification could go here
     } catch (error) {
       console.error("Failed to create sample:", error);
       throw error;
@@ -61,7 +63,7 @@ const Layout = () => {
           setShowForm={setShowForm}
           setShowHeavyMetalModal={setShowHeavyMetalModal}
         />
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className={`flex-1 p-6 overflow-y-auto ${theme.bg}`}>
           <Outlet />
         </main>
 
@@ -74,7 +76,7 @@ const Layout = () => {
         )}
 
         {showHeavyMetalModal && (
-          <HeavyMetalFormModal
+          <HeavyMetalFormModalNew
             theme={theme}
             onClose={() => setShowHeavyMetalModal(false)}
           />

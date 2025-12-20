@@ -100,14 +100,14 @@ const Agents = ({ theme: propTheme }) => {
               <div className="flex justify-between">
                 <span className={theme?.textMuted}>States:</span>
                 <span className="font-semibold">
-                  {collector.assignedStates.length}
+                  {Object.keys(collector.samplesByState).length}
                 </span>
               </div>
-              {collector.assignedStates.length > 0 && (
+              {Object.keys(collector.samplesByState).length > 0 && (
                 <div className="mt-2 pt-2 border-t border-opacity-20">
                   <p className={`text-xs ${theme?.textMuted} mb-1`}>Active in:</p>
                   <div className="flex flex-wrap gap-1">
-                    {collector.assignedStates.slice(0, 3).map((state) => (
+                    {Object.keys(collector.samplesByState).slice(0, 3).map((state) => (
                       <span
                         key={state}
                         className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded"
@@ -115,9 +115,9 @@ const Agents = ({ theme: propTheme }) => {
                         {state}
                       </span>
                     ))}
-                    {collector.assignedStates.length > 3 && (
+                    {Object.keys(collector.samplesByState).length > 3 && (
                       <span className={`text-xs ${theme?.textMuted}`}>
-                        +{collector.assignedStates.length - 3} more
+                        +{Object.keys(collector.samplesByState).length - 3} more
                       </span>
                     )}
                   </div>
@@ -125,8 +125,8 @@ const Agents = ({ theme: propTheme }) => {
               )}
               <div className="flex justify-between pt-2 border-t border-opacity-20">
                 <span className={theme?.textMuted}>Status:</span>
-                <span className="text-green-500 font-semibold">
-                  {collector.status}
+                <span className={`font-semibold ${collector.isActive ? 'text-green-500' : 'text-gray-500'}`}>
+                  {collector.isActive ? 'Active' : 'Inactive'}
                 </span>
               </div>
             </div>

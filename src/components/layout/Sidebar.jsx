@@ -18,6 +18,7 @@ const roleConfig = {
     excelImport: true,
     navItems: [
       "dashboard",
+      "superadmin",
       "database",
       "map",
       "reports",
@@ -50,6 +51,11 @@ const roleConfig = {
     excelImport: false,
     navItems: ["my-samples"], // My Samples for lab results only
   },
+  labanalyst: {
+    sampleButton: false,
+    excelImport: false,
+    navItems: ["lab-samples"], // Lab analyst - view and confirm AAS readings
+  },
 };
 
 const Sidebar = ({
@@ -75,10 +81,22 @@ const Sidebar = ({
       key: "dashboard",
     },
     {
+      icon: Users,
+      label: "Admin Center",
+      route: "/superadmin",
+      key: "superadmin",
+    },
+    {
       icon: Beaker,
       label: "My Samples",
       route: "/data-collector",
       key: "my-samples",
+    },
+    {
+      icon: Beaker,
+      label: "Lab Samples",
+      route: "/lab-samples",
+      key: "lab-samples",
     },
     {
       icon: Database,
@@ -124,25 +142,30 @@ const Sidebar = ({
   };
 
   return (
-    <div className="pt-5 pl-6 z-[2000] lg:flex lg:gap-6">
+    <div className="pt-5 pl-6 z-[2000] lg:flex lg:gap-6 ">
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden "
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
       <aside
-        className={`fixed lg:sticky top-16 lg:top-24 left-0 z-50
-    h-[calc(100vh-4rem)] lg:h-fit w-64 lg:w-64
-    overflow-y-auto overflow-x-hidden scrollbar-hide
-    ${theme?.card} shadow-xl lg:shadow-md border-r lg:border ${theme?.border}
-    p-4 lg:rounded-lg
-    transform transition-transform duration-300 ease-in-out
-    ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-  `}
+        className={`fixed lg:sticky top-16 lg:top-24 left-0 z-50 pt-16 md:pt-7
+          h-full lg:h-fit w-64 lg:w-64 border-4 
+          ${theme?.card} shadow-xl lg:shadow-md border-r lg:border ${
+          theme?.border
+        }
+          p-4 lg:rounded-lg
+          transform transition-transform duration-300 ease-in-out
+          ${
+            mobileMenuOpen
+              ? "translate-x-0"
+              : "-translate-x-full lg:translate-x-0"
+          }
+        `}
       >
-        <nav className="space-y-2">
+        <nav className="space-y-2  max-h-[500px]  overflow-y-auto ">
           {navItemsToRender.map((item) => (
             <NavItem
               key={item.key}

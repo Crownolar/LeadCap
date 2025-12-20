@@ -1,149 +1,143 @@
-import { X, Camera, Trash2, Loader, MapPin } from "lucide-react";
-import { productTypes, vendorTypes } from "../../utils/constants";
+import { X, Camera, Trash2, Loader, MapPin, File } from "lucide-react";
+import { vendorTypes, sampleTypes } from "../../utils/constants";
 import { useRef, useState, useEffect } from "react";
-import api from "../../utils/api";
+import {
+  getInitialSampleFormState,
+  fetchFormData,
+  filterLGAsByState,
+  filterMarketsByLGA,
+  getVariantsForCategory,
+  fetchVariantsForCategory,
+  handleStateChange,
+  handleLGAChange,
+  handleMarketChange,
+  handleCategoryChange,
+  handleVendorTypeChange,
+  handleFileUpload,
+  removeFile,
+  getCurrentLocation,
+  buildSamplePayload,
+  validateSampleForm,
+} from "../../utils/formHelpers";
 
 const SampleFormModal = ({ theme, onClose, onSubmit }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  const [formData, setFormData] = useState({
-    stateId: "",
-    lgaId: "",
-    productType: "",
-    productName: "",
-    brandName: "",
-    batchNumber: "",
-    price: "",
-    marketId: "",
-    vendorType: "",
-    vendorTypeOther: "",
-    isRegistered: false,
-    gpsLatitude: "",
-    gpsLongitude: "",
-    productOrigin: "LOCAL",
-    navdacNumber: "",
-    sonNumber: "",
-    productPhoto: null,
-  });
+  const [formData, setFormData] = useState(getInitialSampleFormState());
 
   const [states, setStates] = useState([]);
   const [lgas, setLgas] = useState([]);
   const [markets, setMarkets] = useState([]);
+  const [variants, setVariants] = useState([]);
   const [allLgas, setAllLgas] = useState([]);
   const [allMarkets, setAllMarkets] = useState([]);
+  const [categories, setCategories] = useState([]); // Add categories state
   const [loadingData, setLoadingData] = useState(false);
+  const [loadingVariants, setLoadingVariants] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [locationError, setLocationError] = useState(null);
 
   const productPhotoRef = useRef(null);
+  const calibrationCurveRef = useRef(null);
 
-  // Fetch initial data (states and all LGAs/markets for filtering)
+  // Initialize form data
   useEffect(() => {
-    const fetchData = async () => {
+    const initFormData = async () => {
+      // Check if user is authenticated
+      const token = sessionStorage.getItem("accessToken");
+      if (!token) {
+        console.warn("No authentication token found. User must be logged in.");
+        setError("Please log in first to create a sample.");
+        setLoadingData(false);
+        return;
+      }
+
       setLoadingData(true);
       try {
-        const [statesRes, lgasRes, marketsRes] = await Promise.all([
-          api.get("/samples/states/all"),
-          api.get("/samples/lgas/all"),
-          api.get("/samples/markets/all"),
-        ]);
-
-        setStates(statesRes.data.data || []);
-        setAllLgas(lgasRes.data.data || []);
-        setAllMarkets(marketsRes.data.data || []);
+        const data = await fetchFormData();
+        console.log("Fetched data:", data);
+        setStates(data.states || []);
+        setAllLgas(data.allLgas || []);
+        setAllMarkets(data.allMarkets || []);
+        setCategories(data.categories || []); // Store categories from API
       } catch (err) {
-        console.error("Error fetching data:", err);
+        console.error("Error fetching form data:", err);
+        setError(`Failed to load form data: ${err.message || "Please check your internet connection"}`);
+        setStates([]);
+        setAllLgas([]);
+        setAllMarkets([]);
+        setCategories([]);
       } finally {
         setLoadingData(false);
       }
     };
 
-    fetchData();
+    initFormData();
   }, []);
 
-  // Filter LGAs based on selected state
+  // Handle state change
   useEffect(() => {
     if (formData.stateId) {
-      const filteredLgas = allLgas.filter(
-        (lga) => lga.stateId === formData.stateId
-      );
-      setLgas(filteredLgas);
-      setFormData((prev) => ({ ...prev, lgaId: "", marketId: "" })); // Reset LGA and Market selection
+      const filtered = filterLGAsByState(formData.stateId, allLgas);
+      setLgas(filtered);
     } else {
       setLgas([]);
       setMarkets([]);
     }
   }, [formData.stateId, allLgas]);
 
-  // Filter Markets based on selected LGA
+  // Handle LGA change
   useEffect(() => {
     if (formData.lgaId) {
-      const filteredMarkets = allMarkets.filter(
-        (market) => market.lgaId === formData.lgaId
-      );
-      setMarkets(filteredMarkets);
-      setFormData((prev) => ({ ...prev, marketId: "" })); // Reset Market selection
+      const filtered = filterMarketsByLGA(formData.lgaId, allMarkets);
+      setMarkets(filtered);
     } else {
       setMarkets([]);
     }
   }, [formData.lgaId, allMarkets]);
 
-  const handleGetCurrentLocation = () => {
+  // Handle category change - fetch variants from API
+  useEffect(() => {
+    const loadVariants = async () => {
+      if (formData.productCategoryId) {
+        setLoadingVariants(true);
+        setError(null);
+        try {
+          const fetchedVariants = await fetchVariantsForCategory(formData.productCategoryId);
+          if (fetchedVariants.length === 0) {
+            setError("No product variants found for this category. Please try again or select a different category.");
+          }
+          setVariants(fetchedVariants);
+        } catch (err) {
+          console.error("Error loading variants:", err);
+          setError("Failed to load product variants. Please try again.");
+          setVariants([]);
+        } finally {
+          setLoadingVariants(false);
+        }
+      } else {
+        setVariants([]);
+      }
+    };
+
+    loadVariants();
+  }, [formData.productCategoryId]);
+
+  const handleGetCurrentLocation = async () => {
     setGettingLocation(true);
     setLocationError(null);
-
-    if (!navigator.geolocation) {
-      setLocationError("Geolocation is not supported by your browser");
+    try {
+      const location = await getCurrentLocation();
+      setFormData((prev) => ({
+        ...prev,
+        gpsLatitude: location.gpsLatitude,
+        gpsLongitude: location.gpsLongitude,
+      }));
+    } catch (err) {
+      setLocationError(err.message);
+    } finally {
       setGettingLocation(false);
-      return;
     }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        setFormData((prev) => ({
-          ...prev,
-          gpsLatitude: latitude.toFixed(6),
-          gpsLongitude: longitude.toFixed(6),
-        }));
-        setGettingLocation(false);
-        setLocationError(null);
-      },
-      (error) => {
-        let errorMessage = "Unable to get your location";
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage =
-              "Location permission denied. Please enable location access.";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = "Location information is unavailable.";
-            break;
-          case error.TIMEOUT:
-            errorMessage = "Location request timed out.";
-            break;
-          default:
-            errorMessage = "An error occurred while getting your location.";
-        }
-        setLocationError(errorMessage);
-        setGettingLocation(false);
-      }
-    );
-  };
-
-  const handleFileUpload = (e, field) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () =>
-      setFormData((prev) => ({ ...prev, [field]: reader.result }));
-    reader.readAsDataURL(file);
-  };
-
-  const removePhoto = (field) => {
-    setFormData((prev) => ({ ...prev, [field]: null }));
-    if (field === "productPhoto") productPhotoRef.current.value = "";
   };
 
   const handleSubmit = async (e) => {
@@ -151,37 +145,22 @@ const SampleFormModal = ({ theme, onClose, onSubmit }) => {
     setLoading(true);
     setError(null);
 
-    const payload = {
-      stateId: formData.stateId,
-      lgaId: formData.lgaId,
-      marketId: formData.marketId || null,
-      vendorType: formData.vendorType,
-      vendorTypeOther: formData.vendorTypeOther || null,
-      productType: formData.productType,
-      productName: formData.productName,
-      price: parseFloat(formData.price),
-      batchNumber: formData.batchNumber || null,
-      brandName: formData.brandName || null,
-      gpsLatitude: formData.gpsLatitude
-        ? parseFloat(formData.gpsLatitude)
-        : null,
-      gpsLongitude: formData.gpsLongitude
-        ? parseFloat(formData.gpsLongitude)
-        : null,
-      isRegistered: formData.isRegistered,
-      productOrigin: formData.productOrigin,
-      navdacNumber: formData.navdacNumber || null,
-      sonNumber: formData.sonNumber || null,
-      productPhotoUrl: null,
-    };
+    const validation = validateSampleForm(formData);
+    if (!validation.valid) {
+      setError(Object.values(validation.errors).join(", "));
+      setLoading(false);
+      return;
+    }
 
     try {
+      const payload = buildSamplePayload(formData);
       await onSubmit(payload);
       alert("Sample created successfully!");
       onClose();
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to create sample");
-      alert(`${err.response?.data?.message || "Failed to create sample"}`);
+      const errorMsg = err.response?.data?.message || "Failed to create sample";
+      setError(errorMsg);
+      alert(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -215,7 +194,19 @@ const SampleFormModal = ({ theme, onClose, onSubmit }) => {
           </div>
         )}
 
-        {!loadingData && (
+        {!loadingData && error && (
+          <div className='p-6 text-center'>
+            <p className='text-red-600 font-semibold text-lg mb-4'>{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className='px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors'
+            >
+              Refresh Page
+            </button>
+          </div>
+        )}
+
+        {!loadingData && !error && (
           <form
             onSubmit={handleSubmit}
             className='flex-1 overflow-y-auto p-6 space-y-6'
@@ -297,8 +288,32 @@ const SampleFormModal = ({ theme, onClose, onSubmit }) => {
                         {market.name}
                       </option>
                     ))}
+                    <option value='OTHER'>Other (Manual Entry)</option>
                   </select>
                 </div>
+
+                {formData.marketId === "OTHER" && (
+                  <div className='md:col-span-1 animate-in fade-in'>
+                    <label
+                      className={`block text-sm font-medium mb-2 ${theme.text}`}
+                    >
+                      Market Name *
+                    </label>
+                    <input
+                      type='text'
+                      required={formData.marketId === "OTHER"}
+                      value={formData.marketName}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          marketName: e.target.value,
+                        })
+                      }
+                      className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
+                      placeholder='e.g., Local Market, Community Center'
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label
@@ -310,14 +325,7 @@ const SampleFormModal = ({ theme, onClose, onSubmit }) => {
                     required
                     value={formData.vendorType}
                     onChange={(e) => {
-                      setFormData({
-                        ...formData,
-                        vendorType: e.target.value,
-                        vendorTypeOther:
-                          e.target.value === "OTHER"
-                            ? formData.vendorTypeOther
-                            : "",
-                      });
+                      handleVendorTypeChange(e.target.value, formData, setFormData);
                     }}
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
                   >
@@ -427,22 +435,70 @@ const SampleFormModal = ({ theme, onClose, onSubmit }) => {
                   <label
                     className={`block text-sm font-medium mb-2 ${theme.text}`}
                   >
-                    Product Type *
+                    Product Category *
                   </label>
                   <select
                     required
-                    value={formData.productType}
+                    value={formData.productCategoryId}
                     onChange={(e) =>
-                      setFormData({ ...formData, productType: e.target.value })
+                      setFormData({ ...formData, productCategoryId: e.target.value, productVariantId: "" })
+                    }
+                    className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
+                    disabled={categories.length === 0}
+                  >
+                    <option value=''>Select Product Category</option>
+                    {categories.length > 0 ? (
+                      categories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.displayName || category.name}
+                        </option>
+                      ))
+                    ) : (
+                      <option disabled>No categories available</option>
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${theme.text}`}
+                  >
+                    Product Variant *
+                  </label>
+                  <select
+                    required
+                    disabled={!formData.productCategoryId || loadingVariants}
+                    value={formData.productVariantId}
+                    onChange={(e) =>
+                      setFormData({ ...formData, productVariantId: e.target.value })
+                    }
+                    className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50`}
+                  >
+                    <option value=''>{loadingVariants ? 'Loading variants...' : 'Select Product Variant'}</option>
+                    {variants.map((variant) => (
+                      <option key={variant.id} value={variant.id}>
+                        {variant.name || variant.displayName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${theme.text}`}
+                  >
+                    Sample Type *
+                  </label>
+                  <select
+                    required
+                    value={formData.sampleType}
+                    onChange={(e) =>
+                      setFormData({ ...formData, sampleType: e.target.value })
                     }
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
                   >
-                    <option value=''>Select Product Type</option>
-                    {Object.entries(productTypes).map(([key, value]) => (
-                      <option key={key} value={key}>
-                        {value}
-                      </option>
-                    ))}
+                    <option value='SOLID'>Solid (mg/kg)</option>
+                    <option value='LIQUID'>Liquid (mg/L)</option>
                   </select>
                 </div>
 
@@ -604,9 +660,23 @@ const SampleFormModal = ({ theme, onClose, onSubmit }) => {
                   label='Product Photo'
                   photo={formData.productPhoto}
                   refInput={productPhotoRef}
-                  onUpload={(e) => handleFileUpload(e, "productPhoto")}
-                  onRemove={() => removePhoto("productPhoto")}
+                  onUpload={(e) => handleFileUpload(e, "productPhoto", setFormData)}
+                  onRemove={() => removeFile("productPhoto", setFormData, productPhotoRef)}
                   theme={theme}
+                />
+                <FileUpload
+                  label='Calibration Curve Photo'
+                  file={formData.calibrationCurveFile}
+                  refInput={calibrationCurveRef}
+                  onUpload={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setFormData({ ...formData, calibrationCurveFile: file });
+                    }
+                  }}
+                  onRemove={() => setFormData({ ...formData, calibrationCurveFile: null })}
+                  theme={theme}
+                  acceptType='.png,.jpg,.jpeg'
                 />
               </div>
             </section>
@@ -719,6 +789,73 @@ const PhotoUpload = ({ label, photo, refInput, onUpload, onRemove, theme }) => {
         ref={refInput}
         type='file'
         accept='image/*'
+        className='hidden'
+        onChange={handleUpload}
+      />
+    </div>
+  );
+};
+
+const FileUpload = ({ label, file, refInput, onUpload, onRemove, theme, acceptType = '*' }) => {
+  const handleUpload = (e) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+
+    // Validate file size (max 10MB)
+    if (selectedFile.size > 10 * 1024 * 1024) {
+      alert("File size must be less than 10MB");
+      e.target.value = "";
+      return;
+    }
+
+    onUpload(e);
+  };
+
+  return (
+    <div>
+      <label className={`block text-sm font-medium mb-2 ${theme.text}`}>
+        {label}
+      </label>
+      {file ? (
+        <div className='relative group'>
+          <div className={`border rounded-lg p-4 ${theme.border} flex items-center gap-3 bg-emerald-50 dark:bg-emerald-900/20`}>
+            <File className='w-6 h-6 text-emerald-600 flex-shrink-0' />
+            <div className='flex-1 min-w-0'>
+              <p className='text-sm font-medium text-emerald-700 dark:text-emerald-400 truncate'>
+                {file.name}
+              </p>
+              <p className='text-xs text-emerald-600 dark:text-emerald-500'>
+                {(file.size / 1024).toFixed(2)} KB
+              </p>
+            </div>
+            <button
+              type='button'
+              onClick={onRemove}
+              className='bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg opacity-0 group-hover:opacity-100'
+              title='Remove file'
+            >
+              <Trash2 className='w-4 h-4' />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div
+          onClick={() => refInput.current?.click()}
+          className={`border-2 border-dashed ${theme.border} rounded-lg p-8 text-center ${theme.hover} cursor-pointer transition-all hover:border-emerald-500`}
+        >
+          <File className={`w-12 h-12 mx-auto mb-2 ${theme.textMuted}`} />
+          <p className={`text-sm font-medium ${theme.text}`}>
+            Click to upload calibration curve photo
+          </p>
+          <p className={`text-xs ${theme.textMuted} mt-1`}>
+            PNG or JPG up to 10MB
+          </p>
+        </div>
+      )}
+      <input
+        ref={refInput}
+        type='file'
+        accept={acceptType}
         className='hidden'
         onChange={handleUpload}
       />
