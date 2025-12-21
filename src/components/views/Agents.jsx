@@ -1,30 +1,35 @@
 import React, { useEffect, useState } from "react";
-import { useTheme } from "../../hooks/useTheme";
+import { useTheme } from "../../context/ThemeContext";
 import { useSelector } from "react-redux";
 import { Lock } from "lucide-react";
 import api from "../../utils/api";
 
-const Agents = ({ theme: propTheme }) => {
-  const { theme: hookTheme } = useTheme();
+const Agents = () => {
+  const { theme } = useTheme();
   const { currentUser } = useSelector((state) => state.auth);
   const [dataCollectors, setDataCollectors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const theme = propTheme || hookTheme;
-
   // Role-based access control
   const normalizedRole = currentUser?.role?.toLowerCase().replace(/[\s_]/g, "");
   const allowedRoles = ["superadmin", "headresearcher"];
-  
+
   if (!allowedRoles.includes(normalizedRole)) {
     return (
-      <div className={`${theme?.bg} min-h-screen flex items-center justify-center p-4`}>
-        <div className={`${theme?.card} rounded-lg border ${theme?.border} shadow-md p-8 text-center max-w-md`}>
+      <div
+        className={`${theme?.bg} min-h-screen flex items-center justify-center p-4`}
+      >
+        <div
+          className={`${theme?.card} rounded-lg border ${theme?.border} shadow-md p-8 text-center max-w-md`}
+        >
           <Lock className="w-16 h-16 mx-auto mb-4 text-yellow-600" />
-          <h2 className={`${theme?.text} text-2xl font-bold mb-2`}>Access Restricted</h2>
+          <h2 className={`${theme?.text} text-2xl font-bold mb-2`}>
+            Access Restricted
+          </h2>
           <p className={theme?.textMuted}>
-            You do not have permission to view field agents. Only Super Admin and Head Researcher can access this section.
+            You do not have permission to view field agents. Only Super Admin
+            and Head Researcher can access this section.
           </p>
         </div>
       </div>
@@ -105,16 +110,20 @@ const Agents = ({ theme: propTheme }) => {
               </div>
               {Object.keys(collector.samplesByState).length > 0 && (
                 <div className="mt-2 pt-2 border-t border-opacity-20">
-                  <p className={`text-xs ${theme?.textMuted} mb-1`}>Active in:</p>
+                  <p className={`text-xs ${theme?.textMuted} mb-1`}>
+                    Active in:
+                  </p>
                   <div className="flex flex-wrap gap-1">
-                    {Object.keys(collector.samplesByState).slice(0, 3).map((state) => (
-                      <span
-                        key={state}
-                        className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded"
-                      >
-                        {state}
-                      </span>
-                    ))}
+                    {Object.keys(collector.samplesByState)
+                      .slice(0, 3)
+                      .map((state) => (
+                        <span
+                          key={state}
+                          className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded"
+                        >
+                          {state}
+                        </span>
+                      ))}
                     {Object.keys(collector.samplesByState).length > 3 && (
                       <span className={`text-xs ${theme?.textMuted}`}>
                         +{Object.keys(collector.samplesByState).length - 3} more
@@ -125,8 +134,12 @@ const Agents = ({ theme: propTheme }) => {
               )}
               <div className="flex justify-between pt-2 border-t border-opacity-20">
                 <span className={theme?.textMuted}>Status:</span>
-                <span className={`font-semibold ${collector.isActive ? 'text-green-500' : 'text-gray-500'}`}>
-                  {collector.isActive ? 'Active' : 'Inactive'}
+                <span
+                  className={`font-semibold ${
+                    collector.isActive ? "text-green-500" : "text-gray-500"
+                  }`}
+                >
+                  {collector.isActive ? "Active" : "Inactive"}
                 </span>
               </div>
             </div>

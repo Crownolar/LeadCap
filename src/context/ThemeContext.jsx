@@ -10,6 +10,7 @@ const themes = {
     textMuted: "text-gray-500",
     border: "border-gray-200",
     hover: "hover:bg-gray-100",
+    input: "bg-white border-gray-300 text-gray-900",
   },
   dark: {
     bg: "bg-gray-900",
@@ -18,6 +19,7 @@ const themes = {
     textMuted: "text-gray-400",
     border: "border-gray-700",
     hover: "hover:bg-gray-700",
+    input: "bg-gray-700 border-gray-600 text-gray-100",
   },
 };
 

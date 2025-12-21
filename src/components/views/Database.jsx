@@ -3,7 +3,7 @@ import { Search, Download, Lock } from "lucide-react";
 import api from "../../utils/api";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchSamples } from "../../redux/slice/samplesSlice";
-import { useTheme } from "../../hooks/useTheme";
+import { useTheme } from "../../context/ThemeContext";
 import { filterSamples } from "../../utils/helpers";
 import { getContaminationStatus } from "../../utils/chartDataHelpers";
 import SampleDetailModal from "../modals/SampleDetailModal";
@@ -22,7 +22,6 @@ const getMaxReading = (heavyMetalReadings) => {
 };
 
 const Database = ({
-  theme: propTheme,
   searchTerm: propSearchTerm,
   setSearchTerm: propSetSearchTerm,
   filterState: propFilterState,
@@ -36,20 +35,28 @@ const Database = ({
   states: propStates,
 }) => {
   const dispatch = useDispatch();
-  const { theme: hookTheme } = useTheme();
+  const { theme } = useTheme();
   const { samples: reduxSamples } = useSelector((state) => state.samples);
   const { currentUser } = useSelector((state) => state.auth);
 
   // Block DATA_COLLECTOR from accessing this view
-  const isDataCollector = currentUser?.role?.toLowerCase().replace(/[\s_]/g, "") === "datacollector";
+  const isDataCollector =
+    currentUser?.role?.toLowerCase().replace(/[\s_]/g, "") === "datacollector";
   if (isDataCollector) {
     return (
-      <div className={`${hookTheme?.bg} min-h-screen flex items-center justify-center p-4`}>
-        <div className={`${hookTheme?.card} rounded-lg border ${hookTheme?.border} shadow-md p-8 text-center max-w-md`}>
+      <div
+        className={`${hookTheme?.bg} min-h-screen flex items-center justify-center p-4`}
+      >
+        <div
+          className={`${hookTheme?.card} rounded-lg border ${hookTheme?.border} shadow-md p-8 text-center max-w-md`}
+        >
           <Lock className="w-16 h-16 mx-auto mb-4 text-yellow-600" />
-          <h2 className={`${hookTheme?.text} text-2xl font-bold mb-2`}>Access Restricted</h2>
+          <h2 className={`${hookTheme?.text} text-2xl font-bold mb-2`}>
+            Access Restricted
+          </h2>
           <p className={hookTheme?.textMuted}>
-            Data collectors can only view their own collected samples in the <strong>My Samples</strong> section.
+            Data collectors can only view their own collected samples in the{" "}
+            <strong>My Samples</strong> section.
           </p>
         </div>
       </div>
@@ -57,7 +64,8 @@ const Database = ({
   }
 
   // Check if user is HEAD_RESEARCHER (only role that can see Collected By column)
-  const isHeadResearcher = currentUser?.role?.toLowerCase().replace(/[\s_]/g, "") === "headresearcher";
+  const isHeadResearcher =
+    currentUser?.role?.toLowerCase().replace(/[\s_]/g, "") === "headresearcher";
 
   // Local state for standalone mode
   const [localSearchTerm, setLocalSearchTerm] = useState("");
@@ -69,7 +77,6 @@ const Database = ({
   const [localStates, setLocalStates] = useState([]);
 
   // Use props if provided, otherwise fall back to local/Redux values
-  const theme = propTheme || hookTheme;
   const searchTerm = propSearchTerm ?? localSearchTerm;
   const setSearchTerm = propSetSearchTerm || setLocalSearchTerm;
   const filterState = propFilterState ?? localFilterState;
@@ -86,8 +93,23 @@ const Database = ({
   // Compute filtered samples if not provided via props
   const computedFilteredSamples = useMemo(() => {
     if (propFilteredSamples) return propFilteredSamples;
-    return filterSamples(reduxSamples || [], searchTerm, filterState, filterCategory, filterProduct, filterStatus);
-  }, [propFilteredSamples, reduxSamples, searchTerm, filterState, filterCategory, filterProduct, filterStatus]);
+    return filterSamples(
+      reduxSamples || [],
+      searchTerm,
+      filterState,
+      filterCategory,
+      filterProduct,
+      filterStatus
+    );
+  }, [
+    propFilteredSamples,
+    reduxSamples,
+    searchTerm,
+    filterState,
+    filterCategory,
+    filterProduct,
+    filterStatus,
+  ]);
 
   const filteredSamples = computedFilteredSamples;
 
@@ -176,14 +198,18 @@ const Database = ({
             className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
           >
             <option value="all">All Categories</option>
-            {[...new Set(reduxSamples.map((s) => s.productVariant?.categoryId))].filter(Boolean).map((categoryId) => {
-              const category = reduxSamples.find(s => s.productVariant?.categoryId === categoryId)?.productVariant?.category;
-              return (
-                <option key={categoryId} value={categoryId}>
-                  {category?.name || "Unknown"}
-                </option>
-              );
-            })}
+            {[...new Set(reduxSamples.map((s) => s.productVariant?.categoryId))]
+              .filter(Boolean)
+              .map((categoryId) => {
+                const category = reduxSamples.find(
+                  (s) => s.productVariant?.categoryId === categoryId
+                )?.productVariant?.category;
+                return (
+                  <option key={categoryId} value={categoryId}>
+                    {category?.name || "Unknown"}
+                  </option>
+                );
+              })}
           </select>
 
           <select
@@ -192,14 +218,18 @@ const Database = ({
             className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
           >
             <option value="all">All Products</option>
-            {[...new Set(reduxSamples.map((s) => s.productVariant?.id))].filter(Boolean).map((variantId) => {
-              const variant = reduxSamples.find(s => s.productVariant?.id === variantId)?.productVariant;
-              return (
-                <option key={variantId} value={variantId}>
-                  {variant?.displayName || variant?.name || "Unknown"}
-                </option>
-              );
-            })}
+            {[...new Set(reduxSamples.map((s) => s.productVariant?.id))]
+              .filter(Boolean)
+              .map((variantId) => {
+                const variant = reduxSamples.find(
+                  (s) => s.productVariant?.id === variantId
+                )?.productVariant;
+                return (
+                  <option key={variantId} value={variantId}>
+                    {variant?.displayName || variant?.name || "Unknown"}
+                  </option>
+                );
+              })}
           </select>
 
           <select
@@ -260,7 +290,8 @@ const Database = ({
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {filteredSamples?.map((sample) => {
                 const maxReading = getMaxReading(sample?.heavyMetalReadings);
-                const sampleStatus = getContaminationStatus(sample).toLowerCase();
+                const sampleStatus =
+                  getContaminationStatus(sample).toLowerCase();
                 return (
                   <tr key={sample?.id} className={theme?.hover}>
                     <td className="px-4 py-3 whitespace-nowrap font-medium">
@@ -287,7 +318,9 @@ const Database = ({
                     {isHeadResearcher && (
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="font-medium text-sm">
-                          {sample?.creator?.fullName || sample?.creator?.email || "Unknown"}
+                          {sample?.creator?.fullName ||
+                            sample?.creator?.email ||
+                            "Unknown"}
                         </div>
                         <div className={`text-xs ${theme?.textMuted}`}>
                           {sample?.creator?.role?.replace(/_/g, " ") || "N/A"}
@@ -384,7 +417,9 @@ const Database = ({
                 {isHeadResearcher && (
                   <div className="text-sm mb-1">
                     <span className="font-semibold">Collected By:</span>{" "}
-                    {sample?.creator?.fullName || sample?.creator?.email || "Unknown"}
+                    {sample?.creator?.fullName ||
+                      sample?.creator?.email ||
+                      "Unknown"}
                     <div className={`text-xs ${theme?.textMuted}`}>
                       {sample?.creator?.role?.replace(/_/g, " ") || "N/A"}
                     </div>

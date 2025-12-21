@@ -2,14 +2,12 @@ import React, { useState, useEffect } from "react";
 import { Edit2, Trash2, Plus, Search, X, Lock } from "lucide-react";
 import api from "../../utils/api";
 import { useSelector } from "react-redux";
-import { useTheme } from "../../hooks/useTheme";
+import { useTheme } from "../../context/ThemeContext";
 
-const UserManagement = ({ theme, darkMode }) => {
+const UserManagement = () => {
   const { currentUser } = useSelector((state) => state.auth);
-  const { theme: hookTheme } = useTheme();
-  const displayTheme = theme || hookTheme;
+  const { theme } = useTheme();
 
-  // Role-based access control - SUPER_ADMIN only
   const normalizedRole = currentUser?.role?.toLowerCase().replace(/[\s_]/g, "");
 
   if (normalizedRole !== "superadmin") {
@@ -20,7 +18,7 @@ const UserManagement = ({ theme, darkMode }) => {
         <div
           className={`${displayTheme?.card} rounded-lg border ${displayTheme?.border} shadow-md p-8 text-center max-w-md`}
         >
-          <Lock className='w-16 h-16 mx-auto mb-4 text-yellow-600' />
+          <Lock className="w-16 h-16 mx-auto mb-4 text-yellow-600" />
           <h2 className={`${displayTheme?.text} text-2xl font-bold mb-2`}>
             Access Restricted
           </h2>
@@ -142,8 +140,8 @@ const UserManagement = ({ theme, darkMode }) => {
 
   return (
     <div className={`p-6 ${theme?.bg}`}>
-      <div className='mx-auto w-full border border-red-800'>
-        <div className='flex justify-between items-center mb-6'>
+      <div className="mx-auto w-full">
+        <div className="flex justify-between items-center mb-6">
           <h1 className={`text-3xl font-bold ${theme?.text}`}>
             User Management
           </h1>
@@ -159,18 +157,18 @@ const UserManagement = ({ theme, darkMode }) => {
               });
               setShowForm(!showForm);
             }}
-            className='flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg transition'
+            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg transition"
           >
             <Plus size={20} /> Add User
           </button>
         </div>
 
         {error && (
-          <div className='mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg flex justify-between items-center'>
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg flex justify-between items-center">
             <span>{error}</span>
             <button
               onClick={() => setError(null)}
-              className='text-red-700 hover:text-red-900'
+              className="text-red-700 hover:text-red-900"
             >
               <X size={20} />
             </button>
@@ -181,11 +179,11 @@ const UserManagement = ({ theme, darkMode }) => {
           <div
             className={`mb-6 p-6 ${theme?.card} border ${theme?.border} rounded-lg`}
           >
-            <form onSubmit={handleSubmit} className='space-y-4'>
-              <div className='grid grid-cols-2 gap-4'>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
                 <input
-                  type='text'
-                  placeholder='Full Name'
+                  type="text"
+                  placeholder="Full Name"
                   value={formData.fullName}
                   onChange={(e) =>
                     setFormData({ ...formData, fullName: e.target.value })
@@ -194,8 +192,8 @@ const UserManagement = ({ theme, darkMode }) => {
                   required
                 />
                 <input
-                  type='email'
-                  placeholder='Email'
+                  type="email"
+                  placeholder="Email"
                   value={formData.email}
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
@@ -207,8 +205,8 @@ const UserManagement = ({ theme, darkMode }) => {
 
               {!editingId && (
                 <input
-                  type='password'
-                  placeholder='Password'
+                  type="password"
+                  placeholder="Password"
                   onChange={(e) =>
                     setFormData({ ...formData, password: e.target.value })
                   }
@@ -233,8 +231,8 @@ const UserManagement = ({ theme, darkMode }) => {
 
               {formData.role.startsWith("POLICY_MAKER") && (
                 <input
-                  type='text'
-                  placeholder='Organization'
+                  type="text"
+                  placeholder="Organization"
                   value={formData.organization}
                   onChange={(e) =>
                     setFormData({ ...formData, organization: e.target.value })
@@ -244,27 +242,27 @@ const UserManagement = ({ theme, darkMode }) => {
                 />
               )}
 
-              <label className='flex items-center gap-2 cursor-pointer'>
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input
-                  type='checkbox'
+                  type="checkbox"
                   checked={formData.isActive}
                   onChange={(e) =>
                     setFormData({ ...formData, isActive: e.target.checked })
                   }
-                  className='rounded'
+                  className="rounded"
                 />
                 <span className={theme?.text}>Active</span>
               </label>
 
-              <div className='flex gap-2'>
+              <div className="flex gap-2">
                 <button
-                  type='submit'
-                  className='flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-2 rounded-lg transition'
+                  type="submit"
+                  className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-2 rounded-lg transition"
                 >
                   {editingId ? "Update User" : "Create User"}
                 </button>
                 <button
-                  type='button'
+                  type="button"
                   onClick={() => {
                     setShowForm(false);
                     setEditingId(null);
@@ -281,10 +279,10 @@ const UserManagement = ({ theme, darkMode }) => {
         <div
           className={`p-4 ${theme?.card} border ${theme?.border} rounded-lg mb-6 flex gap-4`}
         >
-          <div className='flex-1'>
+          <div className="flex-1">
             <input
-              type='text'
-              placeholder='Search by name or email...'
+              type="text"
+              placeholder="Search by name or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className={`w-full px-4 py-2 border ${theme?.border} rounded-lg ${theme?.input} flex items-center gap-2`}
@@ -295,7 +293,7 @@ const UserManagement = ({ theme, darkMode }) => {
             onChange={(e) => setFilterRole(e.target.value)}
             className={`px-4 py-2 border ${theme?.border} rounded-lg ${theme?.input}`}
           >
-            <option value='all'>All Roles</option>
+            <option value="all">All Roles</option>
             {roles.map((r) => (
               <option key={r} value={r}>
                 {r}
@@ -314,7 +312,7 @@ const UserManagement = ({ theme, darkMode }) => {
           </div>
         ) : (
           <div className={`overflow-x-auto border ${theme?.border} rounded-lg`}>
-            <table className='w-full'>
+            <table className="w-full">
               <thead className={theme?.card}>
                 <tr className={`border-b ${theme?.border}`}>
                   <th className={`px-6 py-3 text-left ${theme?.text}`}>Name</th>
@@ -346,7 +344,7 @@ const UserManagement = ({ theme, darkMode }) => {
                       {user.email}
                     </td>
                     <td className={`px-6 py-3 ${theme?.text}`}>
-                      <span className='bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm'>
+                      <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
                         {user.role}
                       </span>
                     </td>
@@ -365,16 +363,16 @@ const UserManagement = ({ theme, darkMode }) => {
                       </span>
                     </td>
                     <td className={`px-6 py-3 text-center`}>
-                      <div className='flex justify-center gap-2'>
+                      <div className="flex justify-center gap-2">
                         <button
                           onClick={() => handleEdit(user)}
-                          className='text-blue-500 hover:text-blue-700 transition'
+                          className="text-blue-500 hover:text-blue-700 transition"
                         >
                           <Edit2 size={18} />
                         </button>
                         <button
                           onClick={() => handleDelete(user.id)}
-                          className='text-red-500 hover:text-red-700 transition'
+                          className="text-red-500 hover:text-red-700 transition"
                         >
                           <Trash2 size={18} />
                         </button>
