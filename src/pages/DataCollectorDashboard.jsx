@@ -11,29 +11,38 @@ import {
 import { useTheme } from "../hooks/useTheme";
 import HeavyMetalFormModalNew from "../components/modals/lab-result_modal/HeavyMetalFormModalNew";
 import { fetchSamples } from "../redux/slice/samplesSlice";
-import { getMultipleSampleReadings, getSampleReadings } from "../redux/slice/heavyMetalSlice";
+import {
+  getMultipleSampleReadings,
+  getSampleReadings,
+} from "../redux/slice/heavyMetalSlice";
 
 const DataCollectorDashboard = ({ theme: propTheme }) => {
   const dispatch = useDispatch();
   const { currentUser } = useSelector((state) => state.auth);
   const { theme: hookTheme } = useTheme();
-  const { samples: allSamples, loading: samplesLoading, error: samplesError } = useSelector((state) => state.samples);
-  const { readingsBySample, loading: readingsLoading } = useSelector((state) => state.heavyMetal);
-  
+  const {
+    samples: allSamples,
+    loading: samplesLoading,
+    error: samplesError,
+  } = useSelector((state) => state.samples);
+  const { readingsBySample, loading: readingsLoading } = useSelector(
+    (state) => state.heavyMetal
+  );
+
   // Use prop if provided, otherwise fall back to hook theme
   const theme = propTheme || hookTheme;
-  
+
   // Fallback theme object if neither prop nor hook provided
   const fallbackTheme = {
     bg: "bg-gray-900",
-    card: "bg-gray-800", 
+    card: "bg-gray-800",
     text: "text-white",
     textMuted: "text-gray-400",
     border: "border-gray-700",
     input: "bg-gray-700 text-white border-gray-600",
     hover: "hover:bg-gray-700",
   };
-  
+
   const activeTheme = theme || fallbackTheme;
 
   // State management
@@ -76,7 +85,7 @@ const DataCollectorDashboard = ({ theme: propTheme }) => {
   // Fetch heavy metal readings when samples are loaded
   useEffect(() => {
     if (mySamples.length > 0) {
-      const sampleIds = mySamples.map(sample => sample.id);
+      const sampleIds = mySamples.map((sample) => sample.id);
       dispatch(getMultipleSampleReadings(sampleIds));
     }
   }, [dispatch, mySamples.length]);
@@ -99,7 +108,7 @@ const DataCollectorDashboard = ({ theme: propTheme }) => {
     }
     return {
       label: `${readings.length} Results`,
-      color: "bg-green-100 text-green-700", 
+      color: "bg-green-100 text-green-700",
       icon: CheckCircle,
     };
   };
@@ -129,11 +138,13 @@ const DataCollectorDashboard = ({ theme: propTheme }) => {
   return (
     <div className={`min-h-screen ${activeTheme?.bg}`}>
       {/* Header */}
-      <div className={`${activeTheme?.card} border-b ${activeTheme?.border} shadow-md`}>
-        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
-          <div className='flex items-center gap-4 mb-4'>
-            <div className='w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg'>
-              <Beaker className='w-7 h-7 text-white' />
+      <div
+        className={`${activeTheme?.card} border-b ${activeTheme?.border} shadow-md`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+              <Beaker className="w-7 h-7 text-white" />
             </div>
             <div>
               <h1 className={`text-3xl font-bold ${activeTheme?.text}`}>
@@ -151,7 +162,7 @@ const DataCollectorDashboard = ({ theme: propTheme }) => {
           >
             <div className="space-y-2">
               <p className={activeTheme?.text}>
-                <span className='font-semibold'>
+                <span className="font-semibold">
                   Welcome, {currentUser?.fullName}
                 </span>
                 {currentUser?.organization && (
@@ -162,10 +173,13 @@ const DataCollectorDashboard = ({ theme: propTheme }) => {
               </p>
               {supervisor ? (
                 <p className={activeTheme?.textMuted}>
-                  <span className="font-semibold">Supervisor:</span> {supervisor.fullName} ({supervisor.email})
+                  <span className="font-semibold">Supervisor:</span>{" "}
+                  {supervisor.fullName} ({supervisor.email})
                 </p>
               ) : loadingSupervisor ? (
-                <p className={activeTheme?.textMuted}>Loading supervisor info...</p>
+                <p className={activeTheme?.textMuted}>
+                  Loading supervisor info...
+                </p>
               ) : (
                 <p className={activeTheme?.textMuted}>
                   No supervisor assigned yet
@@ -177,13 +191,13 @@ const DataCollectorDashboard = ({ theme: propTheme }) => {
       </div>
 
       {/* Stats Section */}
-      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
-        <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-8'>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Total Samples */}
           <div
             className={`${activeTheme?.card} rounded-lg shadow-md p-6 border ${activeTheme?.border}`}
           >
-            <div className='flex items-center justify-between'>
+            <div className="flex items-center justify-between">
               <div>
                 <p className={`${activeTheme?.textMuted} text-sm font-medium`}>
                   Total Samples
@@ -192,8 +206,8 @@ const DataCollectorDashboard = ({ theme: propTheme }) => {
                   {!samplesLoading ? mySamples.length : "--"}
                 </p>
               </div>
-              <div className='w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center'>
-                <Eye className='w-6 h-6 text-blue-600 dark:text-blue-400' />
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                <Eye className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
           </div>
@@ -202,7 +216,7 @@ const DataCollectorDashboard = ({ theme: propTheme }) => {
           <div
             className={`${activeTheme?.card} rounded-lg shadow-md p-6 border ${activeTheme?.border}`}
           >
-            <div className='flex items-center justify-between'>
+            <div className="flex items-center justify-between">
               <div>
                 <p className={`${activeTheme?.textMuted} text-sm font-medium`}>
                   Pending Results
@@ -213,8 +227,8 @@ const DataCollectorDashboard = ({ theme: propTheme }) => {
                     : "--"}
                 </p>
               </div>
-              <div className='w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center'>
-                <Clock className='w-6 h-6 text-yellow-600 dark:text-yellow-400' />
+              <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
+                <Clock className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
               </div>
             </div>
           </div>
@@ -223,7 +237,7 @@ const DataCollectorDashboard = ({ theme: propTheme }) => {
           <div
             className={`${activeTheme?.card} rounded-lg shadow-md p-6 border ${activeTheme?.border}`}
           >
-            <div className='flex items-center justify-between'>
+            <div className="flex items-center justify-between">
               <div>
                 <p className={`${activeTheme?.textMuted} text-sm font-medium`}>
                   With Results
@@ -234,15 +248,15 @@ const DataCollectorDashboard = ({ theme: propTheme }) => {
                     : "--"}
                 </p>
               </div>
-              <div className='w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center'>
-                <CheckCircle className='w-6 h-6 text-green-600 dark:text-green-400' />
+              <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
             </div>
           </div>
         </div>
 
         {/* Filter Tabs */}
-        <div className='flex gap-3 mb-6 '>
+        <div className="flex gap-3 mb-6 ">
           {[
             { value: "all", label: "All Samples" },
             { value: "pending", label: "Pending Results" },
@@ -265,22 +279,22 @@ const DataCollectorDashboard = ({ theme: propTheme }) => {
 
         {/* Error Message */}
         {samplesError && (
-          <div className='bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg mb-6'>
+          <div className="bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg mb-6">
             {samplesError}
           </div>
         )}
 
         {/* Loading State */}
         {(samplesLoading || readingsLoading) && (
-          <div className='text-center py-12'>
-            <div className='inline-flex items-center gap-2'>
-              <div className='w-2 h-2 bg-emerald-600 rounded-full animate-bounce'></div>
+          <div className="text-center py-12">
+            <div className="inline-flex items-center gap-2">
+              <div className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce"></div>
               <div
-                className='w-2 h-2 bg-emerald-600 rounded-full animate-bounce'
+                className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce"
                 style={{ animationDelay: "0.1s" }}
               ></div>
               <div
-                className='w-2 h-2 bg-emerald-600 rounded-full animate-bounce'
+                className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce"
                 style={{ animationDelay: "0.2s" }}
               ></div>
               <p className={`ml-2 ${activeTheme?.text}`}>
@@ -291,27 +305,29 @@ const DataCollectorDashboard = ({ theme: propTheme }) => {
         )}
 
         {/* Samples List */}
-        {!samplesLoading && !readingsLoading && filteredSamples.length === 0 && (
-          <div
-            className={`${activeTheme?.card} rounded-lg border ${activeTheme?.border} p-12 text-center`}
-          >
-            <Beaker className='w-16 h-16 mx-auto mb-4 text-gray-400' />
-            <p className={`${activeTheme?.text} font-semibold text-lg`}>
-              No samples found
-            </p>
-            <p className={activeTheme?.textMuted}>
-              {filterStatus === "completed"
-                ? "You haven't added results to any samples yet"
-                : filterStatus === "pending"
-                ? "All your samples have results!"
-                : "Start collecting samples to see them here"}
-            </p>
-          </div>
-        )}
+        {!samplesLoading &&
+          !readingsLoading &&
+          filteredSamples.length === 0 && (
+            <div
+              className={`${activeTheme?.card} rounded-lg border ${activeTheme?.border} p-12 text-center`}
+            >
+              <Beaker className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+              <p className={`${activeTheme?.text} font-semibold text-lg`}>
+                No samples found
+              </p>
+              <p className={activeTheme?.textMuted}>
+                {filterStatus === "completed"
+                  ? "You haven't added results to any samples yet"
+                  : filterStatus === "pending"
+                  ? "All your samples have results!"
+                  : "Start collecting samples to see them here"}
+              </p>
+            </div>
+          )}
 
         {/* Samples Grid */}
         {!samplesLoading && !readingsLoading && filteredSamples.length > 0 && (
-          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredSamples.map((sample) => {
               const status = getReadingStatus(sample);
               const StatusIcon = status.icon;
@@ -324,19 +340,19 @@ const DataCollectorDashboard = ({ theme: propTheme }) => {
                   className={`${activeTheme?.card} rounded-xl shadow-md border ${activeTheme?.border} hover:shadow-lg transition-all overflow-hidden`}
                 >
                   {/* Header */}
-                  <div className='bg-gradient-to-r from-emerald-500 to-cyan-500 p-4'>
-                    <h3 className='text-white font-bold text-lg truncate'>
+                  <div className="bg-gradient-to-r from-emerald-500 to-cyan-500 p-4">
+                    <h3 className="text-white font-bold text-lg truncate">
                       {sample.productName}
                     </h3>
-                    <p className='text-emerald-100 text-sm'>
+                    <p className="text-emerald-100 text-sm">
                       {sample.sampleId}
                     </p>
                   </div>
 
                   {/* Content */}
-                  <div className='p-4 space-y-3'>
+                  <div className="p-4 space-y-3">
                     {/* Location Info */}
-                    <div className='space-y-2'>
+                    <div className="space-y-2">
                       <p
                         className={`${activeTheme?.textMuted} text-xs font-semibold uppercase`}
                       >
@@ -351,15 +367,19 @@ const DataCollectorDashboard = ({ theme: propTheme }) => {
                     </div>
 
                     {/* Product Info */}
-                    <div className='grid grid-cols-2 gap-4 pt-3 border-t border-gray-200 dark:border-gray-700'>
+                    <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-200 dark:border-gray-700">
                       <div>
                         <p
                           className={`${activeTheme?.textMuted} text-xs font-semibold uppercase`}
                         >
                           Type
                         </p>
-                        <p className={`${activeTheme?.text} font-medium text-sm`}>
-                          {sample.productVariant?.displayName || sample.productVariant?.name || "Unknown"}
+                        <p
+                          className={`${activeTheme?.text} font-medium text-sm`}
+                        >
+                          {sample.productVariant?.displayName ||
+                            sample.productVariant?.name ||
+                            "Unknown"}
                         </p>
                       </div>
                       <div>
@@ -368,34 +388,36 @@ const DataCollectorDashboard = ({ theme: propTheme }) => {
                         >
                           Price
                         </p>
-                        <p className={`${activeTheme?.text} font-medium text-sm`}>
+                        <p
+                          className={`${activeTheme?.text} font-medium text-sm`}
+                        >
                           ₦{parseFloat(sample.price).toLocaleString()}
                         </p>
                       </div>
                     </div>
 
                     {/* Results Status */}
-                    <div className='pt-3 border-t border-gray-200 dark:border-gray-700'>
+                    <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
                       <div
                         className={`${status.color} px-3 py-2 rounded-lg flex items-center gap-2`}
                       >
-                        <StatusIcon className='w-4 h-4' />
-                        <span className='text-sm font-semibold'>
+                        <StatusIcon className="w-4 h-4" />
+                        <span className="text-sm font-semibold">
                           {status.label}
                         </span>
                       </div>
                       {readings.length > 0 && (
-                        <div className='mt-3 space-y-1'>
+                        <div className="mt-3 space-y-1">
                           <p
                             className={`${activeTheme?.textMuted} text-xs font-semibold uppercase`}
                           >
                             Recorded Metals:
                           </p>
-                          <div className='flex flex-wrap gap-2'>
+                          <div className="flex flex-wrap gap-2">
                             {readings.map((reading) => (
                               <span
                                 key={reading.id}
-                                className='bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded text-xs font-medium'
+                                className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded text-xs font-medium"
                               >
                                 {reading.heavyMetal}
                               </span>
@@ -407,12 +429,12 @@ const DataCollectorDashboard = ({ theme: propTheme }) => {
                   </div>
 
                   {/* Actions */}
-                  <div className='p-4 border-t border-gray-200 dark:border-gray-700'>
+                  <div className="p-4 border-t border-gray-200 dark:border-gray-700">
                     <button
                       onClick={() => handleAddResults(sample)}
-                      className='w-full bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700 text-white font-semibold py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg'
+                      className="w-full bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700 text-white font-semibold py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
                     >
-                      <Plus className='w-5 h-5' />
+                      <Plus className="w-5 h-5" />
                       {readings.length > 0
                         ? "Update Results"
                         : "Add Lab Results"}

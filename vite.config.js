@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "http://localhost:3000",
+        target: "https://194-146-38-237.cloud-xip.com",
         changeOrigin: true,
         secure: false,
       },

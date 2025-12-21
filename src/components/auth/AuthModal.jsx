@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { AlertTriangle, Eye, EyeOff, KeyRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { useDispatch, useSelector } from "react-redux";
 import { handleLogin, handleSignup } from "../../redux/slice/authSlice";
+import PopupModal from "../modals/popUpModal";
 
 const AuthModal = ({ theme }) => {
   const dispatch = useDispatch();
@@ -20,10 +21,12 @@ const AuthModal = ({ theme }) => {
   const [authMode, setAuthMode] = useState("login");
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
+  const [popupMessage, setPopupMessage] = useState("");
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupType, setPopupType] = useState("error");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage("");
 
     if (authMode === "login") {
       const result = await dispatch(
@@ -31,37 +34,52 @@ const AuthModal = ({ theme }) => {
       );
 
       if (handleLogin.fulfilled.match(result)) {
-        const { fullName, role } = result.payload.user;
-        setMessage(`Welcome back, ${fullName || "User"}!`);
+        setPopupMessage(
+          `Welcome back, ${result.payload.user.fullName || "User"}!`
+        );
+        setPopupType("success");
+        setShowPopup(true);
 
-        const normalizedRole = role?.toLowerCase().replace(/[\s_]/g, "");
-
-        if (normalizedRole && normalizedRole.startsWith("policymaker")) {
-          navigate("/map"); // Policy makers access map
-        } else if (normalizedRole === "supervisor") {
-          navigate("/collectors");
-        } else if (normalizedRole === "datacollector") {
+        // Navigate based on role
+        const normalizedRole = result.payload.user.role
+          ?.toLowerCase()
+          .replace(/[\s_]/g, "");
+        if (normalizedRole?.startsWith("policymaker")) navigate("/map");
+        else if (normalizedRole === "supervisor") navigate("/collectors");
+        else if (normalizedRole === "datacollector")
           navigate("/data-collector-welcome");
-        } else if (normalizedRole === "superadmin") {
-          navigate("/invitecodes");
-        } else if (normalizedRole === "headresearcher") {
-          navigate("/database");
-        } else {
-          navigate("/dashboard");
-        }
+        else if (normalizedRole === "superadmin") navigate("/invitecodes");
+        else if (normalizedRole === "headresearcher") navigate("/database");
+        else navigate("/dashboard");
       } else {
-        setMessage(result.payload || "Login failed!");
+        // Display exact error from API
+        setPopupMessage(result.payload || "Login failed. Please try again.");
+        setPopupType("error");
+        setShowPopup(true);
       }
     } else {
+      // Signup
       const result = await dispatch(handleSignup(authForm));
       if (handleSignup.fulfilled.match(result)) {
-        setMessage(result.payload);
+        setPopupMessage(result.payload || "Signup successful!");
+        setPopupType("success");
+        setShowPopup(true);
         setAuthMode("login");
       } else {
-        setMessage(result.payload);
+        setPopupMessage(result.payload || "Signup failed. Please try again.");
+        setPopupType("error");
+        setShowPopup(true);
       }
     }
   };
+
+  useEffect(() => {
+    if (error) {
+      setPopupMessage(error);
+      setPopupType("error");
+      setShowPopup(true);
+    }
+  }, [error]);
 
   return (
     <div
@@ -181,6 +199,12 @@ const AuthModal = ({ theme }) => {
           <p className="text-sm text-center mt-3 text-emerald-400">{message}</p>
         )}
       </div>
+      <PopupModal
+        show={showPopup}
+        message={popupMessage}
+        type={popupType}
+        onClose={() => setShowPopup(false)}
+      />
     </div>
   );
 };

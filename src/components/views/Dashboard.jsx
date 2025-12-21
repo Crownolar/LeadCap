@@ -31,13 +31,21 @@ import {
   deriveDetectionMetrics,
   getContaminationStatus,
 } from "../../utils/chartDataHelpers";
-
+import { useTheme } from "../../context/ThemeContext";
 
 const CustomTooltip = ({ active, payload, label, theme }) => {
   if (active && payload && payload.length) {
     return (
-      <div className={`${theme?.card || 'bg-white'} p-4 rounded-lg shadow-lg border ${theme?.border || 'border-gray-200'}`}>
-        <p className={`font-semibold ${theme?.text || 'text-gray-800'} mb-2`}>{label}</p>
+      <div
+        className={`${
+          theme?.card || "bg-white"
+        } p-4 rounded-lg shadow-lg border ${
+          theme?.border || "border-gray-200"
+        }`}
+      >
+        <p className={`font-semibold ${theme?.text || "text-gray-800"} mb-2`}>
+          {label}
+        </p>
         {payload.map((entry, index) => (
           <p key={index} className="text-sm" style={{ color: entry.color }}>
             {entry.name}: {entry.value}
@@ -49,23 +57,23 @@ const CustomTooltip = ({ active, payload, label, theme }) => {
   return null;
 };
 
-
-const Dashboard = ({ theme, darkMode }) => {
+const Dashboard = () => {
   const { samples, loading, error, errorCode } = useSelector(
     (state) => state.samples
   );
-  
+
   // Filter states
   const [filterState, setFilterState] = useState("all");
   const [filterProduct, setFilterProduct] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [states, setStates] = useState([]);
+  const { theme, darkMode } = useTheme();
 
   // Fetch states on mount
   useEffect(() => {
     const fetchStates = async () => {
       try {
-        const api = await import("../../utils/api").then(m => m.default);
+        const api = await import("../../utils/api").then((m) => m.default);
         const response = await api.get("/management/states");
         setStates(response.data.data || []);
       } catch (err) {
@@ -78,10 +86,15 @@ const Dashboard = ({ theme, darkMode }) => {
   // Filter samples based on filters
   const filteredSamples = useMemo(() => {
     if (!samples) return [];
-    return samples.filter(s => {
+    return samples.filter((s) => {
       if (filterState !== "all" && s.state?.id !== filterState) return false;
-      if (filterProduct !== "all" && s.productVariant?.id !== filterProduct) return false;
-      if (filterStatus !== "all" && getContaminationStatus(s).toLowerCase() !== filterStatus.toLowerCase()) return false;
+      if (filterProduct !== "all" && s.productVariant?.id !== filterProduct)
+        return false;
+      if (
+        filterStatus !== "all" &&
+        getContaminationStatus(s).toLowerCase() !== filterStatus.toLowerCase()
+      )
+        return false;
       return true;
     });
   }, [samples, filterState, filterProduct, filterStatus]);
@@ -92,8 +105,12 @@ const Dashboard = ({ theme, darkMode }) => {
     const contaminated = filteredSamples.filter(
       (s) => getContaminationStatus(s).toLowerCase() === "contaminated"
     ).length;
-    const safe = filteredSamples.filter((s) => getContaminationStatus(s).toLowerCase() === "safe").length;
-    const pending = filteredSamples.filter((s) => getContaminationStatus(s).toLowerCase() === "pending").length;
+    const safe = filteredSamples.filter(
+      (s) => getContaminationStatus(s).toLowerCase() === "safe"
+    ).length;
+    const pending = filteredSamples.filter(
+      (s) => getContaminationStatus(s).toLowerCase() === "pending"
+    ).length;
 
     const byState = Object.entries(
       filteredSamples.reduce((acc, s) => {
@@ -105,7 +122,10 @@ const Dashboard = ({ theme, darkMode }) => {
 
     const byProductType = Object.entries(
       filteredSamples.reduce((acc, s) => {
-        const type = s.productVariant?.category?.name || s.productVariant?.displayName || "Unknown";
+        const type =
+          s.productVariant?.category?.name ||
+          s.productVariant?.displayName ||
+          "Unknown";
         acc[type] = (acc[type] || 0) + 1;
         return acc;
       }, {})
@@ -135,7 +155,10 @@ const Dashboard = ({ theme, darkMode }) => {
     };
   }, [filteredSamples]);
 
-  const exposureData = useMemo(() => aggregateByMonth(filteredSamples, 6), [filteredSamples]);
+  const exposureData = useMemo(
+    () => aggregateByMonth(filteredSamples, 6),
+    [filteredSamples]
+  );
   const locationData = useMemo(
     () => deriveLocationData(filteredSamples).slice(0, 8),
     [filteredSamples]
@@ -194,10 +217,12 @@ const Dashboard = ({ theme, darkMode }) => {
     );
 
   return (
-    <div className={`space-y-6 px-10 ${theme?.text}`}>
+    <div
+      className={`space-y-6 px-10 ${theme.text} transition-colors duration-300`}
+    >
       {/* Filters Section */}
       <div
-        className={`${theme?.card} rounded-lg shadow-md border ${theme?.border} p-4`}
+        className={`${theme.card} rounded-lg shadow-md border ${theme?.border} p-4`}
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="w-full">
@@ -221,14 +246,18 @@ const Dashboard = ({ theme, darkMode }) => {
             className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
           >
             <option value="all">All Products</option>
-            {[...new Set(filteredSamples.map((s) => s.productVariant?.id))].filter(Boolean).map((variantId) => {
-              const variant = filteredSamples.find(s => s.productVariant?.id === variantId)?.productVariant;
-              return (
-                <option key={variantId} value={variantId}>
-                  {variant?.displayName || variant?.name || "Unknown"}
-                </option>
-              );
-            })}
+            {[...new Set(filteredSamples.map((s) => s.productVariant?.id))]
+              .filter(Boolean)
+              .map((variantId) => {
+                const variant = filteredSamples.find(
+                  (s) => s.productVariant?.id === variantId
+                )?.productVariant;
+                return (
+                  <option key={variantId} value={variantId}>
+                    {variant?.displayName || variant?.name || "Unknown"}
+                  </option>
+                );
+              })}
           </select>
 
           <select
@@ -287,7 +316,9 @@ const Dashboard = ({ theme, darkMode }) => {
         <div
           className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
         >
-          <h3 className="text-lg font-semibold mb-4">Contamination Status Trends</h3>
+          <h3 className="text-lg font-semibold mb-4">
+            Contamination Status Trends
+          </h3>
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={exposureData}>
               <defs>
@@ -460,7 +491,7 @@ const Dashboard = ({ theme, darkMode }) => {
                 data={[
                   { name: "Safe", value: analytics.safe },
                   { name: "Contaminated", value: analytics.contaminated },
-                  { name: "Pending", value: analytics.pending }
+                  { name: "Pending", value: analytics.pending },
                 ]}
                 cx="50%"
                 cy="50%"

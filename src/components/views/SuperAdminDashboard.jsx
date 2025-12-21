@@ -12,12 +12,11 @@ import {
   Search,
 } from "lucide-react";
 import StatCard from "../common/StatCard";
-import { useTheme } from "../../hooks/useTheme";
+import { useTheme } from "../../context/ThemeContext";
 import api from "../../utils/api";
 
 const SuperAdminDashboard = ({ theme: propTheme }) => {
-  const { theme: hookTheme } = useTheme();
-  const theme = propTheme || hookTheme;
+  const { theme } = useTheme();
   const { currentUser } = useSelector((state) => state.auth);
 
   // State management
@@ -41,12 +40,12 @@ const SuperAdminDashboard = ({ theme: propTheme }) => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch all users
         const usersRes = await api.get("/users");
         const allUsers = usersRes.data.data || [];
         setUsers(allUsers);
-        
+
         // Fetch states
         const statesRes = await api.get("/management/states");
         const allStates = statesRes.data.data || [];
@@ -54,26 +53,31 @@ const SuperAdminDashboard = ({ theme: propTheme }) => {
 
         // Build supervisors list from users with state assignments
         // Note: We'll need to fetch supervisor details for each supervisor
-        const supervisorUsers = allUsers.filter(u => u.role === 'SUPERVISOR');
+        const supervisorUsers = allUsers.filter((u) => u.role === "SUPERVISOR");
         setSupervisors(supervisorUsers);
 
         // Calculate stats
-        const supervisorCount = allUsers.filter(u => u.role === 'SUPERVISOR').length || 0;
-        const dataCollectorCount = allUsers.filter(u => u.role === 'DATA_COLLECTOR').length || 0;
-        const labAnalystCount = allUsers.filter(u => u.role === 'LAB_ANALYST').length || 0;
+        const supervisorCount =
+          allUsers.filter((u) => u.role === "SUPERVISOR").length || 0;
+        const dataCollectorCount =
+          allUsers.filter((u) => u.role === "DATA_COLLECTOR").length || 0;
+        const labAnalystCount =
+          allUsers.filter((u) => u.role === "LAB_ANALYST").length || 0;
         const stateCount = allStates.length || 0;
 
         setStats({
           supervisors: supervisorCount,
           dataCollectors: dataCollectorCount,
           labAnalysts: labAnalystCount,
-          states: stateCount
+          states: stateCount,
         });
 
         setError(null);
       } catch (err) {
         console.error("Failed to fetch data:", err);
-        setError(err.response?.data?.message || "Failed to load dashboard data");
+        setError(
+          err.response?.data?.message || "Failed to load dashboard data"
+        );
       } finally {
         setLoading(false);
       }
@@ -84,14 +88,20 @@ const SuperAdminDashboard = ({ theme: propTheme }) => {
 
   const hasPermission = () => {
     if (!currentUser) return false;
-    const normalizedRole = currentUser.role?.toLowerCase().replace(/[\s_]/g, "");
-    return normalizedRole === "superadmin" || normalizedRole === "headresearcher";
+    const normalizedRole = currentUser.role
+      ?.toLowerCase()
+      .replace(/[\s_]/g, "");
+    return (
+      normalizedRole === "superadmin" || normalizedRole === "headresearcher"
+    );
   };
 
   const handleAssignStates = async () => {
     // Check permission first
     if (!hasPermission()) {
-      setError("You don't have permission to assign states. Only SUPER_ADMIN or HEAD_RESEARCHER can perform this action.");
+      setError(
+        "You don't have permission to assign states. Only SUPER_ADMIN or HEAD_RESEARCHER can perform this action."
+      );
       return;
     }
 
@@ -102,23 +112,26 @@ const SuperAdminDashboard = ({ theme: propTheme }) => {
 
     try {
       await api.post(`/supervisor/${selectedSupervisor}/states`, {
-        stateIds: selectedStates
+        stateIds: selectedStates,
       });
 
       // Refresh users to get updated supervisor assignments
       const res = await api.get("/users");
       const allUsers = res.data.data || [];
       setUsers(allUsers);
-      const supervisorUsers = allUsers.filter(u => u.role === 'SUPERVISOR');
+      const supervisorUsers = allUsers.filter((u) => u.role === "SUPERVISOR");
       setSupervisors(supervisorUsers);
-      
+
       setShowAssignModal(false);
       setSelectedSupervisor(null);
       setSelectedStates([]);
       alert("States assigned successfully!");
     } catch (err) {
       console.error("Failed to assign states:", err);
-      const errorMsg = err.response?.data?.details || err.response?.data?.message || "Failed to assign states";
+      const errorMsg =
+        err.response?.data?.details ||
+        err.response?.data?.message ||
+        "Failed to assign states";
       setError(errorMsg);
       alert(errorMsg);
     }
@@ -127,40 +140,47 @@ const SuperAdminDashboard = ({ theme: propTheme }) => {
   const handleUnassignState = async (supervisorId, stateId) => {
     // Check permission first
     if (!hasPermission()) {
-      setError("You don't have permission to unassign states. Only SUPER_ADMIN or HEAD_RESEARCHER can perform this action.");
+      setError(
+        "You don't have permission to unassign states. Only SUPER_ADMIN or HEAD_RESEARCHER can perform this action."
+      );
       return;
     }
 
-    if (!window.confirm("Are you sure you want to unassign this state?")) return;
+    if (!window.confirm("Are you sure you want to unassign this state?"))
+      return;
 
     try {
       // Use the assignment endpoint to remove (update with empty states array)
       await api.delete(`/supervisor/${supervisorId}/states/${stateId}`);
-      
+
       const res = await api.get("/users");
       const allUsers = res.data.data || [];
       setUsers(allUsers);
-      const supervisorUsers = allUsers.filter(u => u.role === 'SUPERVISOR');
+      const supervisorUsers = allUsers.filter((u) => u.role === "SUPERVISOR");
       setSupervisors(supervisorUsers);
       alert("State unassigned successfully!");
     } catch (err) {
       console.error("Failed to unassign state:", err);
-      const errorMsg = err.response?.data?.details || err.response?.data?.message || "Failed to unassign state";
+      const errorMsg =
+        err.response?.data?.details ||
+        err.response?.data?.message ||
+        "Failed to unassign state";
       setError(errorMsg);
       alert(errorMsg);
     }
   };
 
   const getSupervisorByRole = (role) => {
-    return users.filter(u => u.role === role);
+    return users.filter((u) => u.role === role);
   };
 
   const filterUsers = (role) => {
-    const filtered = users.filter(u => u.role === role);
+    const filtered = users.filter((u) => u.role === role);
     if (searchTerm) {
       return filtered.filter(
-        u => u.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-             u.email.toLowerCase().includes(searchTerm.toLowerCase())
+        (u) =>
+          u.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          u.email.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     return filtered;
@@ -178,8 +198,12 @@ const SuperAdminDashboard = ({ theme: propTheme }) => {
     <div className="space-y-6">
       {/* HEADER */}
       <div className="mb-6">
-        <h1 className={`text-3xl font-bold ${theme?.text}`}>SuperAdmin Dashboard</h1>
-        <p className={`${theme?.textMuted} mt-1`}>Manage supervisors, states, and users</p>
+        <h1 className={`text-3xl font-bold ${theme.text}`}>
+          SuperAdmin Dashboard
+        </h1>
+        <p className={`${theme.textMuted} mt-1`}>
+          Manage supervisors, states, and users
+        </p>
       </div>
 
       {/* ERROR ALERT */}
@@ -194,12 +218,19 @@ const SuperAdminDashboard = ({ theme: propTheme }) => {
       {!hasPermission() && (
         <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <div className="flex gap-3">
-            <AlertTriangle size={20} className="text-yellow-600 flex-shrink-0 mt-0.5" />
+            <AlertTriangle
+              size={20}
+              className="text-yellow-600 flex-shrink-0 mt-0.5"
+            />
             <div>
-              <h4 className="font-semibold text-yellow-800 mb-1">Limited Permissions</h4>
+              <h4 className="font-semibold text-yellow-800 mb-1">
+                Limited Permissions
+              </h4>
               <p className="text-sm text-yellow-700">
-                Your current role (<strong>{currentUser?.role}</strong>) does not have permission to manage supervisor state assignments. 
-                Only <strong>SUPER_ADMIN</strong> or <strong>HEAD_RESEARCHER</strong> roles can perform these actions.
+                Your current role (<strong>{currentUser?.role}</strong>) does
+                not have permission to manage supervisor state assignments. Only{" "}
+                <strong>SUPER_ADMIN</strong> or <strong>HEAD_RESEARCHER</strong>{" "}
+                roles can perform these actions.
               </p>
             </div>
           </div>
@@ -239,7 +270,9 @@ const SuperAdminDashboard = ({ theme: propTheme }) => {
       </div>
 
       {/* TABS */}
-      <div className={`${theme?.card} rounded-lg shadow-md border ${theme?.border} p-6`}>
+      <div
+        className={`${theme?.card} rounded-lg shadow-md border ${theme?.border} p-6`}
+      >
         <div className="flex gap-4 border-b border-gray-200 dark:border-gray-700 mb-6">
           <button
             onClick={() => setActiveTab("supervisors")}
@@ -267,11 +300,17 @@ const SuperAdminDashboard = ({ theme: propTheme }) => {
         {activeTab === "supervisors" && (
           <div className="space-y-4">
             <div className="flex gap-2 justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Supervisor Management</h3>
+              <h3 className={`text-lg font-semibold ${theme.text}`}>
+                Supervisor Management
+              </h3>
               <button
                 onClick={() => setShowAssignModal(true)}
                 disabled={!hasPermission()}
-                title={!hasPermission() ? "Only SUPER_ADMIN or HEAD_RESEARCHER can assign states" : ""}
+                title={
+                  !hasPermission()
+                    ? "Only SUPER_ADMIN or HEAD_RESEARCHER can assign states"
+                    : ""
+                }
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
                   hasPermission()
                     ? "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
@@ -284,34 +323,46 @@ const SuperAdminDashboard = ({ theme: propTheme }) => {
             </div>
 
             {/* SUPERVISORS LIST */}
-            <div className="space-y-3">
+            <div className={`space-y-3 `}>
               {getSupervisorByRole("SUPERVISOR").length > 0 ? (
-                getSupervisorByRole("SUPERVISOR").map(supervisor => (
+                getSupervisorByRole("SUPERVISOR").map((supervisor) => (
                   <div
                     key={supervisor.id}
-                    className={`${theme?.bg === 'bg-gray-100' ? 'bg-gray-50' : 'bg-gray-900'} p-4 rounded-lg border ${theme?.border}`}
+                    className={`${theme.bg} p-4 rounded-lg border ${theme?.border}`}
                   >
-                    <div className="flex items-start justify-between">
+                    <div className={`flex items-start justify-between `}>
                       <div className="flex-1">
-                        <h4 className="font-semibold text-lg">{supervisor.fullName}</h4>
-                        <p className={`text-sm ${theme?.textMuted}`}>{supervisor.email}</p>
+                        <h4 className={`font-semibold text-lg ${theme.text}`}>
+                          {supervisor.fullName}
+                        </h4>
+                        <p className={`text-sm ${theme?.textMuted}`}>
+                          {supervisor.email}
+                        </p>
                         {supervisor.phone && (
-                          <p className={`text-sm ${theme?.textMuted}`}>{supervisor.phone}</p>
+                          <p className={`text-sm ${theme?.textMuted}`}>
+                            {supervisor.phone}
+                          </p>
                         )}
                       </div>
-                      <div className="flex gap-2">
+                      <div className={`flex gap-2 `}>
                         <button
                           onClick={() => {
                             if (!hasPermission()) {
-                              setError("You don't have permission to edit supervisor states");
+                              setError(
+                                "You don't have permission to edit supervisor states"
+                              );
                               return;
                             }
                             setSelectedSupervisor(supervisor.id);
                             setShowAssignModal(true);
                           }}
                           disabled={!hasPermission()}
-                          title={!hasPermission() ? "Only SUPER_ADMIN or HEAD_RESEARCHER can edit" : "Edit states"}
-                          className={`p-2 rounded transition ${
+                          title={
+                            !hasPermission()
+                              ? "Only SUPER_ADMIN or HEAD_RESEARCHER can edit"
+                              : "Edit states"
+                          }
+                          className={`${theme.text} p-2 rounded transition ${
                             hasPermission()
                               ? "hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer"
                               : "text-gray-400 cursor-not-allowed"
@@ -323,13 +374,16 @@ const SuperAdminDashboard = ({ theme: propTheme }) => {
                     </div>
 
                     {/* ASSIGNED STATES */}
-                    {supervisor.supervisorStates && supervisor.supervisorStates.length > 0 ? (
-                      <div className="mt-4">
-                        <p className={`text-sm font-semibold mb-2 ${theme?.textMuted}`}>
+                    {supervisor.supervisorStates &&
+                    supervisor.supervisorStates.length > 0 ? (
+                      <div className="mt-4 ">
+                        <p
+                          className={`text-sm font-semibold mb-2 bg-blue-700 ${theme?.textMuted}`}
+                        >
                           Assigned States ({supervisor.supervisorStates.length})
                         </p>
                         <div className="flex flex-wrap gap-2">
-                          {supervisor.supervisorStates.map(ss => (
+                          {supervisor.supervisorStates.map((ss) => (
                             <div
                               key={ss.stateId}
                               className="flex items-center gap-2 px-3 py-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 rounded-full text-sm"
@@ -337,9 +391,15 @@ const SuperAdminDashboard = ({ theme: propTheme }) => {
                               <MapPin size={14} />
                               {ss.state?.name || "Unknown State"}
                               <button
-                                onClick={() => handleUnassignState(supervisor.id, ss.stateId)}
+                                onClick={() =>
+                                  handleUnassignState(supervisor.id, ss.stateId)
+                                }
                                 disabled={!hasPermission()}
-                                title={!hasPermission() ? "Only SUPER_ADMIN or HEAD_RESEARCHER can remove" : "Remove state assignment"}
+                                title={
+                                  !hasPermission()
+                                    ? "Only SUPER_ADMIN or HEAD_RESEARCHER can remove"
+                                    : "Remove state assignment"
+                                }
                                 className={`ml-1 transition ${
                                   hasPermission()
                                     ? "hover:text-red-600 cursor-pointer"
@@ -398,18 +458,25 @@ const SuperAdminDashboard = ({ theme: propTheme }) => {
 
             {/* DATA COLLECTORS */}
             <div>
-              <h4 className="font-semibold mb-3 flex items-center gap-2">
-                <Users size={18} /> Data Collectors ({filterUsers("DATA_COLLECTOR").length})
+              <h4
+                className={` ${theme.text} font-semibold mb-3 flex items-center gap-2`}
+              >
+                <Users size={18} /> Data Collectors (
+                {filterUsers("DATA_COLLECTOR").length})
               </h4>
               <div className="space-y-2 ml-4">
-                {filterUsers("DATA_COLLECTOR").map(user => (
+                {filterUsers("DATA_COLLECTOR").map((user) => (
                   <div
                     key={user.id}
-                    className={`${theme?.bg === 'bg-gray-100' ? 'bg-gray-50' : 'bg-gray-900'} p-3 rounded border ${theme?.border} flex justify-between items-center`}
+                    className={`${theme.bg} p-3 rounded border ${theme?.border} flex justify-between items-center`}
                   >
                     <div>
-                      <p className="font-semibold">{user.fullName}</p>
-                      <p className={`text-sm ${theme?.textMuted}`}>{user.email}</p>
+                      <p className={` ${theme.text} font-semibold`}>
+                        {user.fullName}
+                      </p>
+                      <p className={`text-sm ${theme?.textMuted}`}>
+                        {user.email}
+                      </p>
                     </div>
                     <div className="flex items-center gap-2">
                       {user.supervisorId && (
@@ -430,18 +497,25 @@ const SuperAdminDashboard = ({ theme: propTheme }) => {
 
             {/* LAB ANALYSTS */}
             <div>
-              <h4 className="font-semibold mb-3 flex items-center gap-2">
-                <Users size={18} /> Lab Analysts ({filterUsers("LAB_ANALYST").length})
+              <h4
+                className={` ${theme.text} font-semibold mb-3 flex items-center gap-2`}
+              >
+                <Users size={18} /> Lab Analysts (
+                {filterUsers("LAB_ANALYST").length})
               </h4>
               <div className="space-y-2 ml-4">
-                {filterUsers("LAB_ANALYST").map(user => (
+                {filterUsers("LAB_ANALYST").map((user) => (
                   <div
                     key={user.id}
-                    className={`${theme?.bg === 'bg-gray-100' ? 'bg-gray-50' : 'bg-gray-900'} p-3 rounded border ${theme?.border} flex justify-between items-center`}
+                    className={`${theme.bg} p-3 rounded border ${theme?.border} flex justify-between items-center`}
                   >
                     <div>
-                      <p className="font-semibold">{user.fullName}</p>
-                      <p className={`text-sm ${theme?.textMuted}`}>{user.email}</p>
+                      <p className={` ${theme.text} font-semibold`}>
+                        {user.fullName}
+                      </p>
+                      <p className={`text-sm ${theme?.textMuted}`}>
+                        {user.email}
+                      </p>
                     </div>
                     {user.isActive ? (
                       <CheckCircle size={16} className="text-green-600" />
@@ -455,19 +529,37 @@ const SuperAdminDashboard = ({ theme: propTheme }) => {
 
             {/* POLICY MAKERS */}
             <div>
-              <h4 className="font-semibold mb-3 flex items-center gap-2">
-                <Users size={18} /> Policy Makers ({filterUsers("POLICY_MAKER_SON").length + filterUsers("POLICY_MAKER_NAFDAC").length + filterUsers("POLICY_MAKER_RESOLVE").length + filterUsers("POLICY_MAKER_UNIVERSITY").length})
+              <h4
+                className={` ${theme.text} font-semibold mb-3 flex items-center gap-2`}
+              >
+                <Users size={18} /> Policy Makers (
+                {filterUsers("POLICY_MAKER_SON").length +
+                  filterUsers("POLICY_MAKER_NAFDAC").length +
+                  filterUsers("POLICY_MAKER_RESOLVE").length +
+                  filterUsers("POLICY_MAKER_UNIVERSITY").length}
+                )
               </h4>
               <div className="space-y-2 ml-4">
-                {[...filterUsers("POLICY_MAKER_SON"), ...filterUsers("POLICY_MAKER_NAFDAC"), ...filterUsers("POLICY_MAKER_RESOLVE"), ...filterUsers("POLICY_MAKER_UNIVERSITY")].map(user => (
+                {[
+                  ...filterUsers("POLICY_MAKER_SON"),
+                  ...filterUsers("POLICY_MAKER_NAFDAC"),
+                  ...filterUsers("POLICY_MAKER_RESOLVE"),
+                  ...filterUsers("POLICY_MAKER_UNIVERSITY"),
+                ].map((user) => (
                   <div
                     key={user.id}
-                    className={`${theme?.bg === 'bg-gray-100' ? 'bg-gray-50' : 'bg-gray-900'} p-3 rounded border ${theme?.border} flex justify-between items-center`}
+                    className={`${theme.bg} p-3 rounded border ${theme?.border} flex justify-between items-center`}
                   >
                     <div>
-                      <p className="font-semibold">{user.fullName}</p>
-                      <p className={`text-sm ${theme?.textMuted}`}>{user.email}</p>
-                      <p className="text-xs text-gray-500">{user.role.replace("POLICY_MAKER_", "")}</p>
+                      <p className={` ${theme.text} font-semibold`}>
+                        {user.fullName}
+                      </p>
+                      <p className={`text-sm ${theme.textMuted}`}>
+                        {user.email}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {user.role.replace("POLICY_MAKER_", "")}
+                      </p>
                     </div>
                     {user.isActive ? (
                       <CheckCircle size={16} className="text-green-600" />
@@ -485,19 +577,27 @@ const SuperAdminDashboard = ({ theme: propTheme }) => {
       {/* ASSIGN STATES MODAL */}
       {showAssignModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className={`${theme?.card} rounded-lg shadow-lg p-6 max-w-md w-full`}>
-            <h2 className="text-xl font-bold mb-4">Assign States to Supervisor</h2>
+          <div
+            className={`${theme?.card} rounded-lg shadow-lg p-6 max-w-md w-full`}
+          >
+            <h2 className={`text-xl font-bold mb-4 ${theme.text}`}>
+              Assign States to Supervisor
+            </h2>
 
             {/* SELECT SUPERVISOR */}
             <div className="mb-4">
-              <label className="block text-sm font-semibold mb-2">Select Supervisor</label>
+              <label
+                className={`${theme.text} block text-sm font-semibold mb-2`}
+              >
+                Select Supervisor
+              </label>
               <select
                 value={selectedSupervisor || ""}
                 onChange={(e) => setSelectedSupervisor(e.target.value)}
                 className={`w-full px-3 py-2 border rounded-lg ${theme?.input}`}
               >
                 <option value="">Choose a supervisor...</option>
-                {getSupervisorByRole("SUPERVISOR").map(sup => (
+                {getSupervisorByRole("SUPERVISOR").map((sup) => (
                   <option key={sup.id} value={sup.id}>
                     {sup.fullName} ({sup.email})
                   </option>
@@ -507,10 +607,19 @@ const SuperAdminDashboard = ({ theme: propTheme }) => {
 
             {/* SELECT STATES */}
             <div className="mb-4">
-              <label className="block text-sm font-semibold mb-2">Select States</label>
-              <div className="border rounded-lg p-3 max-h-64 overflow-y-auto bg-gray-50 dark:bg-gray-900">
-                {states.map(state => (
-                  <label key={state.id} className="flex items-center gap-2 py-2 cursor-pointer">
+              <label
+                className={`block text-sm font-semibold mb-2 ${theme.text}`}
+              >
+                Select States
+              </label>
+              <div
+                className={`${theme.text} border rounded-lg p-3 max-h-64 overflow-y-auto  ${theme.bg}`}
+              >
+                {states.map((state) => (
+                  <label
+                    key={state.id}
+                    className="flex items-center gap-2 py-2 cursor-pointer"
+                  >
                     <input
                       type="checkbox"
                       checked={selectedStates.includes(state.id)}
@@ -518,7 +627,9 @@ const SuperAdminDashboard = ({ theme: propTheme }) => {
                         if (e.target.checked) {
                           setSelectedStates([...selectedStates, state.id]);
                         } else {
-                          setSelectedStates(selectedStates.filter(id => id !== state.id));
+                          setSelectedStates(
+                            selectedStates.filter((id) => id !== state.id)
+                          );
                         }
                       }}
                       className="rounded"
@@ -530,7 +641,7 @@ const SuperAdminDashboard = ({ theme: propTheme }) => {
             </div>
 
             {/* BUTTONS */}
-            <div className="flex gap-3">
+            <div className={`${theme.text} flex gap-3`}>
               <button
                 onClick={() => {
                   setShowAssignModal(false);

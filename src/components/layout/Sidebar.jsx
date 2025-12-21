@@ -10,6 +10,7 @@ import {
   Settings,
 } from "lucide-react";
 import { useSelector } from "react-redux";
+import { useTheme } from "../../context/ThemeContext";
 import NavItem from "../common/NavItem";
 
 const roleConfig = {
@@ -59,10 +60,8 @@ const roleConfig = {
 };
 
 const Sidebar = ({
-  theme,
   mobileMenuOpen,
   setMobileMenuOpen,
-  darkMode,
   setShowForm,
   setShowHeavyMetalModal,
   excelImportRef,
@@ -71,7 +70,7 @@ const Sidebar = ({
 
   const normalizedRole = currentUser?.role?.toLowerCase().replace(/[\s_]/g, "");
   const config = roleConfig[normalizedRole] || roleConfig.superadmin;
-  // const canImportExcel = ["superadmin", "headresearcher"].includes(normalizedRole);
+  const { theme, darkMode } = useTheme();
 
   const allNavItems = [
     {
@@ -179,7 +178,7 @@ const Sidebar = ({
           ))}
         </nav>
 
-        <div className="mt-6 pt-6 border-t border-gray-700 space-y-2">
+        <div className={`mt-6 pt-6 border-t ${theme.border} space-y-2`}>
           {/* SAMPLE BUTTON ONLY FOR roles WITH sampleButton = true */}
           {config.sampleButton && (
             <button

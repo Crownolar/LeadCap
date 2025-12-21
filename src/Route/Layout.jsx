@@ -4,7 +4,7 @@ import Header from "../components/layout/Header";
 import Sidebar from "../components/layout/Sidebar";
 import { useSelector, useDispatch } from "react-redux";
 import { handleLogout } from "../redux/slice/authSlice";
-import { useTheme } from "../hooks/useTheme";
+import { useTheme } from "../context/ThemeContext";
 import { useState } from "react";
 import SampleFormModal from "../components/modals/SampleFormModal";
 import HeavyMetalFormModalNew from "../components/modals/lab-result_modal/HeavyMetalFormModalNew";
