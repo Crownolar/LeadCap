@@ -52,6 +52,7 @@ const AuthModal = () => {
           navigate("/data-collector-welcome");
         else if (normalizedRole === "superadmin") navigate("/invitecodes");
         else if (normalizedRole === "headresearcher") navigate("/database");
+        else if (normalizedRole === "labanalyst") navigate("/lab-samples");
         else navigate("/dashboard");
       } else {
         // Display exact error from API

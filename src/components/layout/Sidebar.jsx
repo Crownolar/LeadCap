@@ -42,6 +42,11 @@ const roleConfig = {
     excelImport: false,
     navItems: ["dashboard", "map"], // DASHBOARD AND MAP
   },
+  policymakernafdac: {
+    sampleButton: false,
+    excelImport: false,
+    navItems: ["dashboard", "map"],
+  },
   supervisor: {
     sampleButton: false,
     excelImport: false,
