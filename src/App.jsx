@@ -66,6 +66,10 @@ const App = () => {
     if (isAuthenticated && currentUser) {
       dispatch(fetchSamples({ page: 1, limit: 5000 }));
     }
+
+    if (!isAuthenticated) {
+      navigate("/auth");
+    }
   }, [dispatch, isAuthenticated, currentUser]);
 
   return (

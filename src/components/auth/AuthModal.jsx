@@ -47,8 +47,12 @@ const AuthModal = () => {
           ?.toLowerCase()
           .replace(/[\s_]/g, "");
         if (normalizedRole?.startsWith("policymaker")) navigate("/map");
-        else if (normalizedRole === "supervisor") navigate("/collectors");
-        else if (normalizedRole === "datacollector")
+        else if (normalizedRole === "supervisor") {
+          setTimeout(() => {
+            setShowPopup(false);
+            navigate("/collectors");
+          }, 800);
+        } else if (normalizedRole === "datacollector")
           navigate("/data-collector-welcome");
         else if (normalizedRole === "superadmin") navigate("/invitecodes");
         else if (normalizedRole === "headresearcher") navigate("/database");
@@ -64,12 +68,16 @@ const AuthModal = () => {
       // Signup
       const result = await dispatch(handleSignup(authForm));
       if (handleSignup.fulfilled.match(result)) {
-        setPopupMessage(result.payload || "Signup successful!");
+        setPopupMessage(result.payload.message || "Signup successful!");
         setPopupType("success");
         setShowPopup(true);
         setAuthMode("login");
       } else {
-        setPopupMessage(result.payload || "Signup failed. Please try again.");
+        setPopupMessage(
+          result.payload?.message ||
+            result.payload ||
+            "Signup failed. Please try again."
+        );
         setPopupType("error");
         setShowPopup(true);
       }
@@ -199,7 +207,11 @@ const AuthModal = () => {
         </form>
 
         {message && (
-          <p className="text-sm text-center mt-3 text-emerald-400">{message}</p>
+          <p className="text-sm text-center mt-3 text-emerald-400">
+            {typeof message === "string"
+              ? message
+              : message?.message || "Something went wrong"}
+          </p>
         )}
       </div>
       <PopupModal

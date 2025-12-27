@@ -184,6 +184,7 @@ export const handleSignup = createAsyncThunk(
 
       return rejectWithValue(res.data?.message || "Signup failed");
     } catch (err) {
+      console.log("Signup error:", err.response?.data);
       return rejectWithValue(
         err.response?.data?.message || "Signup failed. Try again."
       );

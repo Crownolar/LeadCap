@@ -1,7 +1,8 @@
 import axios from "axios";
+import { handleLogout } from "../redux/slice/authSlice";
 
 const api = axios.create({
-  baseURL: "/api",
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -26,6 +27,8 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       sessionStorage.clear();
+      window.location.href = "/auth";
+      store.dispatch(handleLogout());
     }
     return Promise.reject(error);
   }
