@@ -8,7 +8,7 @@ import { useTheme } from "../context/ThemeContext";
 import { useState } from "react";
 import SampleFormModal from "../components/modals/SampleFormModal";
 import HeavyMetalFormModalNew from "../components/modals/lab-result_modal/HeavyMetalFormModalNew";
-import { fetchSamples } from "../redux/slice/samplesSlice";
+import { createSample, fetchSamples } from "../redux/slice/samplesSlice";
 import api from "../utils/api";
 import useRoleDataLoader from "../hooks/useRoleDataLoader";
 

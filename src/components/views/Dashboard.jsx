@@ -39,15 +39,23 @@ const CustomTooltip = ({ active, payload, label, theme }) => {
       <div
         className={`${
           theme?.card || "bg-white"
-        } p-4 rounded-lg shadow-lg border ${
+        } p-2 sm:p-3 md:p-4 rounded-lg shadow-lg border ${
           theme?.border || "border-gray-200"
         }`}
       >
-        <p className={`font-semibold ${theme?.text || "text-gray-800"} mb-2`}>
+        <p
+          className={`font-semibold text-xs sm:text-sm ${
+            theme?.text || "text-gray-800"
+          } mb-1 sm:mb-2`}
+        >
           {label}
         </p>
         {payload.map((entry, index) => (
-          <p key={index} className="text-sm" style={{ color: entry.color }}>
+          <p
+            key={index}
+            className="text-xs sm:text-sm"
+            style={{ color: entry.color }}
+          >
             {entry.name}: {entry.value}
           </p>
         ))}
@@ -170,30 +178,32 @@ const Dashboard = () => {
 
   if (error) {
     return (
-      <div className="w-full flex justify-center mt-10">
+      <div className="w-full flex justify-center mt-6 sm:mt-10 px-3 sm:px-4">
         <div
           className={`border-l-4 ${
             errorCode === 401
-              ? "border-red-600 bg-red-50 text-red-700"
-              : "border-yellow-500 bg-yellow-50 text-yellow-700"
-          } p-4 rounded shadow max-w-xl`}
+              ? "border-red-600 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+              : "border-yellow-500 bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
+          } p-3 sm:p-4 rounded shadow max-w-xl w-full`}
         >
-          <h2 className="font-semibold text-lg flex items-center gap-2">
+          <h2 className="font-semibold text-base sm:text-lg flex items-center gap-2">
             {errorCode === 401 ? (
               <>
-                <AlertTriangle size={20} /> Authentication Error
+                <AlertTriangle size={18} className="sm:w-5 sm:h-5" />{" "}
+                Authentication Error
               </>
             ) : (
               <>
-                <AlertTriangle size={20} /> Server Error
+                <AlertTriangle size={18} className="sm:w-5 sm:h-5" /> Server
+                Error
               </>
             )}
           </h2>
-          <p className="mt-1 text-sm">{error}</p>
+          <p className="mt-1 text-xs sm:text-sm">{error}</p>
           {error?.status === 401 && (
             <button
               onClick={() => (window.location.href = "/login")}
-              className="mt-3 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
+              className="mt-3 px-3 py-1.5 sm:px-4 sm:py-2 bg-red-600 text-white rounded hover:bg-red-700 transition text-sm"
             >
               Login Again
             </button>
@@ -205,31 +215,35 @@ const Dashboard = () => {
 
   if (loading)
     return (
-      <p className={`text-center mt-10 text-lg animate-pulse ${theme?.text}`}>
+      <p
+        className={`text-center mt-6 sm:mt-10 text-base sm:text-lg animate-pulse ${theme?.text} px-4`}
+      >
         Loading dashboard data...
       </p>
     );
   if (!samples || samples.length === 0)
     return (
-      <p className={`text-center mt-10 text-lg ${theme?.text}`}>
+      <p
+        className={`text-center mt-6 sm:mt-10 text-base sm:text-lg ${theme?.text} px-4`}
+      >
         No samples found.
       </p>
     );
 
   return (
     <div
-      className={`space-y-6 px-10 ${theme.text} transition-colors duration-300`}
+      className={`space-y-4 sm:space-y-6 px-3 sm:px-4 md:px-6 lg:px-10 ${theme.text} transition-colors duration-300`}
     >
       {/* Filters Section */}
       <div
-        className={`${theme.card} rounded-lg shadow-md border ${theme?.border} p-4`}
+        className={`${theme.card} rounded-lg shadow-md border ${theme?.border} p-3 sm:p-4`}
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           <div className="w-full">
             <select
               value={filterState}
               onChange={(e) => setFilterState(e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm`}
+              className={`w-full px-3 py-2 sm:px-4 text-sm sm:text-base border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
             >
               <option value="all">All States</option>
               {states.map((state) => (
@@ -243,7 +257,7 @@ const Dashboard = () => {
           <select
             value={filterProduct}
             onChange={(e) => setFilterProduct(e.target.value)}
-            className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
+            className={`w-full px-3 py-2 sm:px-4 text-sm sm:text-base border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
           >
             <option value="all">All Products</option>
             {[...new Set(filteredSamples.map((s) => s.productVariant?.id))]
@@ -263,7 +277,7 @@ const Dashboard = () => {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
+            className={`w-full px-3 py-2 sm:px-4 text-sm sm:text-base border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500 sm:col-span-2 lg:col-span-1`}
           >
             <option value="all">All Status</option>
             <option value="safe">Safe</option>
@@ -274,7 +288,8 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           icon={Package}
           label="Total Samples"
@@ -312,14 +327,19 @@ const Dashboard = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Charts Grid 1: Area & Radar */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <div
-          className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
+          className={`${theme?.card} rounded-lg shadow-md p-4 sm:p-6 border ${theme?.border}`}
         >
-          <h3 className="text-lg font-semibold mb-4">
+          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
             Contamination Status Trends
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer
+            width="100%"
+            height={250}
+            className="sm:h-[300px]"
+          >
             <AreaChart data={exposureData}>
               <defs>
                 <linearGradient id="colorDetected" x1="0" y1="0" x2="0" y2="1">
@@ -332,10 +352,10 @@ const Dashboard = () => {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="month" stroke="#6b7280" />
-              <YAxis stroke="#6b7280" />
+              <XAxis dataKey="month" stroke="#6b7280" tick={{ fontSize: 12 }} />
+              <YAxis stroke="#6b7280" tick={{ fontSize: 12 }} />
               <RechartsTooltip content={<CustomTooltip theme={theme} />} />
-              <Legend />
+              <Legend wrapperStyle={{ fontSize: "12px" }} />
               <Area
                 type="monotone"
                 dataKey="safe"
@@ -357,16 +377,29 @@ const Dashboard = () => {
         </div>
 
         <div
-          className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
+          className={`${theme?.card} rounded-lg shadow-md p-4 sm:p-6 border ${theme?.border}`}
         >
-          <h3 className="text-lg font-semibold mb-4">
+          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
             Detection Capacity Metrics
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer
+            width="100%"
+            height={250}
+            className="sm:h-[300px]"
+          >
             <RadarChart data={detectionMetrics}>
               <PolarGrid stroke="#e5e7eb" />
-              <PolarAngleAxis dataKey="metric" stroke="#6b7280" />
-              <PolarRadiusAxis angle={90} domain={[0, 100]} stroke="#6b7280" />
+              <PolarAngleAxis
+                dataKey="metric"
+                stroke="#6b7280"
+                tick={{ fontSize: 11 }}
+              />
+              <PolarRadiusAxis
+                angle={90}
+                domain={[0, 100]}
+                stroke="#6b7280"
+                tick={{ fontSize: 10 }}
+              />
               <Radar
                 name="Capacity Score"
                 dataKey="value"
@@ -380,20 +413,30 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Composed Chart */}
       <div
-        className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
+        className={`${theme?.card} rounded-lg shadow-md p-4 sm:p-6 border ${theme?.border}`}
       >
-        <h3 className="text-lg font-semibold mb-4">
+        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
           Monthly Analysis & Critical Cases
         </h3>
-        <ResponsiveContainer width="100%" height={400}>
+        <ResponsiveContainer
+          width="100%"
+          height={300}
+          className="sm:h-[350px] md:h-[400px]"
+        >
           <ComposedChart data={exposureData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="month" stroke="#6b7280" />
-            <YAxis yAxisId="left" stroke="#6b7280" />
-            <YAxis yAxisId="right" orientation="right" stroke="#6b7280" />
+            <XAxis dataKey="month" stroke="#6b7280" tick={{ fontSize: 11 }} />
+            <YAxis yAxisId="left" stroke="#6b7280" tick={{ fontSize: 11 }} />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              stroke="#6b7280"
+              tick={{ fontSize: 11 }}
+            />
             <RechartsTooltip content={<CustomTooltip theme={theme} />} />
-            <Legend />
+            <Legend wrapperStyle={{ fontSize: "11px" }} />
             <Bar
               yAxisId="left"
               dataKey="detected"
@@ -413,30 +456,39 @@ const Dashboard = () => {
               type="monotone"
               dataKey="capacity"
               stroke="#3b82f6"
-              strokeWidth={3}
+              strokeWidth={2}
               name="Contamination Rate %"
-              dot={{ r: 6, fill: "#3b82f6" }}
+              dot={{ r: 4, fill: "#3b82f6" }}
             />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
 
+      {/* Location Analysis */}
       <div
-        className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
+        className={`${theme?.card} rounded-lg shadow-md p-4 sm:p-6 border ${theme?.border}`}
       >
-        <h3 className="text-lg font-semibold mb-4">Location Analysis</h3>
-        <ResponsiveContainer width="100%" height={400}>
+        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
+          Location Analysis
+        </h3>
+        <ResponsiveContainer
+          width="100%"
+          height={300}
+          className="sm:h-[350px] md:h-[400px]"
+        >
           <BarChart data={locationData} layout="vertical">
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis type="number" stroke="#6b7280" />
+            <XAxis type="number" stroke="#6b7280" tick={{ fontSize: 11 }} />
             <YAxis
               dataKey="location"
               type="category"
               stroke="#6b7280"
-              width={120}
+              width={80}
+              tick={{ fontSize: 10 }}
+              className="sm:w-[100px] md:w-[120px]"
             />
             <RechartsTooltip content={<CustomTooltip theme={theme} />} />
-            <Legend />
+            <Legend wrapperStyle={{ fontSize: "11px" }} />
             <Bar
               dataKey="exposure"
               fill="#8b5cf6"
@@ -453,21 +505,27 @@ const Dashboard = () => {
         </ResponsiveContainer>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Pie Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <div
-          className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
+          className={`${theme?.card} rounded-lg shadow-md p-4 sm:p-6 border ${theme?.border}`}
         >
-          <h3 className="text-lg font-semibold mb-4">
+          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
             Product Type Distribution
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer
+            width="100%"
+            height={250}
+            className="sm:h-[300px]"
+          >
             <PieChart>
               <Pie
                 data={analytics.byProductType}
                 cx="50%"
                 cy="50%"
-                outerRadius={100}
-                label
+                outerRadius={80}
+                label={(entry) => entry.name}
+                labelLine={{ stroke: "#6b7280", strokeWidth: 1 }}
                 dataKey="value"
               >
                 {analytics.byProductType.map((_, i) => (
@@ -480,12 +538,16 @@ const Dashboard = () => {
         </div>
 
         <div
-          className={`${theme?.card} rounded-lg shadow-md p-6 border ${theme?.border}`}
+          className={`${theme?.card} rounded-lg shadow-md p-4 sm:p-6 border ${theme?.border}`}
         >
-          <h3 className="text-lg font-semibold mb-4">
+          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
             Contamination Distribution
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer
+            width="100%"
+            height={250}
+            className="sm:h-[300px]"
+          >
             <PieChart>
               <Pie
                 data={[
@@ -495,8 +557,9 @@ const Dashboard = () => {
                 ]}
                 cx="50%"
                 cy="50%"
-                outerRadius={100}
-                label
+                outerRadius={80}
+                label={(entry) => entry.name}
+                labelLine={{ stroke: "#6b7280", strokeWidth: 1 }}
                 dataKey="value"
               >
                 <Cell fill="#10b981" />

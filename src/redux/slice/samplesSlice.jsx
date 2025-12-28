@@ -99,12 +99,10 @@ export const fetchSamples = createAsyncThunk(
   }
 );
 
-// Create Sample
 export const createSample = createAsyncThunk(
   "samples/createSample",
-  async (formData, { rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
-      const payload = buildSamplePayload(formData);
       const response = await api.post("/samples", payload);
       return response.data.data;
     } catch (err) {
