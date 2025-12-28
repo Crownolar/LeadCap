@@ -41,7 +41,6 @@ const SampleReview = () => {
       const response = await api.get(`/supervisor/samples`);
 
       if (response.data.success) {
-        // Filter samples by review status on frontend since backend doesn't support status param
         const filtered = response.data.data.filter((sample) => {
           const reviewStatus = sample.review?.status || "PENDING";
           return reviewStatus === filterStatus;
@@ -165,28 +164,28 @@ const SampleReview = () => {
 
   if (loading) {
     return (
-      <div className={`${theme?.card} rounded-lg p-8 text-center`}>
-        <p className={theme?.textMuted}>Loading samples...</p>
+      <div className={`${theme?.card} rounded-lg p-6 sm:p-8 text-center`}>
+        <p className={`text-sm sm:text-base ${theme?.textMuted}`}>Loading samples...</p>
       </div>
     );
   }
 
   return (
-    <div className={`${theme?.text} space-y-6`}>
+    <div className={`${theme?.text} space-y-4 sm:space-y-6`}>
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 sm:px-4 sm:py-3 rounded-lg text-sm">
           Error: {error}
         </div>
       )}
 
       {/* Filter Tabs & Bulk Actions */}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         <div className="flex gap-2 flex-wrap">
           {["PENDING", "APPROVED", "REJECTED", "FLAGGED"].map((status) => (
             <button
               key={status}
               onClick={() => setFilterStatus(status)}
-              className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+              className={`px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm rounded-lg font-semibold transition-colors ${
                 filterStatus === status
                   ? "bg-emerald-600 text-white"
                   : `${theme?.card} border ${theme?.border} hover:bg-opacity-50`
@@ -200,40 +199,40 @@ const SampleReview = () => {
         {/* Bulk Actions Bar */}
         {bulkSelection.size > 0 && (
           <div
-            className={`${theme?.card} border ${theme?.border} rounded-lg p-4 flex items-center justify-between flex-wrap gap-3`}
+            className={`${theme?.card} border ${theme?.border} rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3`}
           >
-            <div className="flex items-center gap-3">
-              <CheckCircle size={20} className="text-emerald-600" />
-              <span className="font-semibold">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <CheckCircle size={18} className="text-emerald-600 sm:w-5 sm:h-5 flex-shrink-0" />
+              <span className="text-sm sm:text-base font-semibold">
                 {bulkSelection.size} sample(s) selected
               </span>
             </div>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap w-full sm:w-auto">
               <button
                 onClick={() => handleBulkAction("APPROVED")}
                 disabled={bulkProcessing}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-sm"
+                className="flex-1 sm:flex-none px-3 py-1.5 sm:px-4 sm:py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-xs sm:text-sm"
               >
-                ✓ Approve All
+                ✓ Approve
               </button>
               <button
                 onClick={() => handleBulkAction("REJECTED")}
                 disabled={bulkProcessing}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-sm"
+                className="flex-1 sm:flex-none px-3 py-1.5 sm:px-4 sm:py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-xs sm:text-sm"
               >
-                ✗ Reject All
+                ✗ Reject
               </button>
               <button
                 onClick={() => handleBulkAction("FLAGGED")}
                 disabled={bulkProcessing}
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-sm"
+                className="flex-1 sm:flex-none px-3 py-1.5 sm:px-4 sm:py-2 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-xs sm:text-sm"
               >
-                ⚠ Flag All
+                ⚠ Flag
               </button>
               <button
                 onClick={() => setBulkSelection(new Set())}
                 disabled={bulkProcessing}
-                className="px-4 py-2 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-sm"
+                className="flex-1 sm:flex-none px-3 py-1.5 sm:px-4 sm:py-2 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-xs sm:text-sm"
               >
                 Clear
               </button>
@@ -242,39 +241,39 @@ const SampleReview = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Samples List */}
         <div
-          className={`${theme?.card} rounded-lg p-6 border ${theme?.border}`}
+          className={`${theme?.card} rounded-lg p-4 sm:p-6 border ${theme?.border}`}
         >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">
-              {filterStatus} Samples ({samples.length})
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 className="text-base sm:text-lg font-semibold">
+              {filterStatus} ({samples.length})
             </h3>
             {samples.length > 0 && (
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <label className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm cursor-pointer">
                 <input
                   type="checkbox"
                   checked={bulkSelection.size === samples.length}
                   onChange={handleSelectAll}
-                  className="w-4 h-4 rounded text-emerald-600"
+                  className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded text-emerald-600"
                 />
-                <span>Select All</span>
+                <span className="whitespace-nowrap">Select All</span>
               </label>
             )}
           </div>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
+          <div className="space-y-2 max-h-[400px] sm:max-h-96 overflow-y-auto">
             {samples.length === 0 ? (
-              <p className={`${theme?.textMuted} text-center py-8`}>
+              <p className={`${theme?.textMuted} text-center py-6 sm:py-8 text-sm`}>
                 No {filterStatus.toLowerCase()} samples
               </p>
             ) : (
               samples.map((sample) => (
                 <div
                   key={sample.id}
-                  className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
+                  className={`flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg border transition-colors ${
                     selectedSample?.id === sample.id
-                      ? `${theme?.card} border-emerald-500 bg-emerald-50`
+                      ? `${theme?.card} border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20`
                       : `border ${theme?.border} hover:bg-opacity-50`
                   }`}
                 >
@@ -283,35 +282,35 @@ const SampleReview = () => {
                     checked={bulkSelection.has(sample.id)}
                     onChange={() => handleToggleBulkSelection(sample.id)}
                     onClick={(e) => e.stopPropagation()}
-                    className="w-4 h-4 rounded text-emerald-600 mt-1 flex-shrink-0"
+                    className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded text-emerald-600 mt-0.5 sm:mt-1 flex-shrink-0"
                   />
                   <button
                     onClick={() => handleSelectSample(sample)}
-                    className="flex-1 text-left"
+                    className="flex-1 text-left min-w-0"
                   >
-                    <p className="font-semibold text-sm">
+                    <p className="font-semibold text-xs sm:text-sm truncate">
                       {sample.productName}
                     </p>
-                    <p className={`text-xs ${theme?.textMuted}`}>
+                    <p className={`text-xs ${theme?.textMuted} truncate`}>
                       {sample.sampleId}
                     </p>
-                    <div className="flex gap-1 mt-2 flex-wrap">
-                      <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded">
+                    <div className="flex gap-1 mt-1.5 sm:mt-2 flex-wrap">
+                      <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs px-2 py-0.5 rounded">
                         {sample.state?.name}
                       </span>
                       <span
-                        className={`text-xs px-2 py-1 rounded ${
+                        className={`text-xs px-2 py-0.5 rounded ${
                           sample.verificationStatus === "VERIFIED_ORIGINAL"
-                            ? "bg-green-100 text-green-700"
+                            ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
                             : sample.verificationStatus === "VERIFIED_FAKE"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-gray-100 text-gray-700"
+                            ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+                            : "bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300"
                         }`}
                       >
                         {sample.verificationStatus}
                       </span>
                     </div>
-                    <p className={`text-xs ${theme?.textMuted} mt-2`}>
+                    <p className={`text-xs ${theme?.textMuted} mt-1.5 sm:mt-2 truncate`}>
                       by {sample.creator?.fullName}
                     </p>
                   </button>
@@ -325,44 +324,44 @@ const SampleReview = () => {
         <div className="lg:col-span-2">
           {selectedSample ? (
             <div
-              className={`${theme?.card} rounded-lg p-6 border ${theme?.border} space-y-6`}
+              className={`${theme?.card} rounded-lg p-4 sm:p-6 border ${theme?.border} space-y-4 sm:space-y-6`}
             >
               {/* Sample Details */}
               <div>
-                <h3 className="text-lg font-semibold mb-3">Sample Details</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
+                <h3 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3">Sample Details</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
+                  <div className="min-w-0">
                     <p className={theme?.textMuted}>Sample ID</p>
-                    <p className="font-semibold">{selectedSample.sampleId}</p>
+                    <p className="font-semibold truncate">{selectedSample.sampleId}</p>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className={theme?.textMuted}>Product</p>
-                    <p className="font-semibold">
+                    <p className="font-semibold truncate">
                       {selectedSample.productName}
                     </p>
                   </div>
-                  <div>
+                  <div className="min-w-0 sm:col-span-2">
                     <p className={theme?.textMuted}>Location</p>
-                    <p className="font-semibold">
+                    <p className="font-semibold truncate">
                       {selectedSample.state?.name} - {selectedSample.lga?.name}{" "}
                       - {selectedSample.market?.name}
                     </p>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className={theme?.textMuted}>Collected By</p>
-                    <p className="font-semibold">
+                    <p className="font-semibold truncate">
                       {selectedSample.creator?.fullName}
                     </p>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className={theme?.textMuted}>Brand</p>
-                    <p className="font-semibold">
+                    <p className="font-semibold truncate">
                       {selectedSample.brandName || "-"}
                     </p>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className={theme?.textMuted}>Batch Number</p>
-                    <p className="font-semibold">
+                    <p className="font-semibold truncate">
                       {selectedSample.batchNumber || "-"}
                     </p>
                   </div>
@@ -373,12 +372,12 @@ const SampleReview = () => {
               {selectedSample.heavyMetalReadings &&
                 selectedSample.heavyMetalReadings.length > 0 && (
                   <div>
-                    <h4 className="font-semibold mb-2">Heavy Metal Readings</h4>
+                    <h4 className="text-sm sm:text-base font-semibold mb-2">Heavy Metal Readings</h4>
                     <div className="space-y-2">
                       {selectedSample.heavyMetalReadings.map((reading, idx) => (
                         <div
                           key={idx}
-                          className={`border ${theme?.border} rounded p-2 text-sm`}
+                          className={`border ${theme?.border} rounded p-2 sm:p-3 text-xs sm:text-sm`}
                         >
                           <p className="font-semibold">{reading.heavyMetal}</p>
                           <p className={theme?.textMuted}>
@@ -388,8 +387,8 @@ const SampleReview = () => {
                           <p
                             className={`text-xs ${
                               reading.status === "SAFE"
-                                ? "text-green-600"
-                                : "text-red-600"
+                                ? "text-green-600 dark:text-green-400"
+                                : "text-red-600 dark:text-red-400"
                             }`}
                           >
                             Status: {reading.status}
@@ -402,11 +401,11 @@ const SampleReview = () => {
 
               {/* Review Form */}
               <div className={`border-t ${theme?.border} pt-4`}>
-                <h4 className="font-semibold mb-3">Review Sample</h4>
+                <h4 className="text-sm sm:text-base font-semibold mb-3">Review Sample</h4>
 
                 {/* Status */}
                 <div className="mb-4">
-                  <label className="block text-sm font-semibold mb-2">
+                  <label className="block text-xs sm:text-sm font-semibold mb-2">
                     Decision
                   </label>
                   <div className="grid grid-cols-2 gap-2">
@@ -421,7 +420,7 @@ const SampleReview = () => {
                         onClick={() =>
                           setReviewForm((prev) => ({ ...prev, status }))
                         }
-                        className={`py-2 px-3 rounded-lg font-semibold text-sm transition-colors ${
+                        className={`py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg font-semibold text-xs sm:text-sm transition-colors ${
                           reviewForm.status === status
                             ? "bg-emerald-600 text-white"
                             : `border ${theme?.border} hover:bg-opacity-50`
@@ -435,22 +434,22 @@ const SampleReview = () => {
 
                 {/* Issues */}
                 <div className="mb-4">
-                  <label className="block text-sm font-semibold mb-2">
+                  <label className="block text-xs sm:text-sm font-semibold mb-2">
                     Flag Issues (if any)
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {ISSUE_OPTIONS.map((issue) => (
                       <label
                         key={issue}
-                        className="flex items-center gap-2 text-sm cursor-pointer"
+                        className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm cursor-pointer"
                       >
                         <input
                           type="checkbox"
                           checked={reviewForm.issues.includes(issue)}
                           onChange={() => handleIssueToggle(issue)}
-                          className="w-4 h-4 rounded text-emerald-600"
+                          className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded text-emerald-600 flex-shrink-0"
                         />
-                        {issue}
+                        <span className="break-words">{issue}</span>
                       </label>
                     ))}
                   </div>
@@ -458,7 +457,7 @@ const SampleReview = () => {
 
                 {/* Comments */}
                 <div className="mb-4">
-                  <label className="block text-sm font-semibold mb-2">
+                  <label className="block text-xs sm:text-sm font-semibold mb-2">
                     Comments
                   </label>
                   <textarea
@@ -471,14 +470,14 @@ const SampleReview = () => {
                     }
                     rows="3"
                     placeholder="Add notes or observations..."
-                    className={`w-full px-3 py-2 border ${theme?.border} rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                    className={`w-full px-3 py-2 text-sm sm:text-base border ${theme?.border} rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 ${theme?.card}`}
                   />
                 </div>
 
                 {/* Requested Changes */}
                 {reviewForm.status === "CORRECTION_REQUESTED" && (
                   <div className="mb-4">
-                    <label className="block text-sm font-semibold mb-2">
+                    <label className="block text-xs sm:text-sm font-semibold mb-2">
                       What needs to be corrected?
                     </label>
                     <textarea
@@ -491,7 +490,7 @@ const SampleReview = () => {
                       }
                       rows="3"
                       placeholder="Describe what the collector needs to fix..."
-                      className={`w-full px-3 py-2 border ${theme?.border} rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                      className={`w-full px-3 py-2 text-sm sm:text-base border ${theme?.border} rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 ${theme?.card}`}
                     />
                   </div>
                 )}
@@ -500,7 +499,7 @@ const SampleReview = () => {
                 <button
                   onClick={handleSubmitReview}
                   disabled={reviewing}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white font-semibold py-2 sm:py-2.5 px-4 rounded-lg transition-colors text-sm sm:text-base"
                 >
                   {reviewing ? "Submitting..." : "Submit Review"}
                 </button>
@@ -508,9 +507,9 @@ const SampleReview = () => {
             </div>
           ) : (
             <div
-              className={`${theme?.card} rounded-lg p-6 border ${theme?.border} text-center`}
+              className={`${theme?.card} rounded-lg p-6 sm:p-8 border ${theme?.border} text-center`}
             >
-              <p className={theme?.textMuted}>Select a sample to review</p>
+              <p className={`text-sm sm:text-base ${theme?.textMuted}`}>Select a sample to review</p>
             </div>
           )}
         </div>

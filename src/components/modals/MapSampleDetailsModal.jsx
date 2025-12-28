@@ -21,7 +21,7 @@ export default function MapSampleDetailsModal({ setMapDetails, mapDetails }) {
       <div className="fixed inset-0 z-[9999] flex items-center justify-center">
         <div className="w-full max-h-[90vh] max-w-4xl bg-white dark:bg-gray-900 rounded-xl shadow-2xl flex flex-col m-4">
             {/* Header - Sticky */}
-            <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-700 dark:to-cyan-700 px-6 py-4 rounded-t-xl sticky top-0 z-10">
+            <div className="flex items-center justify-between bg-gradient-to-r from-emerald-600 to-emerald-400 dark:from-emerald-700 dark:to-emerald-500 px-6 py-4 rounded-t-xl sticky top-0 z-10">
               <div className="flex items-center gap-3">
                 <span className="text-white font-medium text-lg">Samples from:</span>
                 <span className="text-white font-bold text-lg">

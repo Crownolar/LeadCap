@@ -27,7 +27,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       sessionStorage.clear();
-      window.location.href = "/auth";
+      // window.location.href = "/auth";
       store.dispatch(handleLogout());
     }
     return Promise.reject(error);

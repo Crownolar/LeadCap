@@ -1,6 +1,6 @@
 import Dashboard from "./components/views/Dashboard";
 import Home from "./pages/Home";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useNavigate } from "react-router-dom";
 import PrivateRoute from "./Route/PrivateRoute";
 import Layout from "./Route/Layout";
 import AuthModal from "./components/auth/AuthModal";
@@ -60,17 +60,7 @@ const App = () => {
   const theme = darkMode ? darkTheme : lightTheme;
 
   const logout = () => dispatch(handleLogout());
-
-  useEffect(() => {
-    // Only fetch samples if user is authenticated
-    if (isAuthenticated && currentUser) {
-      dispatch(fetchSamples({ page: 1, limit: 5000 }));
-    }
-
-    if (!isAuthenticated) {
-      navigate("/auth");
-    }
-  }, [dispatch, isAuthenticated, currentUser]);
+  const navigate = useNavigate();
 
   return (
     <div>

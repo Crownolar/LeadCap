@@ -15,8 +15,6 @@ const MarketManagement = () => {
     stateId: "",
     lgaId: "",
     name: "",
-    latitude: "",
-    longitude: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -76,8 +74,6 @@ const MarketManagement = () => {
         stateId: "",
         lgaId: "",
         name: "",
-        latitude: "",
-        longitude: "",
       });
       setEditingId(null);
       setShowForm(false);
@@ -97,8 +93,6 @@ const MarketManagement = () => {
       stateId: market.stateId,
       lgaId: market.lgaId,
       name: market.name,
-      latitude: market.latitude || "",
-      longitude: market.longitude || "",
     });
     setEditingId(market.id);
     setShowForm(true);
@@ -124,8 +118,6 @@ const MarketManagement = () => {
       stateId: "",
       lgaId: "",
       name: "",
-      latitude: "",
-      longitude: "",
     });
   };
 
@@ -173,8 +165,6 @@ const MarketManagement = () => {
                 stateId: "",
                 lgaId: "",
                 name: "",
-                latitude: "",
-                longitude: "",
               });
               setEditingId(null);
             }
@@ -258,42 +248,6 @@ const MarketManagement = () => {
                 placeholder="e.g., Lekki Market"
                 className={`w-full px-3 py-2 rounded-lg border ${theme?.border} ${theme?.input}`}
               />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label
-                  className={`block text-sm font-medium ${theme?.text} mb-1`}
-                >
-                  Latitude (Optional)
-                </label>
-                <input
-                  type="number"
-                  step="0.00001"
-                  value={formData.latitude}
-                  onChange={(e) =>
-                    setFormData({ ...formData, latitude: e.target.value })
-                  }
-                  placeholder="e.g., 6.5244"
-                  className={`w-full px-3 py-2 rounded-lg border ${theme?.border} ${theme?.input}`}
-                />
-              </div>
-              <div>
-                <label
-                  className={`block text-sm font-medium ${theme?.text} mb-1`}
-                >
-                  Longitude (Optional)
-                </label>
-                <input
-                  type="number"
-                  step="0.00001"
-                  value={formData.longitude}
-                  onChange={(e) =>
-                    setFormData({ ...formData, longitude: e.target.value })
-                  }
-                  placeholder="e.g., 3.7679"
-                  className={`w-full px-3 py-2 rounded-lg border ${theme?.border} ${theme?.input}`}
-                />
-              </div>
             </div>
             <div className="flex gap-2">
               <button
@@ -415,13 +369,6 @@ const MarketManagement = () => {
                                     <p className={`font-medium ${theme?.text}`}>
                                       {market.name}
                                     </p>
-                                    {(market.latitude || market.longitude) && (
-                                      <p
-                                        className={`text-xs ${theme?.textMuted}`}
-                                      >
-                                        {market.latitude}, {market.longitude}
-                                      </p>
-                                    )}
                                     <p
                                       className={`text-xs ${theme?.textMuted}`}
                                     >

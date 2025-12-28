@@ -34,9 +34,7 @@ export const fetchLGAs = createAsyncThunk(
       const res = await api.get("/samples/lgas/all");
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(
-        extractErrorMessage(err, "Failed to fetch LGAs")
-      );
+      return rejectWithValue(extractErrorMessage(err, "Failed to fetch LGAs"));
     }
   }
 );
@@ -128,6 +126,7 @@ const initialState = {
   calibrations: [],
   loading: false,
   error: null,
+  hasFetched: false,
 };
 
 const samplesSlice = createSlice({
@@ -145,6 +144,7 @@ const samplesSlice = createSlice({
         state.loading = false;
         state.samples = action.payload.items;
         state.pagination = action.payload.pagination;
+        state.hasFetched = true;
       })
       .addCase(fetchSamples.rejected, (state, action) => {
         state.loading = false;
@@ -220,6 +220,7 @@ const samplesSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       });
+    // .addCase(handleLogout, () => initialState);
   },
 });
 

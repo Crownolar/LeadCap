@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
   Beaker,
@@ -10,15 +10,14 @@ import {
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import HeavyMetalFormModalNew from "../components/modals/lab-result_modal/HeavyMetalFormModalNew";
-import { fetchSamples } from "../redux/slice/samplesSlice";
 import {
   getMultipleSampleReadings,
   getSampleReadings,
 } from "../redux/slice/heavyMetalSlice";
 
-const DataCollectorDashboard = ({ theme: propTheme }) => {
+const DataCollectorDashboard = () => {
   const dispatch = useDispatch();
-  const { currentUser } = useSelector((state) => state.auth);
+  const { currentUser, isAuthenticated } = useSelector((state) => state.auth);
   const { theme } = useTheme();
   const {
     samples: allSamples,
@@ -36,49 +35,39 @@ const DataCollectorDashboard = ({ theme: propTheme }) => {
   const [supervisor, setSupervisor] = useState(null);
   const [loadingSupervisor, setLoadingSupervisor] = useState(false);
 
-  // Filter user's samples
-  const mySamples = allSamples.filter(
-    (sample) => sample.creator?.id === currentUser?.id
-  );
-
-  // Fetch samples and readings on component mount
-  // useEffect(() => {
-  //   if (currentUser?.id) {
-  //     dispatch(fetchSamples({ page: 1, limit: 5000 }));
-  //     fetchSupervisorInfo();
-  //   }
-  // }, [dispatch, currentUser?.id]);
-
-  const { isAuthenticated } = useSelector((state) => state.auth);
+  const mySamples = useMemo(() => {
+    if (!currentUser?.id) return [];
+    return allSamples.filter((sample) => sample.creator?.id === currentUser.id);
+  }, [allSamples, currentUser?.id]);
 
   useEffect(() => {
-    if (!isAuthenticated || !currentUser?.id) return;
+    if (!currentUser?.id) return;
 
-    dispatch(fetchSamples({ page: 1, limit: 5000 }));
-  }, [dispatch, isAuthenticated, currentUser?.id]);
-
-  const fetchSupervisorInfo = async () => {
-    try {
-      setLoadingSupervisor(true);
-      const api = require("../utils/api").default;
-      const response = await api.get("/data-collector/me/supervisor");
-      if (response.data.success) {
-        setSupervisor(response.data.data);
+    const fetchSupervisorInfo = async () => {
+      try {
+        setLoadingSupervisor(true);
+        const res = await api.get("/data-collector/me/supervisor");
+        if (res.data?.success) {
+          setSupervisor(res.data.data);
+        }
+      } catch (err) {
+        console.error("Supervisor fetch failed:", err);
+      } finally {
+        setLoadingSupervisor(false);
       }
-    } catch (err) {
-      console.error("Error fetching supervisor info:", err);
-    } finally {
-      setLoadingSupervisor(false);
-    }
-  };
+    };
 
-  // Fetch heavy metal readings when samples are loaded
+    fetchSupervisorInfo();
+  }, [currentUser?.id]);
+
+  const sampleIdsKey = useMemo(() => {
+    return mySamples.map((s) => s.id).join(",");
+  }, [mySamples]);
+
   useEffect(() => {
-    if (mySamples.length > 0) {
-      const sampleIds = mySamples.map((sample) => sample.id);
-      dispatch(getMultipleSampleReadings(sampleIds));
-    }
-  }, [dispatch, mySamples.length]);
+    if (!sampleIdsKey) return;
+    dispatch(getMultipleSampleReadings(sampleIdsKey.split(",")));
+  }, [dispatch, sampleIdsKey]);
 
   // Check if sample has readings
   const hasAllReadings = (sample) => {
@@ -119,10 +108,10 @@ const DataCollectorDashboard = ({ theme: propTheme }) => {
 
   const handleModalClose = () => {
     setShowHeavyMetalModal(false);
-    setSelectedSample(null);
     if (selectedSample) {
       dispatch(getSampleReadings(selectedSample.id));
     }
+    setSelectedSample(null);
   };
 
   return (

@@ -102,10 +102,10 @@ const MapView = ({ theme: propTheme, samples: propSamples }) => {
   if (samplesWithCoords.length === 0) {
     return (
       <div
-        className={`${propTheme?.card} rounded-lg shadow-md p-6 border ${propTheme?.border} text-center py-12`}
+        className={`${propTheme?.card} rounded-lg sm:rounded-xl shadow-md p-4 sm:p-6 md:p-8 border ${propTheme?.border} text-center py-8 sm:py-12`}
       >
-        <MapPin className='w-16 h-16 mx-auto mb-4 text-gray-400' />
-        <p className={propTheme?.textMuted}>
+        <MapPin className='w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 text-gray-400' />
+        <p className={`text-sm sm:text-base ${propTheme?.textMuted}`}>
           No samples with GPS coordinates yet
         </p>
       </div>
@@ -114,12 +114,12 @@ const MapView = ({ theme: propTheme, samples: propSamples }) => {
 
   return (
     <>
-      <div className='border-0 rounded-xl overflow-hidden shadow-2xl bg-white dark:bg-gray-800'>
+      <div className='border-0 rounded-lg sm:rounded-xl overflow-hidden shadow-lg sm:shadow-2xl bg-white dark:bg-gray-800'>
         {/* Map Header */}
-        <div className='bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 dark:from-blue-700 dark:via-blue-600 dark:to-cyan-600 px-6 py-4 flex items-center gap-3'>
-          <div className='w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm'>
+        <div className='bg-gradient-to-r from-emerald-600 via-emerald-500 to-cyan-500 dark:from-emerald-700 dark:via-emerald-600 dark:to-cyan-600 px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3'>
+          <div className='w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm flex-shrink-0'>
             <svg
-              className='w-6 h-6 text-white'
+              className='w-5 h-5 sm:w-6 sm:h-6 text-white'
               fill='none'
               stroke='currentColor'
               viewBox='0 0 24 24'
@@ -128,22 +128,22 @@ const MapView = ({ theme: propTheme, samples: propSamples }) => {
                 strokeLinecap='round'
                 strokeLinejoin='round'
                 strokeWidth={2}
-                d='M9 20l-5.447-2.724A1 1 0 003 16.382V5.618a1 1 0 011.553-.894L9 7m0 13l6.447 3.268A1 1 0 0021 19.382V8.618a1 1 0 00-1.553-.894L15 10m0 13V7m0 0L9.553 3.732A1 1 0 008 4.618v10.764'
+                d='M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.553-.894L9 7m0 13l6.447 3.268A1 1 0 0021 19.382V8.618a1 1 0 00-1.553-.894L15 10m0 13V7m0 0L9.553 3.732A1 1 0 008 4.618v10.764'
               />
             </svg>
           </div>
-          <div>
-            <h2 className='text-xl font-bold text-white'>
+          <div className='flex-1 min-w-0'>
+            <h2 className='text-base sm:text-lg md:text-xl font-bold text-white truncate'>
               Geographic Distribution
             </h2>
-            <p className='text-blue-100 text-sm'>
+            <p className='text-emerald-100 text-xs sm:text-sm truncate'>
               Interactive map of sample locations
             </p>
           </div>
           {samplesWithCoords.length > 0 && (
-            <div className='ml-auto bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg'>
-              <p className='text-white font-semibold text-sm'>
-                {samplesWithCoords.length} samples
+            <div className='bg-white/20 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex-shrink-0 self-end sm:self-auto'>
+              <p className='text-white font-semibold text-xs sm:text-sm whitespace-nowrap'>
+                {samplesWithCoords.length} {samplesWithCoords.length === 1 ? 'sample' : 'samples'}
               </p>
             </div>
           )}

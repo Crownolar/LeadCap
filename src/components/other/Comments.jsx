@@ -57,26 +57,26 @@ export default function Comments({ comment, fetchComments }) {
   };
 
   return (
-    <div className="flex flex-col border-l-4 border-emerald-500 bg-white dark:bg-gray-800 rounded-lg p-4 gap-3 shadow-sm hover:shadow-md transition-shadow">
+    <div className="flex flex-col border-l-4 border-emerald-500 bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 gap-2 sm:gap-3 shadow-sm hover:shadow-md transition-shadow">
       {/* Header with user info */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white font-bold px-3 py-2 rounded-lg min-w-max">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 sm:mb-2">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white font-bold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg text-sm sm:text-base whitespace-nowrap">
             {comment.user.fullName}
           </div>
-          <span className="text-xs font-semibold px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
+          <span className="text-xs font-semibold px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded whitespace-nowrap">
             {comment?.user?.role}
           </span>
         </div>
 
         {/* Action buttons */}
         {!isEditing && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 self-end sm:self-auto">
             {canEdit && (
               <button
                 onClick={handleEditToggle}
                 disabled={isLoading}
-                className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors disabled:opacity-50"
+                className="p-1.5 sm:p-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors disabled:opacity-50"
                 title="Edit comment"
               >
                 <Edit2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -86,7 +86,7 @@ export default function Comments({ comment, fetchComments }) {
               <button
                 onClick={handleDelete}
                 disabled={isLoading}
-                className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors disabled:opacity-50"
+                className="p-1.5 sm:p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors disabled:opacity-50"
                 title="Delete comment"
               >
                 <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
@@ -102,44 +102,44 @@ export default function Comments({ comment, fetchComments }) {
           <textarea
             value={editText}
             onChange={(e) => setEditText(e.target.value)}
-            className="w-full p-3 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
             rows="3"
           />
           <div className="flex gap-2 justify-end">
             <button
               onClick={handleEditToggle}
               disabled={isLoading}
-              className="px-3 py-1.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center gap-1 disabled:opacity-50"
+              className="px-2.5 py-1.5 sm:px-3 sm:py-1.5 text-sm sm:text-base rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center gap-1 disabled:opacity-50"
             >
-              <X className="w-4 h-4" />
-              Cancel
+              <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden xs:inline">Cancel</span>
             </button>
             <button
               onClick={handleSaveEdit}
               disabled={isLoading}
-              className="px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors flex items-center gap-1 disabled:opacity-50"
+              className="px-2.5 py-1.5 sm:px-3 sm:py-1.5 text-sm sm:text-base rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors flex items-center gap-1 disabled:opacity-50"
             >
-              <Check className="w-4 h-4" />
-              Save
+              <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden xs:inline">Save</span>
             </button>
           </div>
         </div>
       ) : (
-        <p className="font-medium text-gray-900 dark:text-white leading-relaxed">
+        <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-white leading-relaxed break-words">
           {comment.commentText}
         </p>
       )}
 
       {/* Footer with timestamp */}
-      <div className="flex gap-4 text-sm text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-700">
-        <span>
+      <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-700">
+        <span className="whitespace-nowrap">
           {comment.createdAt.split("T")[0]}
         </span>
-        <span>
+        <span className="whitespace-nowrap">
           {comment.createdAt.split("T")[1].split(":").slice(0, 2).join(":")}
         </span>
         {comment.updatedAt !== comment.createdAt && (
-          <span className="italic">(edited)</span>
+          <span className="italic whitespace-nowrap">(edited)</span>
         )}
       </div>
     </div>

@@ -7,18 +7,18 @@ import { useSelector } from "react-redux";
 function CommentSection({ commentSectionView, setCommentSectionView }) {
   const { sample } = commentSectionView;
   const { currentUser } = useSelector((state) => state.auth);
-  
+
   // Only these roles can add comments
   const COMMENT_ROLES = [
-    'SUPER_ADMIN',
-    'HEAD_RESEARCHER',
-    'SUPERVISOR',
-    'POLICY_MAKER_SON',
-    'POLICY_MAKER_NAFDAC',
-    'POLICY_MAKER_RESOLVE',
-    'POLICY_MAKER_UNIVERSITY'
+    "SUPER_ADMIN",
+    "HEAD_RESEARCHER",
+    "SUPERVISOR",
+    "POLICY_MAKER_SON",
+    "POLICY_MAKER_NAFDAC",
+    "POLICY_MAKER_RESOLVE",
+    "POLICY_MAKER_UNIVERSITY",
   ];
-  
+
   const canComment = COMMENT_ROLES.includes(currentUser?.role);
   const [fetchedComments, setFetchedComments] = useState([]);
   const [requestMessage, setRequestMessage] = useState({
@@ -29,21 +29,20 @@ function CommentSection({ commentSectionView, setCommentSectionView }) {
 
   const handleSubmitComment = async () => {
     if (!writtenComment.trim()) return;
-    
+
     try {
       setRequestMessage((prev) => ({ ...prev, loading: true }));
-      // Wait for the POST request to complete
-      await api.post(`/samples/${sample.id}/comments`, { commentText: writtenComment });
-      // Clear the input immediately
+      await api.post(`/samples/${sample.id}/comments`, {
+        commentText: writtenComment,
+      });
       setWrittenComment("");
-      // Fetch the updated comments
       await fetchComments();
     } catch (error) {
       console.error("Error posting comment:", error);
-      setRequestMessage((prev) => ({ 
-        ...prev, 
-        loading: false, 
-        error: true 
+      setRequestMessage((prev) => ({
+        ...prev,
+        loading: false,
+        error: true,
       }));
     }
   };
@@ -68,70 +67,62 @@ function CommentSection({ commentSectionView, setCommentSectionView }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="text-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 shadow-lg">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
           <button
             onClick={() =>
               setCommentSectionView({ isOpen: false, sample: null })
             }
-            className="flex items-center gap-2 text-white hover:text-blue-100 transition-colors mb-4"
+            className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
           >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-semibold">Back to Samples</span>
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="font-semibold text-sm sm:text-base">
+              Back to Samples
+            </span>
           </button>
-
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
-              <MessageSquare className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-white">Sample Details</h1>
-              <p className="text-blue-100 text-sm">Comments & Remarks</p>
-            </div>
-          </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Sample Information Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 mb-8">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 pb-2 border-b-2 border-blue-600">
+        <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6 mb-6 sm:mb-8">
+          <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-3 sm:mb-4 pb-2 border-b-2 border-blue-600">
             Sample Information
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            <div className="space-y-1.5 sm:space-y-2">
+              <label className="block text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
                 Sample ID
               </label>
-              <p className="text-gray-900 dark:text-white font-medium text-base px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <p className="text-sm sm:text-base text-gray-900 dark:text-white font-medium px-3 py-2 sm:px-4 sm:py-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                 {sample.sampleId}
               </p>
             </div>
 
-            <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+            <div className="space-y-1.5 sm:space-y-2">
+              <label className="block text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
                 Date
               </label>
-              <p className="text-gray-900 dark:text-white font-medium text-base px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <p className="text-sm sm:text-base text-gray-900 dark:text-white font-medium px-3 py-2 sm:px-4 sm:py-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                 {sample.date || "14 / 03 / 2025"}
               </p>
             </div>
 
-            <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+            <div className="space-y-1.5 sm:space-y-2 sm:col-span-2 lg:col-span-1">
+              <label className="block text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
                 Product Type
               </label>
-              <p className="text-gray-900 dark:text-white font-medium text-base px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <p className="text-sm sm:text-base text-gray-900 dark:text-white font-medium px-3 py-2 sm:px-4 sm:py-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                 {sample?.productType}
               </p>
             </div>
 
-            <div className="space-y-2 md:col-span-3">
-              <label className="block text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+            <div className="space-y-1.5 sm:space-y-2 sm:col-span-2 lg:col-span-3">
+              <label className="block text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
                 Location
               </label>
-              <p className="text-gray-900 dark:text-white font-medium text-base px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <p className="text-sm sm:text-base text-gray-900 dark:text-white font-medium px-3 py-2 sm:px-4 sm:py-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                 {sample?.state?.name}
               </p>
             </div>
@@ -139,12 +130,14 @@ function CommentSection({ commentSectionView, setCommentSectionView }) {
         </div>
 
         {/* Comments Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700/50 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-blue-600" />
-              Comments & Remarks
-              <span className="ml-auto text-sm font-normal text-gray-600 dark:text-gray-400">
+        <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-700/50 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0" />
+              <span className="flex-1 min-w-0 truncate">
+                Comments & Remarks
+              </span>
+              <span className="text-xs sm:text-sm font-normal text-gray-600 dark:text-gray-400 whitespace-nowrap">
                 {fetchedComments.length}{" "}
                 {fetchedComments.length === 1 ? "comment" : "comments"}
               </span>
@@ -152,21 +145,21 @@ function CommentSection({ commentSectionView, setCommentSectionView }) {
           </div>
 
           {/* Comments List */}
-          <div className="p-6 min-h-[300px] max-h-[500px] overflow-y-auto">
+          <div className="p-4 sm:p-6 min-h-[250px] sm:min-h-[300px] max-h-[400px] sm:max-h-[500px] overflow-y-auto">
             {requestMessage.loading && (
-              <div className="flex flex-col items-center justify-center py-12">
-                <Loader className="w-8 h-8 text-blue-600 animate-spin mb-3" />
-                <p className="text-gray-600 dark:text-gray-400 font-medium">
+              <div className="flex flex-col items-center justify-center py-8 sm:py-12">
+                <Loader className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 animate-spin mb-2 sm:mb-3" />
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 font-medium">
                   Loading comments...
                 </p>
               </div>
             )}
 
             {requestMessage.error && (
-              <div className="flex flex-col items-center justify-center py-12">
-                <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-3">
+              <div className="flex flex-col items-center justify-center py-8 sm:py-12">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-2 sm:mb-3">
                   <svg
-                    className="w-8 h-8 text-red-600"
+                    className="w-6 h-6 sm:w-8 sm:h-8 text-red-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -179,7 +172,7 @@ function CommentSection({ commentSectionView, setCommentSectionView }) {
                     />
                   </svg>
                 </div>
-                <p className="text-red-600 dark:text-red-400 font-semibold">
+                <p className="text-sm sm:text-base text-red-600 dark:text-red-400 font-semibold">
                   Error loading comments
                 </p>
               </div>
@@ -188,21 +181,21 @@ function CommentSection({ commentSectionView, setCommentSectionView }) {
             {!requestMessage.loading &&
               !requestMessage.error &&
               fetchedComments.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-3">
-                    <MessageSquare className="w-8 h-8 text-gray-400" />
+                <div className="flex flex-col items-center justify-center py-8 sm:py-12">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-2 sm:mb-3">
+                    <MessageSquare className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
                   </div>
-                  <p className="text-gray-500 dark:text-gray-400 font-semibold text-lg">
+                  <p className="text-base sm:text-lg text-gray-500 dark:text-gray-400 font-semibold">
                     No Comments Yet
                   </p>
-                  <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">
+                  <p className="text-xs sm:text-sm text-gray-400 dark:text-gray-500 mt-1">
                     Be the first to add a comment
                   </p>
                 </div>
               )}
 
             {fetchedComments.length > 0 && (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {fetchedComments.map((comment) => (
                   <Comments
                     key={comment.id}
@@ -215,24 +208,25 @@ function CommentSection({ commentSectionView, setCommentSectionView }) {
           </div>
 
           {/* Add Comment Form */}
-          <div className="bg-gray-50 dark:bg-gray-900/50 p-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="bg-gray-50 dark:bg-gray-900/50 p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700">
             {!canComment ? (
-              <div className="flex items-center gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
-                <Lock className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-                <p className="text-yellow-800 dark:text-yellow-200 font-medium">
-                  Only supervisors, researchers, and policy makers can add comments
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                <Lock className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
+                <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200 font-medium">
+                  Only supervisors, researchers, and policy makers can add
+                  comments
                 </p>
               </div>
             ) : (
               <>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 sm:mb-3">
                   Add a Comment
                 </label>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <input
                     type="text"
                     placeholder="Write your comment or remark..."
-                    className="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:border-blue-600 focus:outline-none font-medium transition-all"
+                    className="flex-1 px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:border-blue-600 focus:outline-none font-medium transition-all"
                     value={writtenComment}
                     onChange={(e) => setWrittenComment(e.target.value)}
                     onKeyPress={(e) => {
@@ -244,10 +238,10 @@ function CommentSection({ commentSectionView, setCommentSectionView }) {
                   <button
                     onClick={handleSubmitComment}
                     disabled={!writtenComment.trim()}
-                    className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2"
+                    className="px-4 py-2.5 sm:px-6 sm:py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base w-full sm:w-auto"
                   >
-                    <Send className="w-5 h-5" />
-                    <span className="hidden sm:inline">Comment</span>
+                    <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span>Comment</span>
                   </button>
                 </div>
               </>

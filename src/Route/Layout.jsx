@@ -10,6 +10,7 @@ import SampleFormModal from "../components/modals/SampleFormModal";
 import HeavyMetalFormModalNew from "../components/modals/lab-result_modal/HeavyMetalFormModalNew";
 import { fetchSamples } from "../redux/slice/samplesSlice";
 import api from "../utils/api";
+import useRoleDataLoader from "../hooks/useRoleDataLoader";
 
 const Layout = () => {
   const dispatch = useDispatch();
@@ -22,15 +23,16 @@ const Layout = () => {
 
   const logout = () => {
     dispatch(handleLogout());
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
+    sessionStorage.removeItem("accessToken");
+    sessionStorage.removeItem("refreshToken");
   };
 
   const handleFormSubmit = async (formData) => {
     try {
-      await api.post("/samples", formData);
-      // Refresh samples after successful creation
-      dispatch(fetchSamples());
+      await dispatch(createSample(formData)).unwrap();
+      // await api.post("/samples", formData);
+      // // Refresh samples after successful creation
+      // dispatch(fetchSamples());
       setShowForm(false);
       // Optional: Show success message
       // Toast or notification could go here
@@ -39,6 +41,8 @@ const Layout = () => {
       throw error;
     }
   };
+
+  useRoleDataLoader(currentUser);
 
   return (
     <div className={`min-h-screen flex flex-col ${theme.bg}`}>

@@ -14,16 +14,14 @@ import { useEffect, useState } from "react";
 import MapSampleDetailsModal from "../modals/MapSampleDetailsModal";
 
 // Nigeria's precise center and bounds
-// Nigeria: 9.0820° N, 8.6753° E (center)
-// Borders: West - Benin (773 km), East - Cameroon (1,690 km), North - Niger (1,497 km), South - Gulf of Guinea
-const nigeriaCenter = [9.0820, 8.6753]; // Nigeria's precise center
+const nigeriaCenter = [9.0820, 8.6753];
 const defaultPosition = nigeriaCenter;
 const nigeriaBounds = L.latLngBounds(
-  [3.5, 2.3],   // Southwest corner (Gulf of Guinea coastal area)
-  [13.9, 14.7]  // Northeast corner (Niger/Chad border area)
+  [3.5, 2.3],   // Southwest corner
+  [13.9, 14.7]  // Northeast corner
 );
 
-// Major state boundary lines for demarcation (simplified major state borders)
+// Major state boundary lines
 const nigeriaStateBoundaries = [
   // Northern boundary (international border with Niger)
   {
@@ -91,7 +89,9 @@ const FitBounds = ({ markers }) => {
   useEffect(() => {
     if (markers.length > 0) {
       try {
-        map.fitBounds(nigeriaBounds, { padding: [50, 50] });
+        // Responsive padding based on screen size
+        const padding = window.innerWidth < 640 ? [20, 20] : [50, 50];
+        map.fitBounds(nigeriaBounds, { padding });
       } catch (e) {
         console.error(e.message);
       }
@@ -101,31 +101,38 @@ const FitBounds = ({ markers }) => {
     map.on('drag', function() {
       map.panInsideBounds(nigeriaBounds, { animate: false });
     });
-  }, [map]);
+  }, [map, markers.length]);
+
+  return null;
 };
 
 const iconObject = (samplesLength) => {
+  // Responsive marker size
+  const isSmallScreen = window.innerWidth < 640;
+  const markerHeight = isSmallScreen ? 35 : 50;
+  const badgeSize = isSmallScreen ? 'w-5 h-5 text-xs' : 'w-6 h-6 text-sm';
+  const badgePosition = isSmallScreen ? '-top-1 -left-1' : '-top-2 -left-2';
+
   return new L.divIcon({
     className: "",
-    html: ` <div class='relative '>
-                <img
-                src=${markerIcon}
-                alt='marker'
-                class='h-[50px]'
-                />
-                ${
-                  samplesLength > 0
-                    ? `<span class='absolute rounded-full grid place-items-center -top-2 -left-2 w-6 h-6 bg-red-800 text-white  '>
-                ${samplesLength}
-                </span>`
-                    : ""
-                }    
-            </div>`,
-
+    html: `<div class='relative'>
+             <img
+               src=${markerIcon}
+               alt='marker'
+               class='h-[${markerHeight}px]'
+             />
+             ${
+               samplesLength > 0
+                 ? `<span class='absolute rounded-full grid place-items-center ${badgePosition} ${badgeSize} bg-red-800 text-white font-bold'>
+               ${samplesLength}
+             </span>`
+                 : ""
+             }    
+           </div>`,
     shadowUrl: markerShadow,
     iconSize: null,
-    iconAnchor: [-5, 65],
-    popupAnchor: [0, -35],
+    iconAnchor: isSmallScreen ? [-5, 45] : [-5, 65],
+    popupAnchor: isSmallScreen ? [0, -25] : [0, -35],
   });
 };
 
@@ -159,22 +166,23 @@ export default function Map({ samples }) {
 
   return (
     <>
-      <div className='relative h-[700px]  '>
+      <div className='relative h-[400px] sm:h-[500px] md:h-[600px] lg:h-[700px]'>
         <MapContainer
           center={defaultPosition}
           zoom={6}
-          minZoom={6}
+          minZoom={5}
           maxZoom={18}
           scrollWheelZoom={false}
           style={{
-            height: "600px",
+            height: "100%",
             width: "100%",
           }}
+          className="rounded-lg sm:rounded-xl"
         >
           <TileLayer
             url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
             attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-          ></TileLayer>
+          />
           
           {/* State Boundary Lines */}
           {nigeriaStateBoundaries.map((boundary, idx) => (
@@ -182,10 +190,10 @@ export default function Map({ samples }) {
               key={idx}
               positions={boundary.coordinates}
               pathOptions={{
-                color: idx < 4 ? "#d32f2f" : "#1976d2", // Red for international borders, blue for internal borders
-                weight: idx < 4 ? 3 : 2, // Thicker international borders
+                color: idx < 4 ? "#d32f2f" : "#1976d2",
+                weight: idx < 4 ? 3 : 2,
                 opacity: 0.7,
-                dashArray: idx < 4 ? "5,5" : "3,3", // Dashed pattern
+                dashArray: idx < 4 ? "5,5" : "3,3",
                 lineCap: "round",
               }}
             />
@@ -223,29 +231,29 @@ export default function Map({ samples }) {
                     closeButton={false}
                     className='custom-popup'
                   >
-                    <div className='min-w-[300px] z-[5000]'>
-                      <div className='flex  justify-between '>
-                        <div className='  '>
-                          <h3 className='font-bold text-gray-900 text-base'>
+                    <div className='min-w-[200px] sm:min-w-[250px] md:min-w-[300px] max-w-[280px] sm:max-w-[320px] z-[5000]'>
+                      <div className='flex flex-col sm:flex-row justify-between gap-2 sm:gap-3'>
+                        <div className='flex-shrink-0'>
+                          <h3 className='font-bold text-gray-900 text-sm sm:text-base truncate'>
                             {s.state?.name}
                           </h3>
                         </div>
 
-                        <div className='flex  flex-col '>
-                          <div className='flex items-center justify-between '>
-                            <span className='text-xs text-gray-600 font-semibold'>
+                        <div className='flex flex-col gap-1'>
+                          <div className='flex items-center justify-between gap-2'>
+                            <span className='text-xs text-gray-600 font-semibold whitespace-nowrap'>
                               📌 Samples:
                             </span>
-                            <span className='text-sm font-bold text-blue-600'>
+                            <span className='text-xs sm:text-sm font-bold text-blue-600'>
                               {sameLngAndLat(samples, coord).length}
                             </span>
                           </div>
                           {contaminationCount > 0 && (
-                            <div className='flex items-center justify-between'>
-                              <span className='text-xs text-gray-600 font-semibold'>
+                            <div className='flex items-center justify-between gap-2'>
+                              <span className='text-xs text-gray-600 font-semibold whitespace-nowrap'>
                                 ⚠️ Contaminated:
                               </span>
-                              <span className='text-sm font-bold text-red-600'>
+                              <span className='text-xs sm:text-sm font-bold text-red-600'>
                                 {contaminationCount}
                               </span>
                             </div>
@@ -253,12 +261,12 @@ export default function Map({ samples }) {
                         </div>
                       </div>
 
-                      <div className=''>
-                        <div className='mt-1 border-t'>
-                          <p className='text-xs text-gray-600 font-semibold mb-[2px]'>
+                      <div className='mt-2'>
+                        <div className='border-t pt-2'>
+                          <p className='text-xs text-gray-600 font-semibold mb-1'>
                             Recent Product:
                           </p>
-                          <div className=''>
+                          <div>
                             {sameLngAndLat(samples, coord)
                               .slice(0, 1)
                               .map((sample, idx) => (
@@ -277,6 +285,7 @@ export default function Map({ samples }) {
                 </Marker>
               );
             }
+            return null;
           })}
           {samples && <FitBounds markers={samples} />}
         </MapContainer>
