@@ -1,5 +1,4 @@
 import axios from "axios";
-import { handleLogout } from "../redux/slice/authSlice";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -21,14 +20,17 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Handle auth errors
+// Handle auth errors (lazy import to avoid circular dependency)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       sessionStorage.clear();
-      // window.location.href = "/auth";
-      store.dispatch(handleLogout());
+      import("../redux/store").then(({ store }) => {
+        import("../redux/slice/authSlice").then(({ handleLogout }) => {
+          store.dispatch(handleLogout());
+        });
+      });
     }
     return Promise.reject(error);
   }
