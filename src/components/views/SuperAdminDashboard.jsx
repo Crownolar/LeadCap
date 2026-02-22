@@ -45,7 +45,7 @@ const SuperAdminDashboard = ({ theme: propTheme }) => {
         const allUsers = usersRes.data.data || [];
         setUsers(allUsers);
 
-        const statesRes = await api.get("/management/states");
+        const statesRes = await api.get("/management/states", { params: { activeOnly: "true" } });
         const allStates = statesRes.data.data || [];
         setStates(allStates);
 
@@ -304,7 +304,11 @@ const SuperAdminDashboard = ({ theme: propTheme }) => {
                 Supervisor Management
               </h3>
               <button
-                onClick={() => setShowAssignModal(true)}
+                onClick={() => {
+                  setShowAssignModal(true);
+                  setSelectedSupervisor(null);
+                  setSelectedStates([]);
+                }}
                 disabled={!hasPermission()}
                 title={
                   !hasPermission()
@@ -360,6 +364,10 @@ const SuperAdminDashboard = ({ theme: propTheme }) => {
                               return;
                             }
                             setSelectedSupervisor(supervisor.id);
+                            const currentStateIds = (supervisor.supervisorStates || []).map(
+                              (ss) => ss.state?.id ?? ss.stateId
+                            );
+                            setSelectedStates(currentStateIds);
                             setShowAssignModal(true);
                           }}
                           disabled={!hasPermission()}
@@ -661,7 +669,19 @@ const SuperAdminDashboard = ({ theme: propTheme }) => {
               </label>
               <select
                 value={selectedSupervisor || ""}
-                onChange={(e) => setSelectedSupervisor(e.target.value)}
+                onChange={(e) => {
+                  const id = e.target.value || null;
+                  setSelectedSupervisor(id);
+                  if (id) {
+                    const sup = getSupervisorByRole("SUPERVISOR").find((s) => s.id === id);
+                    const currentStateIds = (sup?.supervisorStates || []).map(
+                      (ss) => ss.state?.id ?? ss.stateId
+                    );
+                    setSelectedStates(currentStateIds);
+                  } else {
+                    setSelectedStates([]);
+                  }
+                }}
                 className={`w-full px-3 py-2 text-sm sm:text-base border rounded-lg ${theme?.input}`}
               >
                 <option value="">Choose a supervisor...</option>

@@ -75,7 +75,7 @@ const Reports = ({ theme: propTheme, samples: propSamples }) => {
 
   const fetchStates = async () => {
     try {
-      const response = await api.get("/management/states");
+      const response = await api.get("/management/states", { params: { activeOnly: "true" } });
       setStates(response.data.data || response.data || []);
     } catch (err) {
       console.error("Failed to fetch states:", err);

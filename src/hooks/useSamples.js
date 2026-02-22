@@ -33,7 +33,7 @@ export const useSamples = (currentUser) => {
   // Fetch states from API
   const fetchStates = useCallback(async () => {
     try {
-      const response = await api.get("/samples/states/all");
+      const response = await api.get("/management/states", { params: { activeOnly: "true" } });
       setStates(response.data.data || response.data || []);
     } catch (err) {
       console.error("Failed to fetch states:", err);

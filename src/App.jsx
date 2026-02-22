@@ -17,9 +17,7 @@ import PolicyWelcome from "./pages/PolicyWelcome";
 import HeavyMetalFormModalNew from "./components/modals/lab-result_modal/HeavyMetalFormModalNew";
 import DataCollectorDashboard from "./pages/DataCollectorDashboard";
 import DataCollectorWelcome from "./pages/DataCollectorWelcome";
-import StateManagement from "./components/views/StateManagement";
-import LGAManagement from "./components/views/LGAManagement";
-import MarketManagement from "./components/views/MarketManagement";
+import StateActivation from "./components/views/StateActivation";
 import UserManagement from "./components/views/UserManagement";
 import ThresholdManagement from "./components/views/ThresholdManagement";
 import InviteCodeManagement from "./components/views/InviteCodeManagement";
@@ -75,14 +73,6 @@ const App = () => {
           element={
             <PrivateRoute allowedRoles={["datacollector"]}>
               <DataCollectorWelcome />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/invitecodes"
-          element={
-            <PrivateRoute isAuthenticated={isAuthenticated}>
-              <InviteCodeGenerate theme={theme} />
             </PrivateRoute>
           }
         />
@@ -192,25 +182,7 @@ const App = () => {
             path="states"
             element={
               <PrivateRoute allowedRoles={["superadmin"]}>
-                <StateManagement theme={theme} darkMode={darkMode} />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="lgas"
-            element={
-              <PrivateRoute allowedRoles={["superadmin"]}>
-                <LGAManagement theme={theme} darkMode={darkMode} />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="markets"
-            element={
-              <PrivateRoute allowedRoles={["superadmin"]}>
-                <MarketManagement theme={theme} darkMode={darkMode} />
+                <StateActivation theme={theme} darkMode={darkMode} />
               </PrivateRoute>
             }
           />
@@ -229,6 +201,15 @@ const App = () => {
             element={
               <PrivateRoute allowedRoles={["superadmin"]}>
                 <ThresholdManagement theme={theme} darkMode={darkMode} />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="invitecodes"
+            element={
+              <PrivateRoute allowedRoles={["superadmin"]}>
+                <InviteCodeGenerate theme={theme} darkMode={darkMode} />
               </PrivateRoute>
             }
           />

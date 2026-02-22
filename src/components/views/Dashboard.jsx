@@ -82,7 +82,7 @@ const Dashboard = () => {
     const fetchStates = async () => {
       try {
         const api = await import("../../utils/api").then((m) => m.default);
-        const response = await api.get("/management/states");
+        const response = await api.get("/management/states", { params: { activeOnly: "true" } });
         setStates(response.data.data || []);
       } catch (err) {
         console.error("Failed to fetch states:", err);

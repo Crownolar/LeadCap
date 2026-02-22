@@ -19,15 +19,9 @@ const roleConfig = {
     excelImport: true,
     navItems: [
       "dashboard",
-      "superadmin",
       "database",
       "map",
       "reports",
-      "agents",
-      "states",
-      "lgas",
-      "markets",
-      "users",
       "thresholds",
       "invites",
     ],
@@ -130,8 +124,6 @@ const Sidebar = ({
       key: "sample-review",
     },
     { icon: Settings, label: "States", route: "/states", key: "states" },
-    { icon: Settings, label: "LGAs", route: "/lgas", key: "lgas" },
-    { icon: Settings, label: "Markets", route: "/markets", key: "markets" },
     { icon: Users, label: "Users", route: "/users", key: "users" },
     {
       icon: Settings,
@@ -139,7 +131,7 @@ const Sidebar = ({
       route: "/thresholds",
       key: "thresholds",
     },
-    { icon: Plus, label: "Invite Codes", route: "/invites", key: "invites" },
+    { icon: Plus, label: "Invite Codes", route: "/invitecodes", key: "invites" },
   ];
 
   const navItemsToRender = allNavItems.filter((item) =>

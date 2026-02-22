@@ -74,7 +74,7 @@ export const sampleToFormState = (sample) => {
 export const fetchFormData = async () => {
   try {
     const [statesRes, lgasRes, marketsRes, categoriesRes] = await Promise.all([
-      api.get("/management/states"),
+      api.get("/management/states", { params: { activeOnly: "true" } }),
       api.get("/management/lgas"),
       api.get("/management/markets"),
       api.get("/products/categories"),
