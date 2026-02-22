@@ -30,7 +30,7 @@ export const getInitialSampleFormState = () => ({
   gpsLatitude: "",
   gpsLongitude: "",
   productOrigin: "LOCAL",
-  navdacNumber: "",
+  nafdacNumber: "",
   sonNumber: "",
   productPhoto: null,
 });
@@ -60,7 +60,7 @@ export const sampleToFormState = (sample) => {
     gpsLatitude: sample.gpsLatitude != null ? String(sample.gpsLatitude) : "",
     gpsLongitude: sample.gpsLongitude != null ? String(sample.gpsLongitude) : "",
     productOrigin: sample.productOrigin || "LOCAL",
-    navdacNumber: sample.navdacNumber || "",
+    nafdacNumber: sample.nafdacNumber || "",
     sonNumber: sample.sonNumber || "",
     productPhoto: sample.productPhotoUrl ? sample.productPhotoUrl : null,
   };
@@ -339,7 +339,7 @@ export const buildSamplePayload = (formData) => {
     gpsLongitude: formData.gpsLongitude ? parseFloat(formData.gpsLongitude) : null,
     isRegistered: formData.isRegistered,
     productOrigin: formData.productOrigin,
-    navdacNumber: formData.navdacNumber || null,
+    nafdacNumber: formData.nafdacNumber || null,
     sonNumber: formData.sonNumber || null,
     productPhotoUrl: formData.productPhotoUrl || null,
   };

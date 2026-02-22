@@ -179,7 +179,10 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
       alert(isEdit ? "Sample updated successfully!" : "Sample created successfully!");
       onClose();
     } catch (err) {
-      const errorMsg = err.response?.data?.message || "Failed to create sample";
+      const errorMsg =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        (isEdit ? "Failed to update sample" : "Failed to create sample");
       setError(errorMsg);
       alert(errorMsg);
     } finally {
@@ -642,9 +645,9 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                   </label>
                   <input
                     type="text"
-                    value={formData.navdacNumber}
+                    value={formData.nafdacNumber}
                     onChange={(e) =>
-                      setFormData({ ...formData, navdacNumber: e.target.value })
+                      setFormData({ ...formData, nafdacNumber: e.target.value })
                     }
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
                     placeholder="e.g., A7-0001-2023"

@@ -167,9 +167,9 @@ export default function MapSampleDetails({ samples, setCommentSectionView }) {
                   }`}>
                     {s.verificationStatus === "VERIFIED_ORIGINAL" ? "✓ Original Product" : "✗ Counterfeit Detected"}
                   </p>
-                  {s.navdacNumber && (
+                  {s.nafdacNumber && (
                     <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 truncate">
-                      <span className="font-semibold">NAFDAC:</span> {s.navdacNumber}
+                      <span className="font-semibold">NAFDAC:</span> {s.nafdacNumber}
                     </p>
                   )}
                   {s.sonNumber && (
