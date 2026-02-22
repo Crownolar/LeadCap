@@ -35,6 +35,37 @@ export const getInitialSampleFormState = () => ({
   productPhoto: null,
 });
 
+/**
+ * Map API sample object to form state for edit mode
+ */
+export const sampleToFormState = (sample) => {
+  if (!sample) return getInitialSampleFormState();
+  const marketId = sample.marketId || (sample.marketName ? "OTHER" : "");
+  return {
+    stateId: sample.stateId || "",
+    lgaId: sample.lgaId || "",
+    productCategoryId: sample.productVariant?.category?.id || sample.productVariant?.categoryId || "",
+    productVariantId: sample.productVariantId || sample.productVariant?.id || "",
+    productName: sample.productName || "",
+    brandName: sample.brandName || "",
+    batchNumber: sample.batchNumber || "",
+    price: sample.price != null ? String(sample.price) : "",
+    marketId: marketId,
+    marketName: sample.marketName || "",
+    sampleType: sample.sampleType || "SOLID",
+    calibrationCurveFile: null,
+    vendorType: sample.vendorType || "",
+    vendorTypeOther: sample.vendorTypeOther || "",
+    isRegistered: Boolean(sample.isRegistered),
+    gpsLatitude: sample.gpsLatitude != null ? String(sample.gpsLatitude) : "",
+    gpsLongitude: sample.gpsLongitude != null ? String(sample.gpsLongitude) : "",
+    productOrigin: sample.productOrigin || "LOCAL",
+    navdacNumber: sample.navdacNumber || "",
+    sonNumber: sample.sonNumber || "",
+    productPhoto: sample.productPhotoUrl ? sample.productPhotoUrl : null,
+  };
+};
+
 // ===== DATA FETCHING =====
 
 /**

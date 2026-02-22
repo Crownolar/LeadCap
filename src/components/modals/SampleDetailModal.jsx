@@ -1,4 +1,4 @@
-import { X, AlertTriangle } from "lucide-react";
+import { X, AlertTriangle, Pencil } from "lucide-react";
 
 // Helper to format vendor type for display
 const formatVendorType = (vendorType, vendorTypeOther) => {
@@ -38,8 +38,15 @@ const getContaminationInfo = (heavyMetalReadings) => {
   };
 };
 
-const SampleDetailModal = ({ theme, sample, onClose }) => {
+const SampleDetailModal = ({ theme, sample, onClose, onEditRequest }) => {
   const contaminationInfo = getContaminationInfo(sample?.heavyMetalReadings);
+
+  const handleEdit = () => {
+    if (onEditRequest && sample) {
+      onEditRequest(sample);
+      onClose();
+    }
+  };
 
   return (
     <div
@@ -62,13 +69,26 @@ const SampleDetailModal = ({ theme, sample, onClose }) => {
               {sample?.sampleId}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className={`p-2 rounded-lg ${theme.hover} flex-shrink-0`}
-            aria-label="Close"
-          >
-            <X className="w-5 h-5 md:w-6 md:h-6" />
-          </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {onEditRequest && (
+              <button
+                type="button"
+                onClick={handleEdit}
+                className={`p-2 rounded-lg ${theme.hover} flex items-center gap-1.5 text-sm font-medium`}
+                aria-label="Edit sample"
+              >
+                <Pencil className="w-4 h-4 md:w-5 md:h-5" />
+                Edit
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className={`p-2 rounded-lg ${theme.hover}`}
+              aria-label="Close"
+            >
+              <X className="w-5 h-5 md:w-6 md:h-6" />
+            </button>
+          </div>
         </div>
 
         <div className="overflow-y-auto p-4 flex-1">

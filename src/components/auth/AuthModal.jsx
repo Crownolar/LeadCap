@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import { useDispatch, useSelector } from "react-redux";
 import { handleLogin, handleSignup } from "../../redux/slice/authSlice";
-import PopupModal from "../modals/popUpModal";
+import PopupModal from "../modals/PopupModal";
 import { useTheme } from "../../context/ThemeContext";
 
 const AuthModal = () => {

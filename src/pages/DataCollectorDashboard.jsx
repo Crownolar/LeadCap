@@ -7,13 +7,17 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
+  FileText,
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import HeavyMetalFormModalNew from "../components/modals/lab-result_modal/HeavyMetalFormModalNew";
+import SampleDetailModal from "../components/modals/SampleDetailModal";
+import SampleFormModal from "../components/modals/SampleFormModal";
 import {
   getMultipleSampleReadings,
   getSampleReadings,
 } from "../redux/slice/heavyMetalSlice";
+import { fetchSamples } from "../redux/slice/samplesSlice";
 import api from "../utils/api";
 
 const DataCollectorDashboard = () => {
@@ -33,6 +37,8 @@ const DataCollectorDashboard = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedSample, setSelectedSample] = useState(null);
   const [showHeavyMetalModal, setShowHeavyMetalModal] = useState(false);
+  const [detailSample, setDetailSample] = useState(null);
+  const [editSample, setEditSample] = useState(null);
   const [supervisor, setSupervisor] = useState(null);
   const [loadingSupervisor, setLoadingSupervisor] = useState(false);
 
@@ -115,6 +121,22 @@ const DataCollectorDashboard = () => {
     setSelectedSample(null);
   };
 
+  const handleViewDetails = (sample) => {
+    setDetailSample(sample);
+  };
+
+  const handleEditRequest = (sample) => {
+    setDetailSample(null);
+    setEditSample(sample);
+  };
+
+  const handleEditSubmit = async (payload) => {
+    if (!editSample?.id) return;
+    await api.put(`/samples/${editSample.id}`, payload);
+    dispatch(fetchSamples());
+    setEditSample(null);
+  };
+
   return (
     <div className={`min-h-screen ${theme?.bg}`}>
       {/* Header */}
@@ -143,28 +165,28 @@ const DataCollectorDashboard = () => {
           >
             <div className="space-y-2">
               <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                <p className={`${theme?.text} text-sm sm:text-base`}>
+                <p className="text-gray-800 dark:text-gray-100 text-sm sm:text-base">
                   <span className="font-semibold">
                     Welcome, {currentUser?.fullName}
                   </span>
                 </p>
                 {currentUser?.organization && (
-                  <span className={`text-xs sm:text-sm ${theme?.textMuted}`}>
+                  <span className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">
                     • {currentUser.organization}
                   </span>
                 )}
               </div>
               {supervisor ? (
-                <p className={`text-xs sm:text-sm ${theme?.textMuted}`}>
+                <p className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">
                   <span className="font-semibold">Supervisor:</span>{" "}
                   {supervisor.fullName} ({supervisor.email})
                 </p>
               ) : loadingSupervisor ? (
-                <p className={`text-xs sm:text-sm ${theme?.textMuted}`}>
+                <p className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">
                   Loading supervisor info...
                 </p>
               ) : (
-                <p className={`text-xs sm:text-sm ${theme?.textMuted}`}>
+                <p className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">
                   No supervisor assigned yet
                 </p>
               )}
@@ -343,6 +365,14 @@ const DataCollectorDashboard = () => {
                     <p className="text-emerald-100 text-xs sm:text-sm mt-1">
                       {sample.sampleId}
                     </p>
+                    <button
+                      type="button"
+                      onClick={() => handleViewDetails(sample)}
+                      className="mt-2 text-emerald-100 hover:text-white text-xs font-medium flex items-center gap-1"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      View details
+                    </button>
                   </div>
 
                   {/* Content */}
@@ -357,7 +387,7 @@ const DataCollectorDashboard = () => {
                       <p
                         className={`${theme?.text} font-medium text-sm sm:text-base`}
                       >
-                        {sample.market?.name || "N/A"}
+                        {sample.marketName || sample.market?.name || "N/A"}
                       </p>
                       <p className={`${theme?.textMuted} text-xs sm:text-sm`}>
                         {sample.lga?.name}, {sample.state?.name}
@@ -446,6 +476,26 @@ const DataCollectorDashboard = () => {
           </div>
         )}
       </div>
+
+      {/* Sample Detail Modal */}
+      {detailSample && (
+        <SampleDetailModal
+          theme={theme}
+          sample={detailSample}
+          onClose={() => setDetailSample(null)}
+          onEditRequest={handleEditRequest}
+        />
+      )}
+
+      {/* Sample Edit Modal */}
+      {editSample && (
+        <SampleFormModal
+          onClose={() => setEditSample(null)}
+          onSubmit={handleEditSubmit}
+          mode="edit"
+          initialSample={editSample}
+        />
+      )}
 
       {/* Heavy Metal Modal */}
       {showHeavyMetalModal && selectedSample && (
