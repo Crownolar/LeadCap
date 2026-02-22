@@ -6,7 +6,6 @@ import Dashboard from "../components/views/Dashboard";
 import Database from "../components/views/Database";
 import MapView from "../components/views/MapView";
 import Reports from "../components/views/Reports";
-import Agents from "../components/views/Agents";
 import SampleFormModal from "../components/modals/SampleFormModal";
 import SampleDetailModal from "../components/modals/SampleDetailModal";
 import { useRef, useState, useMemo } from "react";
@@ -108,7 +107,6 @@ const Home = () => {
       )}
       {currentView === "map" && <MapView theme={theme} samples={filteredSamples} />}
       {currentView === "reports" && <Reports theme={theme} samples={filteredSamples} />}
-      {currentView === "agents" && <Agents theme={theme} samples={filteredSamples} />}
       {showForm && (
         <SampleFormModal
           theme={theme}

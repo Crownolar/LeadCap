@@ -29,7 +29,7 @@ const roleConfig = {
   headresearcher: {
     sampleButton: false,
     excelImport: false,
-    navItems: ["dashboard", "database", "map", "reports", "agents"],
+    navItems: ["dashboard", "database", "map", "reports"],
   },
   policymakerson: {
     sampleButton: false,
@@ -79,12 +79,6 @@ const Sidebar = ({
       key: "dashboard",
     },
     {
-      icon: Users,
-      label: "Admin Center",
-      route: "/superadmin",
-      key: "superadmin",
-    },
-    {
       icon: Beaker,
       label: "My Samples",
       route: "/data-collector",
@@ -110,7 +104,6 @@ const Sidebar = ({
     },
     { icon: Map, label: "Geographic View", route: "/map", key: "map" },
     { icon: FileText, label: "Reports", route: "/reports", key: "reports" },
-    { icon: Users, label: "Field Agents", route: "/agents", key: "agents" },
     {
       icon: Users,
       label: "Data Collectors",
@@ -123,8 +116,6 @@ const Sidebar = ({
       route: "/sample-review",
       key: "sample-review",
     },
-    { icon: Settings, label: "States", route: "/states", key: "states" },
-    { icon: Users, label: "Users", route: "/users", key: "users" },
     {
       icon: Settings,
       label: "Thresholds",

@@ -9,7 +9,6 @@ import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { handleLogout } from "./redux/slice/authSlice";
 import MapView from "./components/views/MapView";
-import Agents from "./components/views/Agents";
 import Reports from "./components/views/Reports";
 import Database from "./components/views/Database";
 import { fetchSamples } from "./redux/slice/samplesSlice";
@@ -17,12 +16,9 @@ import PolicyWelcome from "./pages/PolicyWelcome";
 import HeavyMetalFormModalNew from "./components/modals/lab-result_modal/HeavyMetalFormModalNew";
 import DataCollectorDashboard from "./pages/DataCollectorDashboard";
 import DataCollectorWelcome from "./pages/DataCollectorWelcome";
-import StateActivation from "./components/views/StateActivation";
-import UserManagement from "./components/views/UserManagement";
 import ThresholdManagement from "./components/views/ThresholdManagement";
 import InviteCodeManagement from "./components/views/InviteCodeManagement";
 import SupervisorDashboard from "./components/views/SupervisorDashboard";
-import SuperAdminDashboard from "./components/views/SuperAdminDashboard";
 import CollectorManagement from "./components/views/CollectorManagement";
 import SampleReview from "./components/views/SampleReview";
 import LabAnalystDashboard from "./components/views/LabAnalystDashboard";
@@ -150,15 +146,6 @@ const App = () => {
           />
 
           <Route
-            path="agents"
-            element={
-              <PrivateRoute allowedRoles={["superadmin", "headresearcher"]}>
-                <Agents />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
             path="map"
             element={
               <PrivateRoute
@@ -174,24 +161,6 @@ const App = () => {
                 ]}
               >
                 <MapView theme={theme} />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="states"
-            element={
-              <PrivateRoute allowedRoles={["superadmin"]}>
-                <StateActivation theme={theme} darkMode={darkMode} />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="users"
-            element={
-              <PrivateRoute allowedRoles={["superadmin"]}>
-                <UserManagement theme={theme} darkMode={darkMode} />
               </PrivateRoute>
             }
           />
@@ -219,15 +188,6 @@ const App = () => {
             element={
               <PrivateRoute allowedRoles={["superadmin"]}>
                 <InviteCodeManagement theme={theme} darkMode={darkMode} />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="superadmin"
-            element={
-              <PrivateRoute allowedRoles={["superadmin"]}>
-                <SuperAdminDashboard theme={theme} darkMode={darkMode} />
               </PrivateRoute>
             }
           />

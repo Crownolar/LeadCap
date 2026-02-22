@@ -1,13 +1,16 @@
 import {
   KeyRound,
   Users,
-  Beaker,
-  MessageSquare,
   Trash2,
   Edit,
   Eye,
   MapPin,
   Plus,
+  Settings,
+  Check,
+  X,
+  Loader2,
+  Search,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -65,6 +68,15 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
   const [assignError, setAssignError] = useState(null);
   const [assignLoading, setAssignLoading] = useState(false);
 
+  // State activation tab
+  const [activationStates, setActivationStates] = useState([]);
+  const [activationLoading, setActivationLoading] = useState(false);
+  const [activationError, setActivationError] = useState(null);
+  const [selectedStateIds, setSelectedStateIds] = useState([]);
+  const [activationBusyId, setActivationBusyId] = useState(null);
+  const [activationBulkBusy, setActivationBulkBusy] = useState(false);
+  const [stateSearch, setStateSearch] = useState("");
+
   useEffect(() => {
     dispatch(getAllUsers({ page: 1, limit: 20 })).then((res) =>
       console.log("Fetched Users (dispatch result):", res.payload)
@@ -89,6 +101,25 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
       }
     };
     fetchAdminData();
+  }, [activeTab]);
+
+  // Fetch all states (no activeOnly) for State activation tab
+  useEffect(() => {
+    if (activeTab !== "stateActivation") return;
+    const fetchActivationStates = async () => {
+      try {
+        setActivationLoading(true);
+        setActivationError(null);
+        const res = await api.get("/management/states");
+        setActivationStates(res.data?.data || []);
+      } catch (err) {
+        setActivationError("Failed to load states: " + (err.response?.data?.error || err.message));
+        setActivationStates([]);
+      } finally {
+        setActivationLoading(false);
+      }
+    };
+    fetchActivationStates();
   }, [activeTab]);
 
   useEffect(() => {
@@ -271,6 +302,66 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
     }
   };
 
+  // State activation: filter by search
+  const filteredActivationStates = stateSearch.trim()
+    ? activationStates.filter(
+        (s) =>
+          (s.name || "").toLowerCase().includes(stateSearch.toLowerCase()) ||
+          (s.code || "").toLowerCase().includes(stateSearch.toLowerCase())
+      )
+    : activationStates;
+
+  const handleActivationToggleOne = async (state) => {
+    setActivationBusyId(state.id);
+    try {
+      await api.patch(`/management/states/${state.id}/active`, {
+        isActive: !state.isActive,
+      });
+      const res = await api.get("/management/states");
+      setActivationStates(res.data?.data || []);
+      setSelectedStateIds((prev) => prev.filter((id) => id !== state.id));
+      setActivationError(null);
+    } catch (err) {
+      setActivationError("Failed to update: " + (err.response?.data?.error || err.message));
+    } finally {
+      setActivationBusyId(null);
+    }
+  };
+
+  const handleActivationBulk = async (isActive) => {
+    if (selectedStateIds.length === 0) return;
+    setActivationBulkBusy(true);
+    try {
+      await api.patch("/management/states/bulk-active", {
+        stateIds: selectedStateIds,
+        isActive,
+      });
+      const res = await api.get("/management/states");
+      setActivationStates(res.data?.data || []);
+      setSelectedStateIds([]);
+      setActivationError(null);
+      setMessage(`${selectedStateIds.length} state(s) ${isActive ? "activated" : "deactivated"}.`);
+    } catch (err) {
+      setActivationError("Bulk update failed: " + (err.response?.data?.error || err.message));
+    } finally {
+      setActivationBulkBusy(false);
+    }
+  };
+
+  const toggleActivationSelect = (id) => {
+    setSelectedStateIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleActivationSelectAll = () => {
+    if (selectedStateIds.length === filteredActivationStates.length) {
+      setSelectedStateIds([]);
+    } else {
+      setSelectedStateIds(filteredActivationStates.map((s) => s.id));
+    }
+  };
+
   const getStatusBadge = (status) => {
     const statusStyles = {
       active: "bg-emerald-500/20 text-emerald-400 border-emerald-500/50",
@@ -291,8 +382,7 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
     { id: "invite", label: "Invite Codes", icon: KeyRound },
     { id: "users", label: "Users", icon: Users },
     { id: "supervisors", label: "Supervisors & States", icon: MapPin },
-    { id: "samples", label: "Samples", icon: Beaker },
-    { id: "comments", label: "Comments", icon: MessageSquare },
+    { id: "stateActivation", label: "State activation", icon: Settings },
     { id: "viewUser", label: "View User", icon: Eye },
   ];
 
@@ -499,6 +589,162 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                   ))
                 )}
               </div>
+            </div>
+          )}
+
+          {activeTab === "stateActivation" && (
+            <div>
+              <div className='mb-6'>
+                <h2 className='text-xl font-bold flex items-center gap-2 mb-1'>
+                  <Settings className='text-emerald-500' /> State activation
+                </h2>
+                <p className={`text-sm ${currentTheme.textMuted}`}>
+                  Activate or deactivate states. Only active states appear in dropdowns (e.g. Add Sample).
+                </p>
+              </div>
+
+              {activationError && (
+                <div className='mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm'>
+                  {activationError}
+                </div>
+              )}
+              {message && (
+                <div className='mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm'>
+                  {message}
+                </div>
+              )}
+
+              {/* Scope bar: selection count + bulk actions (UX: show what will change) */}
+              {selectedStateIds.length > 0 && (
+                <div className='mb-4 p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 flex flex-wrap items-center gap-3'>
+                  <span className='text-sm font-medium text-emerald-400'>
+                    {selectedStateIds.length} selected
+                  </span>
+                  <button
+                    type='button'
+                    disabled={activationBulkBusy}
+                    onClick={() => handleActivationBulk(true)}
+                    className='flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-medium min-h-[44px] min-w-[44px]'
+                    title='Activate selected states'
+                  >
+                    {activationBulkBusy ? <Loader2 size={18} className='animate-spin' /> : <Check size={18} />}
+                    Activate
+                  </button>
+                  <button
+                    type='button'
+                    disabled={activationBulkBusy}
+                    onClick={() => handleActivationBulk(false)}
+                    className='flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 disabled:opacity-50 text-white text-sm font-medium min-h-[44px] min-w-[44px]'
+                    title='Deactivate selected states'
+                  >
+                    {activationBulkBusy ? <Loader2 size={18} className='animate-spin' /> : <X size={18} />}
+                    Deactivate
+                  </button>
+                  <button
+                    type='button'
+                    onClick={() => setSelectedStateIds([])}
+                    className='text-sm text-gray-400 hover:text-gray-200'
+                  >
+                    Clear selection
+                  </button>
+                </div>
+              )}
+
+              {/* Search: filter by name or code */}
+              <div className='mb-4 relative'>
+                <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500' />
+                <input
+                  type='text'
+                  placeholder='Search by state name or code...'
+                  value={stateSearch}
+                  onChange={(e) => setStateSearch(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-lg border ${currentTheme.input} text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                />
+              </div>
+
+              {activationLoading ? (
+                <div className='flex items-center gap-2 py-8 text-center'>
+                  <Loader2 className='w-6 h-6 animate-spin text-emerald-500' />
+                  <span className={currentTheme.textMuted}>Loading states...</span>
+                </div>
+              ) : (
+                <div className={`rounded-xl border ${currentTheme.border} overflow-hidden ${currentTheme.card}`}>
+                  <div className='overflow-x-auto'>
+                    <table className='w-full text-sm'>
+                      <thead className={currentTheme.bg === 'bg-gray-800' ? 'bg-gray-700/80' : 'bg-gray-100'}>
+                        <tr>
+                          <th className='px-4 py-3 text-left w-12'>
+                            <input
+                              type='checkbox'
+                              checked={filteredActivationStates.length > 0 && selectedStateIds.length === filteredActivationStates.length}
+                              onChange={toggleActivationSelectAll}
+                              className='rounded border-gray-400 w-5 h-5 min-w-[24px] min-h-[24px]'
+                              aria-label='Select all'
+                            />
+                          </th>
+                          <th className={`px-4 py-3 text-left font-semibold ${currentTheme.textMuted}`}>Name</th>
+                          <th className={`px-4 py-3 text-left font-semibold ${currentTheme.textMuted}`}>Code</th>
+                          <th className={`px-4 py-3 text-left font-semibold ${currentTheme.textMuted}`}>Status</th>
+                          <th className={`px-4 py-3 text-left font-semibold ${currentTheme.textMuted}`}>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className={`divide-y ${currentTheme.border}`}>
+                        {filteredActivationStates.map((state) => (
+                          <tr key={state.id} className={`${currentTheme.hover || 'hover:bg-gray-700/30'}`}>
+                            <td className='px-4 py-3'>
+                              <input
+                                type='checkbox'
+                                checked={selectedStateIds.includes(state.id)}
+                                onChange={() => toggleActivationSelect(state.id)}
+                                className='rounded border-gray-400 w-5 h-5 min-w-[24px] min-h-[24px]'
+                                aria-label={`Select ${state.name}`}
+                              />
+                            </td>
+                            <td className={`px-4 py-3 font-medium ${currentTheme.text}`}>{state.name}</td>
+                            <td className={`px-4 py-3 ${currentTheme.textMuted}`}>{state.code}</td>
+                            <td className='px-4 py-3'>
+                              <span
+                                className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${
+                                  state.isActive
+                                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                                    : 'bg-gray-500/20 text-gray-400 border border-gray-500/40'
+                                }`}
+                              >
+                                {state.isActive ? 'Active' : 'Inactive'}
+                              </span>
+                            </td>
+                            <td className='px-4 py-3'>
+                              <button
+                                type='button'
+                                disabled={activationBusyId === state.id}
+                                onClick={() => handleActivationToggleOne(state)}
+                                className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium disabled:opacity-50 ${
+                                  state.isActive
+                                    ? 'text-amber-400 hover:bg-amber-500/10'
+                                    : 'text-emerald-400 hover:bg-emerald-500/10'
+                                }`}
+                              >
+                                {activationBusyId === state.id ? (
+                                  <Loader2 size={16} className='animate-spin' />
+                                ) : state.isActive ? (
+                                  'Deactivate'
+                                ) : (
+                                  'Activate'
+                                )}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {filteredActivationStates.length === 0 && (
+                    <div className={`px-4 py-8 text-center ${currentTheme.textMuted}`}>
+                      {stateSearch.trim() ? 'No states match your search.' : 'No states found.'}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
