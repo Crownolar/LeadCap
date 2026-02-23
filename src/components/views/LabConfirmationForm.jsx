@@ -187,8 +187,11 @@ const LabConfirmationForm = () => {
       {/* HEADER */}
       <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
         <button
-          onClick={() => navigate("lab-samples")}
+          type="button"
+          onClick={() => navigate("/lab-samples")}
           className={`p-1.5 sm:p-2 rounded-lg transition ${theme.hover}`}
+          title="Back to lab samples"
+          aria-label="Back to lab samples"
         >
           <ArrowLeft size={18} className={`sm:w-5 sm:h-5 ${theme.text}`} />
         </button>
@@ -382,7 +385,7 @@ const LabConfirmationForm = () => {
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-4 sm:mt-6">
             <button
               type="button"
-              onClick={() => navigate("lab-samples")}
+              onClick={() => navigate("/lab-samples")}
               className={`px-4 py-2 border ${theme?.hover} ${theme?.text} ${theme?.bg} ${theme?.border} rounded-lg text-sm sm:text-base font-medium transition-colors`}
             >
               Cancel

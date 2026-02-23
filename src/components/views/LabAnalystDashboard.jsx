@@ -130,7 +130,11 @@ const LabAnalystDashboard = ({ theme: propTheme }) => {
         <StatCard
           icon={TrendingUp}
           label="Accuracy Rate"
-          value={`${(labStats?.accuracyRate || 0).toFixed(1)}%`}
+          value={
+            labStats?.completedCount === 0
+              ? "N/A"
+              : `${(labStats?.accuracyRate ?? 0).toFixed(1)}%`
+          }
           color="bg-purple-600"
           theme={theme}
         />
@@ -140,8 +144,11 @@ const LabAnalystDashboard = ({ theme: propTheme }) => {
       <div
         className={`${theme?.card} ${theme.text} rounded-lg shadow-md border ${theme?.border} p-4 sm:p-6`}
       >
-        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
+        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 inline-flex items-center gap-2">
           Samples Requiring Lab Confirmation
+          <span className="inline-flex items-center justify-center min-w-[1.5rem] h-6 px-2 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
+            {samplesRequiringConfirmation.length}
+          </span>
         </h3>
 
         {/* Desktop Table View */}
@@ -214,11 +221,15 @@ const LabAnalystDashboard = ({ theme: propTheme }) => {
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan="6"
-                    className="px-4 py-6 text-center text-gray-500 dark:text-gray-400"
-                  >
-                    No samples pending lab confirmation
+                  <td colSpan="6" className="px-4 py-8 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <p className={`text-sm font-medium ${theme?.text} mb-1`}>
+                        No samples pending lab confirmation
+                      </p>
+                      <p className={`text-xs ${theme?.textMuted}`}>
+                        Samples with Lead XRF results requiring AAS will appear here
+                      </p>
+                    </div>
                   </td>
                 </tr>
               )}
@@ -315,16 +326,19 @@ const LabAnalystDashboard = ({ theme: propTheme }) => {
               </div>
             ))
           ) : (
-            <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-gray-400 text-sm">
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <p className={`text-sm font-medium ${theme?.text} mb-1`}>
                 No samples pending lab confirmation
+              </p>
+              <p className={`text-xs ${theme?.textMuted}`}>
+                Samples with Lead XRF results requiring AAS will appear here
               </p>
             </div>
           )}
         </div>
       </div>
 
-      {/* COMPARISON INSIGHTS */}
+      {/* COMPARISON INSIGHTS - show N/A when no AAS recorded yet */}
       {labStats?.comparisonMetrics && (
         <div
           className={`${theme?.card} ${theme.text} rounded-lg shadow-md border ${theme?.border} p-4 sm:p-6`}
@@ -332,32 +346,38 @@ const LabAnalystDashboard = ({ theme: propTheme }) => {
           <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
             XRF vs AAS Agreement Analysis
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-            <div className={`${theme?.bg} p-3 sm:p-4 rounded`}>
-              <p className={`text-xs sm:text-sm ${theme?.textMuted} mb-1`}>
-                Full Agreement
-              </p>
-              <p className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">
-                {labStats.comparisonMetrics.fullAgreement}%
-              </p>
+          {labStats?.completedCount === 0 ? (
+            <p className={`text-sm ${theme?.textMuted}`}>
+              Record AAS readings to see agreement metrics.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <div className={`${theme?.bg} p-3 sm:p-4 rounded`}>
+                <p className={`text-xs sm:text-sm ${theme?.textMuted} mb-1`}>
+                  Full Agreement
+                </p>
+                <p className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">
+                  {labStats.comparisonMetrics.fullAgreement}%
+                </p>
+              </div>
+              <div className={`${theme?.bg} p-3 sm:p-4 rounded`}>
+                <p className={`text-xs sm:text-sm ${theme?.textMuted} mb-1`}>
+                  Partial Agreement
+                </p>
+                <p className="text-xl sm:text-2xl font-bold text-amber-600 dark:text-amber-400">
+                  {labStats.comparisonMetrics.partialAgreement}%
+                </p>
+              </div>
+              <div className={`${theme?.bg} p-3 sm:p-4 rounded`}>
+                <p className={`text-xs sm:text-sm ${theme?.textMuted} mb-1`}>
+                  Disagreement
+                </p>
+                <p className="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">
+                  {labStats.comparisonMetrics.disagreement}%
+                </p>
+              </div>
             </div>
-            <div className={`${theme?.bg} p-3 sm:p-4 rounded`}>
-              <p className={`text-xs sm:text-sm ${theme?.textMuted} mb-1`}>
-                Partial Agreement
-              </p>
-              <p className="text-xl sm:text-2xl font-bold text-amber-600 dark:text-amber-400">
-                {labStats.comparisonMetrics.partialAgreement}%
-              </p>
-            </div>
-            <div className={`${theme?.bg} p-3 sm:p-4 rounded`}>
-              <p className={`text-xs sm:text-sm ${theme?.textMuted} mb-1`}>
-                Disagreement
-              </p>
-              <p className="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">
-                {labStats.comparisonMetrics.disagreement}%
-              </p>
-            </div>
-          </div>
+          )}
         </div>
       )}
     </div>

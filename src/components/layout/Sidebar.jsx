@@ -54,7 +54,7 @@ const roleConfig = {
   labanalyst: {
     sampleButton: false,
     excelImport: false,
-    navItems: ["lab-samples", "record-reading/:sampleId"], // Lab analyst - view and confirm AAS readings
+    navItems: ["lab-samples"], // Lab analyst - view and confirm AAS; record-reading/:id from dashboard
   },
 };
 
@@ -88,12 +88,6 @@ const Sidebar = ({
       icon: Beaker,
       label: "Lab Samples",
       route: "/lab-samples",
-      key: "lab-samples",
-    },
-    {
-      icon: Beaker,
-      label: "Record Readings List",
-      route: "/record-reading/:sampleId",
       key: "lab-samples",
     },
     {
