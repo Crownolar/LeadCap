@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "https://194-146-38-237.cloud-xip.com",
+        target: "https://api.leadcap.ng",
         changeOrigin: true,
         secure: false,
       },
