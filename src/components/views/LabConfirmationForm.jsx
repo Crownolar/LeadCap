@@ -57,10 +57,11 @@ const LabConfirmationForm = () => {
         );
         setSample(res.data.data);
 
-        // Initialize form with readings pending AAS
+        // Initialize form with readings pending AAS (Lead only - AAS not enforced for other metals)
         const initialData = {};
         res.data.data?.heavyMetalReadings?.forEach((reading) => {
           if (
+            reading.heavyMetal === "LEAD" &&
             reading.requiresLabConfirmation &&
             reading.aasStatus === "PENDING"
           ) {
@@ -145,11 +146,13 @@ const LabConfirmationForm = () => {
       console.error("   Error message:", err.message);
       console.error("   Error response data:", err.response?.data);
       console.error("   Error status:", err.response?.status);
-      setError(
+      const backendMessage =
+        err.response?.data?.error ||
         err.response?.data?.message ||
-          err.response?.data?.errors?.join(", ") ||
-          "Failed to submit AAS readings"
-      );
+        (Array.isArray(err.response?.data?.errors)
+          ? err.response.data.errors.join(", ")
+          : null);
+      setError(backendMessage || "Failed to submit AAS readings");
     } finally {
       setSubmitting(false);
     }
@@ -177,9 +180,13 @@ const LabConfirmationForm = () => {
     );
   }
 
+  // AAS is only required for Lead; do not show or enforce AAS for other metals
   const readingsToConfirm =
     sample?.heavyMetalReadings?.filter(
-      (r) => r.requiresLabConfirmation && r.aasStatus === "PENDING"
+      (r) =>
+        r.heavyMetal === "LEAD" &&
+        r.requiresLabConfirmation &&
+        r.aasStatus === "PENDING"
     ) || [];
 
   return (
