@@ -6,6 +6,7 @@ import {
   formatDecimal,
 } from "../../utils/thresholdUtils";
 import { useTheme } from "../../context/ThemeContext";
+import { useEnums } from "../../context/EnumsContext";
 
 const ThresholdManagement = () => {
   const [thresholds, setThresholds] = useState([]);
@@ -18,6 +19,7 @@ const ThresholdManagement = () => {
   const [editingId, setEditingId] = useState(null);
   const [editValues, setEditValues] = useState({});
   const { theme } = useTheme();
+  const { heavyMetals: enumsHeavyMetals } = useEnums();
 
   useEffect(() => {
     Promise.all([fetchThresholds(), fetchCategories(), fetchHeavyMetals()]);
@@ -56,17 +58,9 @@ const ThresholdManagement = () => {
       setHeavyMetals(metals);
     } catch (err) {
       console.error("Failed to fetch heavy metals:", err);
-      setHeavyMetals([
-        "LEAD",
-        "CADMIUM",
-        "CHROMIUM",
-        "NICKEL",
-        "ARSENIC",
-        "MERCURY",
-        "COPPER",
-        "ZINC",
-        "COBALT",
-        "MANGANESE",
+      setHeavyMetals(enumsHeavyMetals?.length ? enumsHeavyMetals : [
+        "LEAD", "CADMIUM", "CHROMIUM", "NICKEL", "ARSENIC", "MERCURY",
+        "COPPER", "ZINC", "COBALT", "MANGANESE",
       ]);
     }
   };

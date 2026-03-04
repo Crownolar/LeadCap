@@ -224,49 +224,40 @@ export const generateRiskAssessmentData = (samples, minLeadLevel) => {
 }
 
 /**
- * Call backend PDF generation endpoint
+ * Build request body for backend report endpoints.
+ * Backend fetches data from DB using these filters.
  */
-export const generateReportPDF = async (api, reportType, data, filename) => {
-  try {
-    // DEBUG: Log the exact endpoint being called
-    console.log('🔴 [generateReportPDF] Starting PDF generation');
-    console.log('   Report Type:', reportType);
-    console.log('   Filename:', filename);
-    console.log('   Data structure:', {
-      isArray: Array.isArray(data),
-      type: typeof data,
-      hasDataProperty: data?.data ? true : false,
-      dataLength: Array.isArray(data) ? data.length : (data?.data?.length || 0)
-    });
-    
-    // Data can be either an array directly or an object with data property
-    const dataArray = Array.isArray(data) ? data : (data?.data || []);
-    console.log('   Data samples count:', dataArray.length);
-    console.log('   Full data object keys:', Object.keys(data || {}));
-    
-    // The endpoint should be specific like /reports/generate/state-summary
-    const endpoint = `/reports/generate/${reportType}`;
-    console.log('   Endpoint:', endpoint);
-    console.log('   Full URL will be:', `${api.defaults.baseURL}${endpoint}`);
-    
-    console.log('🟡 [generateReportPDF] Sending POST request...');
-    console.log('   Request payload:', {
-      type: reportType,
-      data: data,
-      payloadSize: JSON.stringify({ type: reportType, data }).length
-    });
-    
-    const response = await api.post(endpoint, {
-      type: reportType,
-      data: data,
-      filename: filename
-    }, {
-      responseType: 'blob'
-    })
+function buildReportPayload(reportType, filters) {
+  const { state, states, productVariants, dateFrom, dateTo, minLeadLevel } = filters || {}
+  switch (reportType) {
+    case 'state-summary':
+      return { state, dateFrom, dateTo }
+    case 'product-type':
+      return { state, dateFrom, dateTo }
+    case 'contamination-analysis':
+      return { states: states || [], productVariantIds: productVariants || [], dateFrom, dateTo }
+    case 'risk-assessment':
+      return { minLeadLevel: minLeadLevel ?? 10, dateFrom, dateTo }
+    default:
+      return { state, dateFrom, dateTo }
+  }
+}
 
-    console.log('🟢 [generateReportPDF] Success! Response received:', response.status);
-    
-    // Create blob URL and download
+/**
+ * Call backend PDF generation endpoint.
+ * Backend expects filters and fetches data from DB.
+ * @param {object} api - axios instance
+ * @param {string} reportType - state-summary | product-type | contamination-analysis | risk-assessment
+ * @param {object} filters - { state, states, productVariants, dateFrom, dateTo, minLeadLevel }
+ * @param {string} filename - download filename (without .pdf)
+ */
+export const generateReportPDF = async (api, reportType, filters, filename) => {
+  const endpoint = `/reports/generate/${reportType}`
+  const payload = buildReportPayload(reportType, filters)
+
+  try {
+    const response = await api.post(endpoint, payload, { responseType: 'blob' })
+
     const url = window.URL.createObjectURL(new Blob([response.data]))
     const link = document.createElement('a')
     link.href = url
@@ -274,18 +265,11 @@ export const generateReportPDF = async (api, reportType, data, filename) => {
     document.body.appendChild(link)
     link.click()
     link.parentElement.removeChild(link)
+    window.URL.revokeObjectURL(url)
 
-    console.log('✅ [generateReportPDF] PDF downloaded successfully');
     return true
   } catch (error) {
-    console.error('❌ [generateReportPDF] Failed to generate PDF');
-    console.error('   Error Message:', error.message);
-    console.error('   Error Code:', error.code);
-    console.error('   Status:', error.response?.status);
-    console.error('   Status Text:', error.response?.statusText);
-    console.error('   URL:', error.config?.url);
-    console.error('   Method:', error.config?.method);
-    console.error('   Full Error:', error);
+    console.error('Report PDF generation failed:', error.message, error.response?.status)
     throw error
   }
 }

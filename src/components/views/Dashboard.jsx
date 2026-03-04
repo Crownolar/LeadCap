@@ -24,7 +24,8 @@ import {
 import { Package, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import StatCard from "../common/StatCard";
 import { COLORS } from "../../utils/constants";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchSamples } from "../../redux/slice/samplesSlice";
 import {
   aggregateByMonth,
   deriveLocationData,
@@ -66,23 +67,35 @@ const CustomTooltip = ({ active, payload, label, theme }) => {
 };
 
 const Dashboard = () => {
-  const { samples, loading, error, errorCode } = useSelector(
+  const dispatch = useDispatch();
+  const { samples, loading, error, errorCode, hasFetched } = useSelector(
     (state) => state.samples
   );
 
-  // Filter states
   const [filterState, setFilterState] = useState("all");
   const [filterProduct, setFilterProduct] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [states, setStates] = useState([]);
+  const [stats, setStats] = useState(null);
   const { theme } = useTheme();
+
+  // Variants that appear in loaded samples only (so "All Products" never shows empty)
+  const productVariantsInSamples = useMemo(() => {
+    if (!samples || samples.length === 0) return [];
+    const variantIds = [...new Set(samples.map((s) => s.productVariant?.id).filter(Boolean))];
+    return variantIds.map((id) => {
+      const sample = samples.find((s) => s.productVariant?.id === id);
+      const v = sample?.productVariant;
+      return v ? { id: v.id, name: v.name, displayName: v.displayName } : null;
+    }).filter(Boolean);
+  }, [samples]);
 
   // Fetch states on mount
   useEffect(() => {
     const fetchStates = async () => {
       try {
         const api = await import("../../utils/api").then((m) => m.default);
-        const response = await api.get("/management/states");
+        const response = await api.get("/management/states", { params: { activeOnly: "true" } });
         setStates(response.data.data || []);
       } catch (err) {
         console.error("Failed to fetch states:", err);
@@ -90,6 +103,13 @@ const Dashboard = () => {
     };
     fetchStates();
   }, []);
+
+  // Load samples once into Redux (no refetch when filters change)
+  useEffect(() => {
+    if (!hasFetched) {
+      dispatch(fetchSamples({ page: 1, limit: 5000 }));
+    }
+  }, [dispatch, hasFetched]);
 
   // Filter samples based on filters
   const filteredSamples = useMemo(() => {
@@ -260,18 +280,11 @@ const Dashboard = () => {
             className={`w-full px-3 py-2 sm:px-4 text-sm sm:text-base border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
           >
             <option value="all">All Products</option>
-            {[...new Set(filteredSamples.map((s) => s.productVariant?.id))]
-              .filter(Boolean)
-              .map((variantId) => {
-                const variant = filteredSamples.find(
-                  (s) => s.productVariant?.id === variantId
-                )?.productVariant;
-                return (
-                  <option key={variantId} value={variantId}>
-                    {variant?.displayName || variant?.name || "Unknown"}
-                  </option>
-                );
-              })}
+            {productVariantsInSamples.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.displayName || v.name || "Unknown"}
+              </option>
+            ))}
           </select>
 
           <select
@@ -288,22 +301,22 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards (server-side stats when available, else client analytics) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           icon={Package}
           label="Total Samples"
-          value={analytics.total}
+          value={stats?.totalSamples ?? analytics.total}
           color="bg-blue-600"
           theme={theme}
         />
         <StatCard
           icon={AlertTriangle}
           label="Contaminated"
-          value={analytics.contaminated}
+          value={stats?.contaminated ?? analytics.contaminated}
           color="bg-red-600"
           subtext={`${(
-            (analytics.contaminated / analytics.total) *
+            ((stats?.contaminated ?? analytics.contaminated) / (stats?.totalSamples || analytics.total || 1)) *
             100
           ).toFixed(1)}% of total`}
           theme={theme}
@@ -311,9 +324,9 @@ const Dashboard = () => {
         <StatCard
           icon={CheckCircle}
           label="Safe"
-          value={analytics.safe}
+          value={stats?.safe ?? analytics.safe}
           color="bg-green-600"
-          subtext={`${((analytics.safe / analytics.total) * 100).toFixed(
+          subtext={`${(((stats?.safe ?? analytics.safe) / (stats?.totalSamples || analytics.total || 1)) * 100).toFixed(
             1
           )}% of total`}
           theme={theme}
@@ -321,7 +334,7 @@ const Dashboard = () => {
         <StatCard
           icon={Clock}
           label="Pending"
-          value={analytics.pending}
+          value={stats?.pending ?? analytics.pending}
           color="bg-yellow-500"
           theme={theme}
         />

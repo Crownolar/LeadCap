@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import api from "../../utils/api";
 import {
@@ -17,32 +18,24 @@ import {
 
 const SupervisorDashboard = () => {
   const { theme } = useTheme();
+  const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [collectors, setCollectors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const COLORS = ["#030a07", "#ef4444", "#f59e0b", "#8b5cf6"];
-
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-
         const [statsRes, collectorsRes] = await Promise.all([
           api.get("/supervisor/stats"),
           api.get("/supervisor/collectors"),
         ]);
-
         if (statsRes.data.success) setStats(statsRes.data.data);
-
-        // Handle collectors response - data might be nested or be the array directly
         if (collectorsRes.data.success) {
-          const collectorsData = collectorsRes.data.data || collectorsRes.data;
-          const collectorsList = Array.isArray(collectorsData)
-            ? collectorsData
-            : collectorsData?.data || [];
-          setCollectors(collectorsList);
+          const data = collectorsRes.data.data || collectorsRes.data;
+          setCollectors(Array.isArray(data) ? data : data?.data || []);
         }
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
@@ -51,9 +44,10 @@ const SupervisorDashboard = () => {
         setLoading(false);
       }
     };
-
     fetchDashboardData();
   }, []);
+
+  const COLORS = ["#030a07", "#ef4444", "#f59e0b", "#8b5cf6"];
 
   if (loading) {
     return (
@@ -83,20 +77,24 @@ const SupervisorDashboard = () => {
 
   return (
     <div className={`${theme?.text} space-y-6`}>
-      {/* Header Stats */}
+      {/* Header Stats - clickable cards for affordance and efficiency */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div
-          className={`${theme?.card} rounded-lg p-6 border ${theme?.border}`}
+        <button
+          type="button"
+          onClick={() => navigate("/collectors")}
+          className={`${theme?.card} rounded-lg p-6 border ${theme?.border} text-left w-full cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2`}
         >
           <p className={`text-sm ${theme?.textMuted} mb-2`}>Data Collectors</p>
           <p className="text-3xl font-bold text-emerald-600">
             {stats?.totalCollectors || 0}
           </p>
           <p className={`text-xs ${theme?.textMuted} mt-2`}>Assigned to you</p>
-        </div>
+        </button>
 
-        <div
-          className={`${theme?.card} rounded-lg p-6 border ${theme?.border}`}
+        <button
+          type="button"
+          onClick={() => navigate("/sample-review")}
+          className={`${theme?.card} rounded-lg p-6 border ${theme?.border} text-left w-full cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
         >
           <p className={`text-sm ${theme?.textMuted} mb-2`}>Total Samples</p>
           <p className="text-3xl font-bold text-blue-600">
@@ -105,22 +103,26 @@ const SupervisorDashboard = () => {
           <p className={`text-xs ${theme?.textMuted} mt-2`}>
             From all collectors
           </p>
-        </div>
+        </button>
 
-        <div
-          className={`${theme?.card} rounded-lg p-6 border ${theme?.border}`}
+        <button
+          type="button"
+          onClick={() => navigate("/sample-review")}
+          className={`${theme?.card} rounded-lg p-6 border ${theme?.border} text-left w-full cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2`}
         >
           <p className={`text-sm ${theme?.textMuted} mb-2`}>This Month</p>
           <p className="text-3xl font-bold text-violet-600">
-            {stats?.samplesThisMonth || 0}
+            {stats?.samplesThisMonth ?? 0}
           </p>
           <p className={`text-xs ${theme?.textMuted} mt-2`}>
             Samples collected
           </p>
-        </div>
+        </button>
 
-        <div
-          className={`${theme?.card} rounded-lg p-6 border ${theme?.border}`}
+        <button
+          type="button"
+          onClick={() => navigate("/sample-review")}
+          className={`${theme?.card} rounded-lg p-6 border ${theme?.border} text-left w-full cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2`}
         >
           <p className={`text-sm ${theme?.textMuted} mb-2`}>Pending Review</p>
           <p className="text-3xl font-bold text-orange-600">
@@ -129,7 +131,7 @@ const SupervisorDashboard = () => {
           <p className={`text-xs ${theme?.textMuted} mt-2`}>
             Awaiting approval
           </p>
-        </div>
+        </button>
       </div>
 
       {/* Review Status Overview */}
@@ -190,7 +192,7 @@ const SupervisorDashboard = () => {
           )}
         </div>
 
-        {/* Pie Chart */}
+        {/* Pie Chart - Legend only (no slice labels) to avoid overlap when values are 0 */}
         <div
           className={`${theme?.card} rounded-lg p-6 border ${theme?.border}`}
         >
@@ -202,11 +204,11 @@ const SupervisorDashboard = () => {
                   data={reviewChartData}
                   cx="50%"
                   cy="50%"
-                  labelLine={false}
-                  label={({ name, value }) => `${name}: ${value}`}
                   outerRadius={80}
-                  fill="#8884d8"
+                  innerRadius={40}
+                  paddingAngle={2}
                   dataKey="value"
+                  nameKey="name"
                 >
                   {reviewChartData.map((entry, index) => (
                     <Cell
@@ -215,7 +217,27 @@ const SupervisorDashboard = () => {
                     />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip
+                  content={({ active, payload }) =>
+                    active && payload?.[0] ? (
+                      <div
+                        className={`rounded px-2 py-1 text-sm ${theme?.card ?? "bg-white"} border ${theme?.border ?? "border-gray-200"}`}
+                      >
+                        {payload[0].name}: {payload[0].value}
+                      </div>
+                    ) : null
+                  }
+                />
+                <Legend
+                  layout="vertical"
+                  align="right"
+                  verticalAlign="middle"
+                  formatter={(value, entry) => (
+                    <span className={theme?.text ?? "text-gray-700"}>
+                      {value}: {entry.payload?.value ?? 0}
+                    </span>
+                  )}
+                />
               </PieChart>
             </ResponsiveContainer>
           )}
@@ -224,13 +246,21 @@ const SupervisorDashboard = () => {
 
       {/* Top Collectors */}
       <div className={`${theme?.card} rounded-lg p-6 border ${theme?.border}`}>
-        <h3 className="text-lg font-semibold mb-4">
-          Your Data Collectors ({collectors.length})
+        <h3 className="text-lg font-semibold mb-4 inline-flex items-center gap-2">
+          Your Data Collectors
+          <span className="inline-flex items-center justify-center min-w-[1.5rem] h-6 px-2 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
+            {collectors.length}
+          </span>
         </h3>
         {collectors.length === 0 ? (
-          <p className={`${theme?.textMuted} text-center py-8`}>
-            No data collectors assigned yet
-          </p>
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <p className={`text-sm font-medium ${theme?.text} mb-1`}>
+              No data collectors assigned yet
+            </p>
+            <p className={`text-xs ${theme?.textMuted}`}>
+              Collectors in your assigned states will appear here
+            </p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

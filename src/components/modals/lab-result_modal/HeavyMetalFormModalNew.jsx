@@ -15,6 +15,7 @@ import {
   clearHeavyMetalState,
 } from "../../../redux/slice/heavyMetalSlice";
 import { useTheme } from "../../../context/ThemeContext";
+import { useEnums } from "../../../context/EnumsContext";
 
 const HeavyMetalFormModalNew = ({
   onClose,
@@ -34,24 +35,13 @@ const HeavyMetalFormModalNew = ({
   const [loadingSample, setLoadingSample] = useState(true);
   const [sampleError, setSampleError] = useState(null);
   const { theme } = useTheme();
+  const { heavyMetals: enumsHeavyMetals, heavyMetalLabels } = useEnums();
 
-  // Heavy metals list
-  const heavyMetals = [
-    "LEAD",
-    "MERCURY",
-    "CADMIUM",
-    "ARSENIC",
-    "CHROMIUM",
-    "NICKEL",
-  ];
-
-  const metalLabels = {
-    LEAD: "Lead (Pb)",
-    MERCURY: "Mercury (Hg)",
-    CADMIUM: "Cadmium (Cd)",
-    ARSENIC: "Arsenic (As)",
-    CHROMIUM: "Chromium (Cr)",
-    NICKEL: "Nickel (Ni)",
+  // Heavy metals list from backend (fallback to common subset)
+  const heavyMetals = enumsHeavyMetals?.length ? enumsHeavyMetals : ["LEAD", "MERCURY", "CADMIUM", "ARSENIC", "CHROMIUM", "NICKEL"];
+  const metalLabels = Object.keys(heavyMetalLabels || {}).length ? heavyMetalLabels : {
+    LEAD: "Lead (Pb)", MERCURY: "Mercury (Hg)", CADMIUM: "Cadmium (Cd)",
+    ARSENIC: "Arsenic (As)", CHROMIUM: "Chromium (Cr)", NICKEL: "Nickel (Ni)",
   };
 
   // Form state: array of readings

@@ -1,11 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import api from "../../utils/api";
+import toast from "react-hot-toast";
 import { CheckCircle } from "lucide-react";
+
+const STATUS_TABS = ["PENDING", "APPROVED", "REJECTED", "FLAGGED"];
 
 const SampleReview = () => {
   const { theme } = useTheme();
-  const [samples, setSamples] = useState([]);
+  const [searchParams] = useSearchParams();
+  const collectorIdFromUrl = searchParams.get("collectorId") || null;
+  const [allSamples, setAllSamples] = useState([]);
   const [selectedSample, setSelectedSample] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -20,6 +26,42 @@ const SampleReview = () => {
     requestedChanges: "",
   });
 
+  const getReviewStatus = (s) => s.review?.status ?? "PENDING";
+
+  const filteredSamples = useMemo(
+    () => allSamples.filter((s) => getReviewStatus(s) === filterStatus),
+    [allSamples, filterStatus]
+  );
+
+  const statusCounts = useMemo(() => {
+    const counts = { PENDING: 0, APPROVED: 0, REJECTED: 0, FLAGGED: 0 };
+    allSamples.forEach((s) => {
+      const status = getReviewStatus(s);
+      if (counts[status] !== undefined) counts[status]++;
+    });
+    return counts;
+  }, [allSamples]);
+
+  const fetchSamples = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const params = { status: "ALL" };
+      if (collectorIdFromUrl) params.collectorId = collectorIdFromUrl;
+      const res = await api.get("/supervisor/samples", { params });
+      if (res.data.success) setAllSamples(res.data.data || []);
+    } catch (err) {
+      console.error("Error fetching samples:", err);
+      setError(err.response?.data?.message || err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [collectorIdFromUrl]);
+
+  useEffect(() => {
+    fetchSamples();
+  }, [fetchSamples]);
+
   const ISSUE_OPTIONS = [
     "Incomplete GPS location",
     "Missing product photo",
@@ -30,30 +72,6 @@ const SampleReview = () => {
     "Missing heavy metal readings",
     "Other",
   ];
-
-  useEffect(() => {
-    fetchSamples();
-  }, [filterStatus]);
-
-  const fetchSamples = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get(`/supervisor/samples`);
-
-      if (response.data.success) {
-        const filtered = response.data.data.filter((sample) => {
-          const reviewStatus = sample.review?.status || "PENDING";
-          return reviewStatus === filterStatus;
-        });
-        setSamples(filtered);
-      }
-    } catch (err) {
-      console.error("Error fetching samples:", err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSelectSample = (sample) => {
     setSelectedSample(sample);
@@ -77,6 +95,18 @@ const SampleReview = () => {
   const handleSubmitReview = async () => {
     if (!selectedSample) return;
 
+    // Decision friction: reject requires a reason (comments or at least one issue)
+    if (reviewForm.status === "REJECTED") {
+      const hasReason =
+        (reviewForm.comments && reviewForm.comments.trim()) ||
+        (reviewForm.requestedChanges && reviewForm.requestedChanges.trim()) ||
+        (reviewForm.issues && reviewForm.issues.length > 0);
+      if (!hasReason) {
+        toast.error("Rejection reason is required. Add comments or select at least one issue.");
+        return;
+      }
+    }
+
     try {
       setReviewing(true);
       const response = await api.post(
@@ -89,15 +119,46 @@ const SampleReview = () => {
       );
 
       if (response.data.success) {
-        alert(`Sample ${reviewForm.status.toLowerCase()}!`);
-        fetchSamples();
+        toast.success(`Sample ${reviewForm.status.toLowerCase()}!`);
+        await fetchSamples();
+        const currentIndex = filteredSamples.findIndex((s) => s.id === selectedSample.id);
+        const nextSample =
+          currentIndex >= 0 && currentIndex < filteredSamples.length - 1
+            ? filteredSamples[currentIndex + 1]
+            : null;
         setSelectedSample(null);
+        setReviewForm({ status: "APPROVED", comments: "", issues: [], requestedChanges: "" });
+        if (nextSample) {
+          setSelectedSample(nextSample);
+          setReviewForm({
+            status: nextSample.review?.status || "APPROVED",
+            comments: nextSample.review?.comments || "",
+            issues: nextSample.review?.issues || [],
+            requestedChanges: nextSample.review?.requestedChanges || "",
+          });
+        }
       }
     } catch (err) {
       console.error("Error submitting review:", err);
-      alert("Failed to submit review: " + err.message);
+      toast.error("Failed to submit review: " + (err.response?.data?.message || err.message));
     } finally {
       setReviewing(false);
+    }
+  };
+
+  const currentSampleIndex =
+    selectedSample && filteredSamples.length
+      ? filteredSamples.findIndex((s) => s.id === selectedSample.id) + 1
+      : 0;
+  const totalInFilter = filteredSamples.length;
+  const goToNextSample = () => {
+    if (!selectedSample || totalInFilter === 0) return;
+    const idx = filteredSamples.findIndex((s) => s.id === selectedSample.id);
+    if (idx >= 0 && idx < totalInFilter - 1) {
+      const next = filteredSamples[idx + 1];
+      handleSelectSample(next);
+    } else {
+      setSelectedSample(null);
     }
   };
 
@@ -112,16 +173,21 @@ const SampleReview = () => {
   };
 
   const handleSelectAll = () => {
-    if (bulkSelection.size === samples.length) {
+    if (bulkSelection.size === filteredSamples.length) {
       setBulkSelection(new Set());
     } else {
-      setBulkSelection(new Set(samples.map((s) => s.id)));
+      setBulkSelection(new Set(filteredSamples.map((s) => s.id)));
     }
   };
 
   const handleBulkAction = async (status) => {
     if (bulkSelection.size === 0) {
-      alert("Please select at least one sample");
+      toast.error("Please select at least one sample");
+      return;
+    }
+
+    if (status === "REJECTED") {
+      toast.error("Rejection requires a reason. Please review and reject samples individually.");
       return;
     }
 
@@ -151,12 +217,24 @@ const SampleReview = () => {
         }
       }
 
-      alert(`Completed: ${successCount} approved, ${errorCount} failed`);
+      const total = bulkSelection.size;
+      if (errorCount === 0) {
+        toast.success(
+          total === 1 ? "1 sample marked successfully." : `${total} samples marked successfully.`
+        );
+      } else if (successCount > 0) {
+        toast(
+          `Updated ${successCount} of ${total} samples. ${errorCount} could not be updated.`,
+          { icon: "⚠️" }
+        );
+      } else {
+        toast.error("Could not update the selected samples. Please try again.");
+      }
       setBulkSelection(new Set());
       fetchSamples();
     } catch (err) {
       console.error("Error in bulk action:", err);
-      alert("Error processing bulk action");
+      toast.error("Error processing bulk action");
     } finally {
       setBulkProcessing(false);
     }
@@ -172,28 +250,47 @@ const SampleReview = () => {
 
   return (
     <div className={`${theme?.text} space-y-4 sm:space-y-6`}>
+      <div className="mb-2">
+        <h1 className="text-xl sm:text-2xl font-bold">Review samples</h1>
+        <p className={`text-sm ${theme?.textMuted} mt-1`}>
+          Review and approve samples from your collectors
+        </p>
+      </div>
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 sm:px-4 sm:py-3 rounded-lg text-sm">
           Error: {error}
         </div>
       )}
 
-      {/* Filter Tabs & Bulk Actions */}
+      {/* Filter Tabs with badge counts & Bulk Actions */}
       <div className="space-y-3 sm:space-y-4">
         <div className="flex gap-2 flex-wrap">
-          {["PENDING", "APPROVED", "REJECTED", "FLAGGED"].map((status) => (
-            <button
-              key={status}
-              onClick={() => setFilterStatus(status)}
-              className={`px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm rounded-lg font-semibold transition-colors ${
-                filterStatus === status
-                  ? "bg-emerald-600 text-white"
-                  : `${theme?.card} border ${theme?.border} hover:bg-opacity-50`
-              }`}
-            >
-              {status}
-            </button>
-          ))}
+          {STATUS_TABS.map((status) => {
+            const count = statusCounts[status] ?? 0;
+            const isActive = filterStatus === status;
+            return (
+              <button
+                key={status}
+                onClick={() => setFilterStatus(status)}
+                className={`inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm rounded-lg font-semibold transition-colors ${
+                  isActive
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : `${theme?.card} border ${theme?.border} hover:bg-opacity-50`
+                }`}
+              >
+                <span>{status}</span>
+                <span
+                  className={`inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-xs font-bold ${
+                    isActive
+                      ? "bg-white/25 text-white"
+                      : "bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200"
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Bulk Actions Bar */}
@@ -247,14 +344,17 @@ const SampleReview = () => {
           className={`${theme?.card} rounded-lg p-4 sm:p-6 border ${theme?.border}`}
         >
           <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <h3 className="text-base sm:text-lg font-semibold">
-              {filterStatus} ({samples.length})
+            <h3 className="text-base sm:text-lg font-semibold inline-flex items-center gap-2">
+              {filterStatus}
+              <span className="inline-flex items-center justify-center min-w-[1.5rem] h-6 px-2 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
+                {filteredSamples.length}
+              </span>
             </h3>
-            {samples.length > 0 && (
+            {filteredSamples.length > 0 && (
               <label className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={bulkSelection.size === samples.length}
+                  checked={bulkSelection.size === filteredSamples.length}
                   onChange={handleSelectAll}
                   className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded text-emerald-600"
                 />
@@ -263,12 +363,17 @@ const SampleReview = () => {
             )}
           </div>
           <div className="space-y-2 max-h-[400px] sm:max-h-96 overflow-y-auto">
-            {samples.length === 0 ? (
-              <p className={`${theme?.textMuted} text-center py-6 sm:py-8 text-sm`}>
-                No {filterStatus.toLowerCase()} samples
-              </p>
+            {filteredSamples.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 sm:py-12 text-center">
+                <p className={`text-sm font-medium ${theme?.text} mb-1`}>
+                  No {filterStatus.toLowerCase()} samples
+                </p>
+                <p className={`text-xs ${theme?.textMuted}`}>
+                  Switch to another tab or wait for new submissions
+                </p>
+              </div>
             ) : (
-              samples.map((sample) => (
+              filteredSamples.map((sample) => (
                 <div
                   key={sample.id}
                   className={`flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg border transition-colors ${
@@ -326,6 +431,12 @@ const SampleReview = () => {
             <div
               className={`${theme?.card} rounded-lg p-4 sm:p-6 border ${theme?.border} space-y-4 sm:space-y-6`}
             >
+              {/* Progress: "Sample 3 of 12" */}
+              {totalInFilter > 0 && (
+                <p className={`text-sm ${theme?.textMuted}`}>
+                  Sample {currentSampleIndex} of {totalInFilter}
+                </p>
+              )}
               {/* Sample Details */}
               <div>
                 <h3 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3">Sample Details</h3>
@@ -374,27 +485,30 @@ const SampleReview = () => {
                   <div>
                     <h4 className="text-sm sm:text-base font-semibold mb-2">Heavy Metal Readings</h4>
                     <div className="space-y-2">
-                      {selectedSample.heavyMetalReadings.map((reading, idx) => (
-                        <div
-                          key={idx}
-                          className={`border ${theme?.border} rounded p-2 sm:p-3 text-xs sm:text-sm`}
-                        >
-                          <p className="font-semibold">{reading.heavyMetal}</p>
-                          <p className={theme?.textMuted}>
-                            XRF: {reading.xrfReading || "-"} | AAS:{" "}
-                            {reading.aasReading || "-"}
-                          </p>
-                          <p
-                            className={`text-xs ${
-                              reading.status === "SAFE"
-                                ? "text-green-600 dark:text-green-400"
-                                : "text-red-600 dark:text-red-400"
-                            }`}
+                      {selectedSample.heavyMetalReadings.map((reading, idx) => {
+                        const status = reading.finalStatus ?? reading.status;
+                        return (
+                          <div
+                            key={reading.id ?? idx}
+                            className={`border ${theme?.border} rounded p-2 sm:p-3 text-xs sm:text-sm`}
                           >
-                            Status: {reading.status}
-                          </p>
-                        </div>
-                      ))}
+                            <p className="font-semibold">{reading.heavyMetal}</p>
+                            <p className={theme?.textMuted}>
+                              XRF: {reading.xrfReading ?? "-"} | AAS:{" "}
+                              {reading.aasReading ?? "-"}
+                            </p>
+                            <p
+                              className={`text-xs ${
+                                status === "SAFE"
+                                  ? "text-green-600 dark:text-green-400"
+                                  : "text-red-600 dark:text-red-400"
+                              }`}
+                            >
+                              Status: {status ?? "PENDING"}
+                            </p>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -455,10 +569,15 @@ const SampleReview = () => {
                   </div>
                 </div>
 
-                {/* Comments */}
+                {/* Comments - required when rejecting */}
                 <div className="mb-4">
                   <label className="block text-xs sm:text-sm font-semibold mb-2">
                     Comments
+                    {reviewForm.status === "REJECTED" && (
+                      <span className="text-red-600 dark:text-red-400 ml-1" title="Required for rejection">
+                        (required for reject)
+                      </span>
+                    )}
                   </label>
                   <textarea
                     value={reviewForm.comments}
@@ -469,7 +588,11 @@ const SampleReview = () => {
                       }))
                     }
                     rows="3"
-                    placeholder="Add notes or observations..."
+                    placeholder={
+                      reviewForm.status === "REJECTED"
+                        ? "Provide a reason for rejection..."
+                        : "Add notes or observations..."
+                    }
                     className={`w-full px-3 py-2 text-sm sm:text-base border ${theme?.border} rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 ${theme?.card}`}
                   />
                 </div>
@@ -495,21 +618,40 @@ const SampleReview = () => {
                   </div>
                 )}
 
-                {/* Submit Button */}
-                <button
-                  onClick={handleSubmitReview}
-                  disabled={reviewing}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white font-semibold py-2 sm:py-2.5 px-4 rounded-lg transition-colors text-sm sm:text-base"
-                >
-                  {reviewing ? "Submitting..." : "Submit Review"}
-                </button>
+                {/* Submit and Next */}
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    onClick={handleSubmitReview}
+                    disabled={reviewing}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white font-semibold py-2 sm:py-2.5 px-4 rounded-lg transition-colors text-sm sm:text-base"
+                  >
+                    {reviewing ? "Submitting..." : "Submit Review"}
+                  </button>
+                  {totalInFilter > 1 && (
+                    <button
+                      type="button"
+                      onClick={goToNextSample}
+                      className="px-4 py-2 sm:py-2.5 border border-emerald-600 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg font-semibold text-sm sm:text-base transition-colors"
+                    >
+                      Next sample
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ) : (
             <div
-              className={`${theme?.card} rounded-lg p-6 sm:p-8 border ${theme?.border} text-center`}
+              className={`rounded-lg p-6 sm:p-8 border ${theme?.border} text-center min-h-[200px] flex flex-col items-center justify-center ${
+                filteredSamples.length === 0
+                  ? "bg-transparent border-dashed"
+                  : theme?.card
+              }`}
             >
-              <p className={`text-sm sm:text-base ${theme?.textMuted}`}>Select a sample to review</p>
+              <p className={`text-sm sm:text-base ${theme?.textMuted}`}>
+                {filteredSamples.length === 0
+                  ? "Select a status tab to see samples"
+                  : "Select a sample to review"}
+              </p>
             </div>
           )}
         </div>

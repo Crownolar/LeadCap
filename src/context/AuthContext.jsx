@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }) => {
 
     try {
       const res = await axios.post(
-        `${API_BASE_URL}/auth/refresh`,
+        `${API_BASE_URL}/auth/refresh-token`,
         { refreshToken },
         {
           headers: { Authorization: `Bearer ${refreshToken}` },
@@ -149,7 +149,7 @@ export const AuthProvider = ({ children }) => {
 
   const handleGenerateInviteCode = async (role) => {
     try {
-      const res = await api.post("/invite-codes", { role });
+      const res = await api.post("/auth/generate-invite", { role });
       const code = res.data.data.code;
 
       await navigator.clipboard.writeText(code);

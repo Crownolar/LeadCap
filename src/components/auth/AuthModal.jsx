@@ -4,13 +4,13 @@ import { useNavigate } from "react-router-dom";
 
 import { useDispatch, useSelector } from "react-redux";
 import { handleLogin, handleSignup } from "../../redux/slice/authSlice";
-import PopupModal from "../modals/popUpModal";
+import PopupModal from "../modals/PopupModal";
 import { useTheme } from "../../context/ThemeContext";
 
 const AuthModal = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, currentUser, error, isAuthenticated } = useSelector(
+  const { loading, error } = useSelector(
     (state) => state.auth
   );
   const [authForm, setAuthForm] = useState({
@@ -21,7 +21,7 @@ const AuthModal = () => {
   });
   const [authMode, setAuthMode] = useState("login");
   const [showPassword, setShowPassword] = useState(false);
-  const [message, setMessage] = useState("");
+  // const [message, setMessage] = useState("");
   const [popupMessage, setPopupMessage] = useState("");
   const [showPopup, setShowPopup] = useState(false);
   const [popupType, setPopupType] = useState("error");
@@ -206,13 +206,13 @@ const AuthModal = () => {
           </button>
         </form>
 
-        {message && (
+        {/* {message && (
           <p className="text-sm text-center mt-3 text-emerald-400">
             {typeof message === "string"
               ? message
               : message?.message || "Something went wrong"}
           </p>
-        )}
+        )} */}
       </div>
       <PopupModal
         show={showPopup}

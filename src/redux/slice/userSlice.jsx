@@ -311,7 +311,7 @@ export const updateUser = createAsyncThunk(
   "users/updateUser",
   async ({ id, updatedData }, thunkAPI) => {
     try {
-      const response = await api.put(`/users/${id}`, updatedData);
+      const response = await api.patch(`/users/${id}`, updatedData);
       return response.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(

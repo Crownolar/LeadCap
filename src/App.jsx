@@ -9,7 +9,6 @@ import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { handleLogout } from "./redux/slice/authSlice";
 import MapView from "./components/views/MapView";
-import Agents from "./components/views/Agents";
 import Reports from "./components/views/Reports";
 import Database from "./components/views/Database";
 import { fetchSamples } from "./redux/slice/samplesSlice";
@@ -17,18 +16,15 @@ import PolicyWelcome from "./pages/PolicyWelcome";
 import HeavyMetalFormModalNew from "./components/modals/lab-result_modal/HeavyMetalFormModalNew";
 import DataCollectorDashboard from "./pages/DataCollectorDashboard";
 import DataCollectorWelcome from "./pages/DataCollectorWelcome";
-import StateManagement from "./components/views/StateManagement";
-import LGAManagement from "./components/views/LGAManagement";
-import MarketManagement from "./components/views/MarketManagement";
-import UserManagement from "./components/views/UserManagement";
 import ThresholdManagement from "./components/views/ThresholdManagement";
 import InviteCodeManagement from "./components/views/InviteCodeManagement";
 import SupervisorDashboard from "./components/views/SupervisorDashboard";
-import SuperAdminDashboard from "./components/views/SuperAdminDashboard";
 import CollectorManagement from "./components/views/CollectorManagement";
 import SampleReview from "./components/views/SampleReview";
 import LabAnalystDashboard from "./components/views/LabAnalystDashboard";
 import LabConfirmationForm from "./components/views/LabConfirmationForm";
+import { EnumsProvider } from "./context/EnumsContext";
+import { Toaster } from "react-hot-toast";
 
 const lightTheme = {
   bg: "bg-gray-100",
@@ -63,7 +59,9 @@ const App = () => {
   const navigate = useNavigate();
 
   return (
+    <EnumsProvider isAuthenticated={isAuthenticated}>
     <div>
+      <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/auth" element={<AuthModal theme={theme} />} />{" "}
@@ -73,14 +71,6 @@ const App = () => {
           element={
             <PrivateRoute allowedRoles={["datacollector"]}>
               <DataCollectorWelcome />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/invitecodes"
-          element={
-            <PrivateRoute isAuthenticated={isAuthenticated}>
-              <InviteCodeGenerate theme={theme} />
             </PrivateRoute>
           }
         />
@@ -158,15 +148,6 @@ const App = () => {
           />
 
           <Route
-            path="agents"
-            element={
-              <PrivateRoute allowedRoles={["superadmin", "headresearcher"]}>
-                <Agents />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
             path="map"
             element={
               <PrivateRoute
@@ -187,42 +168,6 @@ const App = () => {
           />
 
           <Route
-            path="states"
-            element={
-              <PrivateRoute allowedRoles={["superadmin"]}>
-                <StateManagement theme={theme} darkMode={darkMode} />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="lgas"
-            element={
-              <PrivateRoute allowedRoles={["superadmin"]}>
-                <LGAManagement theme={theme} darkMode={darkMode} />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="markets"
-            element={
-              <PrivateRoute allowedRoles={["superadmin"]}>
-                <MarketManagement theme={theme} darkMode={darkMode} />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="users"
-            element={
-              <PrivateRoute allowedRoles={["superadmin"]}>
-                <UserManagement theme={theme} darkMode={darkMode} />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
             path="thresholds"
             element={
               <PrivateRoute allowedRoles={["superadmin"]}>
@@ -232,19 +177,19 @@ const App = () => {
           />
 
           <Route
-            path="invites"
+            path="invitecodes"
             element={
               <PrivateRoute allowedRoles={["superadmin"]}>
-                <InviteCodeManagement theme={theme} darkMode={darkMode} />
+                <InviteCodeGenerate theme={theme} darkMode={darkMode} />
               </PrivateRoute>
             }
           />
 
           <Route
-            path="superadmin"
+            path="invites"
             element={
               <PrivateRoute allowedRoles={["superadmin"]}>
-                <SuperAdminDashboard theme={theme} darkMode={darkMode} />
+                <InviteCodeManagement theme={theme} darkMode={darkMode} />
               </PrivateRoute>
             }
           />
@@ -287,6 +232,7 @@ const App = () => {
         </Route>
       </Routes>
     </div>
+    </EnumsProvider>
   );
 };
 

@@ -19,15 +19,9 @@ const roleConfig = {
     excelImport: true,
     navItems: [
       "dashboard",
-      "superadmin",
       "database",
       "map",
       "reports",
-      "agents",
-      "states",
-      "lgas",
-      "markets",
-      "users",
       "thresholds",
       "invites",
     ],
@@ -35,7 +29,7 @@ const roleConfig = {
   headresearcher: {
     sampleButton: false,
     excelImport: false,
-    navItems: ["dashboard", "database", "map", "reports", "agents"],
+    navItems: ["dashboard", "database", "map", "reports"],
   },
   policymakerson: {
     sampleButton: false,
@@ -60,7 +54,7 @@ const roleConfig = {
   labanalyst: {
     sampleButton: false,
     excelImport: false,
-    navItems: ["lab-samples", "record-reading/:sampleId"], // Lab analyst - view and confirm AAS readings
+    navItems: ["lab-samples"], // Lab analyst - view and confirm AAS; record-reading/:id from dashboard
   },
 };
 
@@ -85,12 +79,6 @@ const Sidebar = ({
       key: "dashboard",
     },
     {
-      icon: Users,
-      label: "Admin Center",
-      route: "/superadmin",
-      key: "superadmin",
-    },
-    {
       icon: Beaker,
       label: "My Samples",
       route: "/data-collector",
@@ -103,12 +91,6 @@ const Sidebar = ({
       key: "lab-samples",
     },
     {
-      icon: Beaker,
-      label: "Record Readings List",
-      route: "/record-reading/:sampleId",
-      key: "lab-samples",
-    },
-    {
       icon: Database,
       label: "Sample Database",
       route: "/database",
@@ -116,7 +98,6 @@ const Sidebar = ({
     },
     { icon: Map, label: "Geographic View", route: "/map", key: "map" },
     { icon: FileText, label: "Reports", route: "/reports", key: "reports" },
-    { icon: Users, label: "Field Agents", route: "/agents", key: "agents" },
     {
       icon: Users,
       label: "Data Collectors",
@@ -129,17 +110,13 @@ const Sidebar = ({
       route: "/sample-review",
       key: "sample-review",
     },
-    { icon: Settings, label: "States", route: "/states", key: "states" },
-    { icon: Settings, label: "LGAs", route: "/lgas", key: "lgas" },
-    { icon: Settings, label: "Markets", route: "/markets", key: "markets" },
-    { icon: Users, label: "Users", route: "/users", key: "users" },
     {
       icon: Settings,
       label: "Thresholds",
       route: "/thresholds",
       key: "thresholds",
     },
-    { icon: Plus, label: "Invite Codes", route: "/invites", key: "invites" },
+    { icon: Plus, label: "Invite Codes", route: "/invitecodes", key: "invites" },
   ];
 
   const navItemsToRender = allNavItems.filter((item) =>

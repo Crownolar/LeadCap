@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useEnums } from "../../context/EnumsContext";
 
 const UserFormModal = ({ theme = {}, onClose, onCreateUser, loading }) => {
   const [newUser, setNewUser] = useState({
@@ -8,6 +9,7 @@ const UserFormModal = ({ theme = {}, onClose, onCreateUser, loading }) => {
     role: "HEAD_RESEARCHER",
   });
 
+  const { userRoles, userRoleLabels } = useEnums();
   const defaultTheme = {
     bg: "bg-gray-900",
     text: "text-gray-100",
@@ -67,17 +69,11 @@ const UserFormModal = ({ theme = {}, onClose, onCreateUser, loading }) => {
             onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
             className='w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:outline-none focus:border-teal-600'
           >
-            <option value='SUPER_ADMIN'>Super Administrator</option>
-            <option value='HEAD_RESEARCHER'>Head Researcher</option>
-            <option value='ADMIN'>Administrator</option>
-            <option value='DATA_COLLECTOR'>Data Collector</option>
-            <option value='SUPERVISOR'>Supervisor</option>
-            <option value='POLICY_MAKER_SON'>Policy Maker - SON</option>
-            <option value='POLICY_MAKER_NAFDAC'>Policy Maker - NAFDAC</option>
-            <option value='POLICY_MAKER_RESOLVE'>Policy Maker - RESOLVE</option>
-            <option value='POLICY_MAKER_UNIVERSITY'>
-              Policy Maker - University
-            </option>
+            {(userRoles.length ? userRoles : ['SUPER_ADMIN', 'HEAD_RESEARCHER', 'DATA_COLLECTOR', 'SUPERVISOR', 'LAB_ANALYST', 'POLICY_MAKER_SON', 'POLICY_MAKER_NAFDAC', 'POLICY_MAKER_RESOLVE', 'POLICY_MAKER_UNIVERSITY']).map((role) => (
+              <option key={role} value={role}>
+                {userRoleLabels[role] || role.replace(/_/g, ' ')}
+              </option>
+            ))}
           </select>
         </div>
 

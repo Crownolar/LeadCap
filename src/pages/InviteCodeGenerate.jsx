@@ -1,11 +1,16 @@
 import {
   KeyRound,
   Users,
-  Beaker,
-  MessageSquare,
   Trash2,
   Edit,
   Eye,
+  MapPin,
+  Plus,
+  Settings,
+  Check,
+  X,
+  Loader2,
+  Search,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -17,14 +22,18 @@ import {
 } from "../redux/slice/userSlice";
 import { useNavigate } from "react-router-dom";
 import api from "../utils/api";
+import { useEnums } from "../context/EnumsContext";
+import { useTheme } from "../context/ThemeContext";
 
-const InviteCodeGenerate = ({ theme = {} }) => {
+const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { theme: contextTheme } = useTheme();
 
   const { users, selectedUser, loading, error, pagination } = useSelector(
     (state) => state.users
   );
+  const { userRoles, userRoleLabels } = useEnums();
 
   const defaultTheme = {
     bg: "bg-gray-900",
@@ -33,7 +42,7 @@ const InviteCodeGenerate = ({ theme = {} }) => {
     border: "border-gray-700",
     textMuted: "text-gray-400",
   };
-  const currentTheme = { ...defaultTheme, ...theme };
+  const currentTheme = { ...defaultTheme, ...contextTheme, ...themeProp };
 
   const [activeTab, setActiveTab] = useState("invite");
   const [inviteLoading, setInviteLoading] = useState(false);
@@ -50,11 +59,68 @@ const InviteCodeGenerate = ({ theme = {} }) => {
   const [editableUser, setEditableUser] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
 
+  // Supervisors & States tab
+  const [statesList, setStatesList] = useState([]);
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [selectedSupervisor, setSelectedSupervisor] = useState(null);
+  const [selectedStates, setSelectedStates] = useState([]);
+  const [assignError, setAssignError] = useState(null);
+  const [assignLoading, setAssignLoading] = useState(false);
+
+  // State activation tab
+  const [activationStates, setActivationStates] = useState([]);
+  const [activationLoading, setActivationLoading] = useState(false);
+  const [activationError, setActivationError] = useState(null);
+  const [selectedStateIds, setSelectedStateIds] = useState([]);
+  const [activationBusyId, setActivationBusyId] = useState(null);
+  const [activationBulkBusy, setActivationBulkBusy] = useState(false);
+  const [stateSearch, setStateSearch] = useState("");
+
   useEffect(() => {
     dispatch(getAllUsers({ page: 1, limit: 20 })).then((res) =>
       console.log("Fetched Users (dispatch result):", res.payload)
     );
   }, [activeTab, dispatch]);
+
+  // Fetch full users (with supervisorStates) and active states for Supervisors tab
+  useEffect(() => {
+    if (activeTab !== "supervisors") return;
+    const fetchAdminData = async () => {
+      try {
+        const [usersRes, statesRes] = await Promise.all([
+          api.get("/users", { params: { limit: 200 } }),
+          api.get("/management/states", { params: { activeOnly: "true" } }),
+        ]);
+        setAdminUsers(usersRes.data?.data || []);
+        setStatesList(statesRes.data?.data || []);
+      } catch (err) {
+        console.error("Failed to fetch admin data:", err);
+        setAdminUsers([]);
+        setStatesList([]);
+      }
+    };
+    fetchAdminData();
+  }, [activeTab]);
+
+  // Fetch all states (no activeOnly) for State activation tab
+  useEffect(() => {
+    if (activeTab !== "stateActivation") return;
+    const fetchActivationStates = async () => {
+      try {
+        setActivationLoading(true);
+        setActivationError(null);
+        const res = await api.get("/management/states");
+        setActivationStates(res.data?.data || []);
+      } catch (err) {
+        setActivationError("Failed to load states: " + (err.response?.data?.error || err.message));
+        setActivationStates([]);
+      } finally {
+        setActivationLoading(false);
+      }
+    };
+    fetchActivationStates();
+  }, [activeTab]);
 
   useEffect(() => {
     if (selectedUser) {
@@ -134,6 +200,20 @@ const InviteCodeGenerate = ({ theme = {} }) => {
     });
   };
 
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm("Deactivate this user? They will no longer be able to sign in."))
+      return;
+    try {
+      await api.delete(`/users/${userId}`);
+      setMessage("User deactivated successfully.");
+      dispatch(getAllUsers({ page: 1, limit: 20 }));
+    } catch (err) {
+      setMessage(
+        err.response?.data?.error || err.message || "Failed to deactivate user"
+      );
+    }
+  };
+
   const handleToggleEdit = () => {
     setIsEditing((v) => !v);
     if (!editableUser && selectedUser) setEditableUser({ ...selectedUser });
@@ -162,6 +242,126 @@ const InviteCodeGenerate = ({ theme = {} }) => {
     });
   };
 
+  const supervisorsList = (adminUsers || []).filter((u) => u.role === "SUPERVISOR");
+
+  const openAssignModalForEdit = (supervisor) => {
+    setSelectedSupervisor(supervisor.id);
+    setSelectedStates(
+      (supervisor.supervisorStates || []).map((ss) => ss.state?.id ?? ss.stateId)
+    );
+    setShowAssignModal(true);
+    setAssignError(null);
+  };
+
+  const openAssignModalNew = () => {
+    setSelectedSupervisor(null);
+    setSelectedStates([]);
+    setShowAssignModal(true);
+    setAssignError(null);
+  };
+
+  const handleAssignStates = async () => {
+    setAssignError(null);
+    if (!selectedSupervisor || selectedStates.length === 0) {
+      setAssignError("Please select a supervisor and at least one state.");
+      return;
+    }
+    setAssignLoading(true);
+    try {
+      await api.post(`/supervisor/${selectedSupervisor}/states`, {
+        stateIds: selectedStates,
+      });
+      const usersRes = await api.get("/users", { params: { limit: 200 } });
+      setAdminUsers(usersRes.data?.data || []);
+      setShowAssignModal(false);
+      setSelectedSupervisor(null);
+      setSelectedStates([]);
+      setMessage("States assigned successfully.");
+      dispatch(getAllUsers({ page: 1, limit: 20 }));
+    } catch (err) {
+      setAssignError(
+        err.response?.data?.error || err.response?.data?.message || "Failed to assign states"
+      );
+    } finally {
+      setAssignLoading(false);
+    }
+  };
+
+  const handleUnassignState = async (supervisorId, stateId) => {
+    if (!window.confirm("Unassign this state from the supervisor?")) return;
+    try {
+      await api.delete(`/supervisor/${supervisorId}/states/${stateId}`);
+      const usersRes = await api.get("/users", { params: { limit: 200 } });
+      setAdminUsers(usersRes.data?.data || []);
+      setMessage("State unassigned.");
+      dispatch(getAllUsers({ page: 1, limit: 20 }));
+    } catch (err) {
+      setMessage(
+        err.response?.data?.error || err.response?.data?.message || "Failed to unassign"
+      );
+    }
+  };
+
+  // State activation: filter by search
+  const filteredActivationStates = stateSearch.trim()
+    ? activationStates.filter(
+        (s) =>
+          (s.name || "").toLowerCase().includes(stateSearch.toLowerCase()) ||
+          (s.code || "").toLowerCase().includes(stateSearch.toLowerCase())
+      )
+    : activationStates;
+
+  const handleActivationToggleOne = async (state) => {
+    setActivationBusyId(state.id);
+    try {
+      await api.patch(`/management/states/${state.id}/active`, {
+        isActive: !state.isActive,
+      });
+      const res = await api.get("/management/states");
+      setActivationStates(res.data?.data || []);
+      setSelectedStateIds((prev) => prev.filter((id) => id !== state.id));
+      setActivationError(null);
+    } catch (err) {
+      setActivationError("Failed to update: " + (err.response?.data?.error || err.message));
+    } finally {
+      setActivationBusyId(null);
+    }
+  };
+
+  const handleActivationBulk = async (isActive) => {
+    if (selectedStateIds.length === 0) return;
+    setActivationBulkBusy(true);
+    try {
+      await api.patch("/management/states/bulk-active", {
+        stateIds: selectedStateIds,
+        isActive,
+      });
+      const res = await api.get("/management/states");
+      setActivationStates(res.data?.data || []);
+      setSelectedStateIds([]);
+      setActivationError(null);
+      setMessage(`${selectedStateIds.length} state(s) ${isActive ? "activated" : "deactivated"}.`);
+    } catch (err) {
+      setActivationError("Bulk update failed: " + (err.response?.data?.error || err.message));
+    } finally {
+      setActivationBulkBusy(false);
+    }
+  };
+
+  const toggleActivationSelect = (id) => {
+    setSelectedStateIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleActivationSelectAll = () => {
+    if (selectedStateIds.length === filteredActivationStates.length) {
+      setSelectedStateIds([]);
+    } else {
+      setSelectedStateIds(filteredActivationStates.map((s) => s.id));
+    }
+  };
+
   const getStatusBadge = (status) => {
     const statusStyles = {
       active: "bg-emerald-500/20 text-emerald-400 border-emerald-500/50",
@@ -181,8 +381,8 @@ const InviteCodeGenerate = ({ theme = {} }) => {
   const tabs = [
     { id: "invite", label: "Invite Codes", icon: KeyRound },
     { id: "users", label: "Users", icon: Users },
-    { id: "samples", label: "Samples", icon: Beaker },
-    { id: "comments", label: "Comments", icon: MessageSquare },
+    { id: "supervisors", label: "Supervisors & States", icon: MapPin },
+    { id: "stateActivation", label: "State activation", icon: Settings },
     { id: "viewUser", label: "View User", icon: Eye },
   ];
 
@@ -204,20 +404,30 @@ const InviteCodeGenerate = ({ theme = {} }) => {
           </p>
         </div>
 
-        <div className='flex gap-2 mb-6 overflow-x-auto pb-2'>
-          {tabs.map((tab) => {
+        <div
+          role='tablist'
+          aria-label='Dashboard sections'
+          className='flex gap-1 mb-6 overflow-x-auto pb-2 border-b border-gray-700/50 -mx-1 px-1'
+        >
+          {tabs.map((tab, index) => {
             const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
+                role='tab'
+                aria-selected={isActive}
+                aria-controls={`panel-${tab.id}`}
+                id={`tab-${tab.id}`}
+                tabIndex={isActive ? 0 : -1}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg"
-                    : `${currentTheme.card} ${currentTheme.text} hover:bg-gray-700`
+                className={`flex items-center gap-2 px-4 py-3 rounded-t-lg transition-all whitespace-nowrap border-b-2 -mb-px focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+                  isActive
+                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500 font-semibold"
+                    : `border-transparent ${currentTheme.text} ${currentTheme.textMuted} hover:text-gray-200 hover:bg-gray-700/50`
                 }`}
               >
-                <Icon size={18} />
+                <Icon size={18} className='flex-shrink-0' />
                 {tab.label}
               </button>
             );
@@ -225,6 +435,9 @@ const InviteCodeGenerate = ({ theme = {} }) => {
         </div>
 
         <div
+          id={`panel-${activeTab}`}
+          role='tabpanel'
+          aria-labelledby={`tab-${activeTab}`}
           className={`${currentTheme.card} rounded-2xl shadow-xl border ${currentTheme.border} p-6`}
         >
           {activeTab === "invite" && (
@@ -292,6 +505,246 @@ const InviteCodeGenerate = ({ theme = {} }) => {
                 </svg>
                 Go to Dashboard
               </button>
+            </div>
+          )}
+
+          {activeTab === "supervisors" && (
+            <div>
+              <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6'>
+                <h2 className='text-xl font-bold flex items-center gap-2'>
+                  <MapPin className='text-emerald-500' /> Supervisor Management
+                </h2>
+                <button
+                  onClick={openAssignModalNew}
+                  className='flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium transition shadow-md'
+                >
+                  <Plus size={18} />
+                  Assign States
+                </button>
+              </div>
+              {message && (
+                <div className='mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm'>
+                  {message}
+                </div>
+              )}
+              <div className='space-y-4'>
+                {supervisorsList.length === 0 ? (
+                  <p className={currentTheme.textMuted}>
+                    No supervisors found. Create a user with role SUPERVISOR first.
+                  </p>
+                ) : (
+                  supervisorsList.map((supervisor) => (
+                    <div
+                      key={supervisor.id}
+                      className={`rounded-xl border ${currentTheme.border} p-4 ${currentTheme.card} hover:shadow-md transition`}
+                    >
+                      <div className='flex flex-col sm:flex-row sm:items-start justify-between gap-3'>
+                        <div className='flex-1 min-w-0'>
+                          <h3 className='font-semibold text-lg truncate'>
+                            {supervisor.fullName}
+                          </h3>
+                          <p className={`text-sm truncate ${currentTheme.textMuted}`}>
+                            {supervisor.email}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => openAssignModalForEdit(supervisor)}
+                          className='self-end sm:self-auto flex items-center gap-2 px-3 py-2 rounded-lg border border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10 text-sm font-medium transition'
+                        >
+                          <Edit size={16} />
+                          Edit states
+                        </button>
+                      </div>
+                      <div className='mt-3 pt-3 border-t border-gray-700/50'>
+                        <p className={`text-xs font-semibold mb-2 ${currentTheme.textMuted}`}>
+                          Assigned States ({supervisor.supervisorStates?.length ?? 0})
+                        </p>
+                        {supervisor.supervisorStates && supervisor.supervisorStates.length > 0 ? (
+                          <div className='flex flex-wrap gap-2'>
+                            {supervisor.supervisorStates.map((ss) => (
+                              <span
+                                key={ss.stateId}
+                                className='inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 text-sm'
+                              >
+                                <MapPin size={14} />
+                                {ss.state?.name ?? ss.stateId}
+                                <button
+                                  type='button'
+                                  onClick={() => handleUnassignState(supervisor.id, ss.stateId)}
+                                  className='ml-1 p-0.5 rounded hover:bg-emerald-500/30 text-emerald-200'
+                                  aria-label='Unassign'
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className={`text-sm ${currentTheme.textMuted}`}>
+                            No states assigned
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "stateActivation" && (
+            <div>
+              <div className='mb-6'>
+                <h2 className='text-xl font-bold flex items-center gap-2 mb-1'>
+                  <Settings className='text-emerald-500' /> State activation
+                </h2>
+                <p className={`text-sm ${currentTheme.textMuted}`}>
+                  Activate or deactivate states. Only active states appear in dropdowns (e.g. Add Sample).
+                </p>
+              </div>
+
+              {activationError && (
+                <div className='mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm'>
+                  {activationError}
+                </div>
+              )}
+              {message && (
+                <div className='mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm'>
+                  {message}
+                </div>
+              )}
+
+              {/* Scope bar: selection count + bulk actions (UX: show what will change) */}
+              {selectedStateIds.length > 0 && (
+                <div className='mb-4 p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 flex flex-wrap items-center gap-3'>
+                  <span className='text-sm font-medium text-emerald-400'>
+                    {selectedStateIds.length} selected
+                  </span>
+                  <button
+                    type='button'
+                    disabled={activationBulkBusy}
+                    onClick={() => handleActivationBulk(true)}
+                    className='flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-medium min-h-[44px] min-w-[44px]'
+                    title='Activate selected states'
+                  >
+                    {activationBulkBusy ? <Loader2 size={18} className='animate-spin' /> : <Check size={18} />}
+                    Activate
+                  </button>
+                  <button
+                    type='button'
+                    disabled={activationBulkBusy}
+                    onClick={() => handleActivationBulk(false)}
+                    className='flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 disabled:opacity-50 text-white text-sm font-medium min-h-[44px] min-w-[44px]'
+                    title='Deactivate selected states'
+                  >
+                    {activationBulkBusy ? <Loader2 size={18} className='animate-spin' /> : <X size={18} />}
+                    Deactivate
+                  </button>
+                  <button
+                    type='button'
+                    onClick={() => setSelectedStateIds([])}
+                    className='text-sm text-gray-400 hover:text-gray-200'
+                  >
+                    Clear selection
+                  </button>
+                </div>
+              )}
+
+              {/* Search: filter by name or code */}
+              <div className='mb-4 relative'>
+                <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500' />
+                <input
+                  type='text'
+                  placeholder='Search by state name or code...'
+                  value={stateSearch}
+                  onChange={(e) => setStateSearch(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-lg border ${currentTheme.input} text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                />
+              </div>
+
+              {activationLoading ? (
+                <div className='flex items-center gap-2 py-8 text-center'>
+                  <Loader2 className='w-6 h-6 animate-spin text-emerald-500' />
+                  <span className={currentTheme.textMuted}>Loading states...</span>
+                </div>
+              ) : (
+                <div className={`rounded-xl border ${currentTheme.border} overflow-hidden ${currentTheme.card}`}>
+                  <div className='overflow-x-auto'>
+                    <table className='w-full text-sm'>
+                      <thead className={currentTheme.bg === 'bg-gray-800' ? 'bg-gray-700/80' : 'bg-gray-100'}>
+                        <tr>
+                          <th className='px-4 py-3 text-left w-12'>
+                            <input
+                              type='checkbox'
+                              checked={filteredActivationStates.length > 0 && selectedStateIds.length === filteredActivationStates.length}
+                              onChange={toggleActivationSelectAll}
+                              className='rounded border-gray-400 w-5 h-5 min-w-[24px] min-h-[24px]'
+                              aria-label='Select all'
+                            />
+                          </th>
+                          <th className={`px-4 py-3 text-left font-semibold ${currentTheme.textMuted}`}>Name</th>
+                          <th className={`px-4 py-3 text-left font-semibold ${currentTheme.textMuted}`}>Code</th>
+                          <th className={`px-4 py-3 text-left font-semibold ${currentTheme.textMuted}`}>Status</th>
+                          <th className={`px-4 py-3 text-left font-semibold ${currentTheme.textMuted}`}>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className={`divide-y ${currentTheme.border}`}>
+                        {filteredActivationStates.map((state) => (
+                          <tr key={state.id} className={`${currentTheme.hover || 'hover:bg-gray-700/30'}`}>
+                            <td className='px-4 py-3'>
+                              <input
+                                type='checkbox'
+                                checked={selectedStateIds.includes(state.id)}
+                                onChange={() => toggleActivationSelect(state.id)}
+                                className='rounded border-gray-400 w-5 h-5 min-w-[24px] min-h-[24px]'
+                                aria-label={`Select ${state.name}`}
+                              />
+                            </td>
+                            <td className={`px-4 py-3 font-medium ${currentTheme.text}`}>{state.name}</td>
+                            <td className={`px-4 py-3 ${currentTheme.textMuted}`}>{state.code}</td>
+                            <td className='px-4 py-3'>
+                              <span
+                                className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${
+                                  state.isActive
+                                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                                    : 'bg-gray-500/20 text-gray-400 border border-gray-500/40'
+                                }`}
+                              >
+                                {state.isActive ? 'Active' : 'Inactive'}
+                              </span>
+                            </td>
+                            <td className='px-4 py-3'>
+                              <button
+                                type='button'
+                                disabled={activationBusyId === state.id}
+                                onClick={() => handleActivationToggleOne(state)}
+                                className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium disabled:opacity-50 ${
+                                  state.isActive
+                                    ? 'text-amber-400 hover:bg-amber-500/10'
+                                    : 'text-emerald-400 hover:bg-emerald-500/10'
+                                }`}
+                              >
+                                {activationBusyId === state.id ? (
+                                  <Loader2 size={16} className='animate-spin' />
+                                ) : state.isActive ? (
+                                  'Deactivate'
+                                ) : (
+                                  'Activate'
+                                )}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {filteredActivationStates.length === 0 && (
+                    <div className={`px-4 py-8 text-center ${currentTheme.textMuted}`}>
+                      {stateSearch.trim() ? 'No states match your search.' : 'No states found.'}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -407,27 +860,11 @@ const InviteCodeGenerate = ({ theme = {} }) => {
                           }
                           className='w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-blue-600 focus:outline-none bg-white text-gray-800 font-medium transition'
                         >
-                          <option value='SUPER_ADMIN'>
-                            Super Administrator
-                          </option>
-                          <option value='HEAD_RESEARCHER'>
-                            Head Researcher
-                          </option>
-                          <option value='ADMIN'>Administrator</option>
-                          <option value='DATA_COLLECTOR'>Data Collector</option>
-                          <option value='SUPERVISOR'>Supervisor</option>
-                          <option value='POLICY_MAKER_SON'>
-                            Policy Maker - SON
-                          </option>
-                          <option value='POLICY_MAKER_NAFDAC'>
-                            Policy Maker - NAFDAC
-                          </option>
-                          <option value='POLICY_MAKER_RESOLVE'>
-                            Policy Maker - RESOLVE
-                          </option>
-                          <option value='POLICY_MAKER_UNIVERSITY'>
-                            Policy Maker - University
-                          </option>
+                          {(userRoles.length ? userRoles : ['SUPER_ADMIN', 'HEAD_RESEARCHER', 'DATA_COLLECTOR', 'SUPERVISOR', 'LAB_ANALYST', 'POLICY_MAKER_SON', 'POLICY_MAKER_NAFDAC', 'POLICY_MAKER_RESOLVE', 'POLICY_MAKER_UNIVERSITY']).map((role) => (
+                            <option key={role} value={role}>
+                              {userRoleLabels[role] || role.replace(/_/g, ' ')}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </div>
@@ -596,11 +1033,19 @@ const InviteCodeGenerate = ({ theme = {} }) => {
                               <Eye size={16} className='text-emerald-400' />
                             </button>
 
-                            <button className='p-1 hover:bg-blue-500/20 rounded transition'>
+                            <button
+                              onClick={() => handleViewUser(user.id)}
+                              title='View / Edit'
+                              className='p-1 hover:bg-blue-500/20 rounded transition'
+                            >
                               <Edit size={16} className='text-blue-400' />
                             </button>
 
-                            <button className='p-1 hover:bg-red-500/20 rounded transition'>
+                            <button
+                              onClick={() => handleDeleteUser(user.id)}
+                              title='Deactivate user'
+                              className='p-1 hover:bg-red-500/20 rounded transition'
+                            >
                               <Trash2 size={16} className='text-red-400' />
                             </button>
                           </div>
@@ -703,27 +1148,11 @@ const InviteCodeGenerate = ({ theme = {} }) => {
                           }
                           className='w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 focus:border-teal-600 focus:outline-none bg-white text-gray-800 font-medium transition'
                         >
-                          <option value='SUPER_ADMIN'>
-                            Super Administrator
-                          </option>
-                          <option value='HEAD_RESEARCHER'>
-                            Head Researcher
-                          </option>
-                          <option value='ADMIN'>Administrator</option>
-                          <option value='DATA_COLLECTOR'>Data Collector</option>
-                          <option value='SUPERVISOR'>Supervisor</option>
-                          <option value='POLICY_MAKER_SON'>
-                            Policy Maker - SON
-                          </option>
-                          <option value='POLICY_MAKER_NAFDAC'>
-                            Policy Maker - NAFDAC
-                          </option>
-                          <option value='POLICY_MAKER_RESOLVE'>
-                            Policy Maker - RESOLVE
-                          </option>
-                          <option value='POLICY_MAKER_UNIVERSITY'>
-                            Policy Maker - University
-                          </option>
+                          {(userRoles.length ? userRoles : ['SUPER_ADMIN', 'HEAD_RESEARCHER', 'DATA_COLLECTOR', 'SUPERVISOR', 'LAB_ANALYST', 'POLICY_MAKER_SON', 'POLICY_MAKER_NAFDAC', 'POLICY_MAKER_RESOLVE', 'POLICY_MAKER_UNIVERSITY']).map((role) => (
+                            <option key={role} value={role}>
+                              {userRoleLabels[role] || role.replace(/_/g, ' ')}
+                            </option>
+                          ))}
                         </select>
                       ) : (
                         <p className='text-gray-900 font-medium text-base px-4 py-2.5 bg-gray-50 rounded-lg'>
@@ -943,6 +1372,103 @@ const InviteCodeGenerate = ({ theme = {} }) => {
           )}
         </div>
       </div>
+
+      {/* Assign States modal */}
+      {showAssignModal && (
+        <div className='fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50'>
+          <div
+            className={`${currentTheme.card} rounded-2xl shadow-2xl border ${currentTheme.border} p-6 max-w-md w-full max-h-[90vh] overflow-y-auto`}
+          >
+            <h2 className='text-xl font-bold mb-4'>Assign States to Supervisor</h2>
+
+            <div className='mb-4'>
+              <label className={`block text-sm font-semibold mb-2 ${currentTheme.text}`}>
+                Select Supervisor
+              </label>
+              <select
+                value={selectedSupervisor ?? ''}
+                onChange={(e) => {
+                  const id = e.target.value || null;
+                  setSelectedSupervisor(id);
+                  if (id) {
+                    const sup = supervisorsList.find((s) => s.id === id);
+                    setSelectedStates(
+                      (sup?.supervisorStates || []).map((ss) => ss.state?.id ?? ss.stateId)
+                    );
+                  } else {
+                    setSelectedStates([]);
+                  }
+                }}
+                className={`w-full px-3 py-2 rounded-lg border ${currentTheme.input}`}
+              >
+                <option value=''>Choose a supervisor...</option>
+                {supervisorsList.map((sup) => (
+                  <option key={sup.id} value={sup.id}>
+                    {sup.fullName} ({sup.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className='mb-6'>
+              <label className={`block text-sm font-semibold mb-2 ${currentTheme.text}`}>
+                Select States
+              </label>
+              <div
+                className={`border rounded-lg p-3 max-h-48 overflow-y-auto ${currentTheme.bg}`}
+              >
+                {statesList.map((state) => (
+                  <label
+                    key={state.id}
+                    className='flex items-center gap-2 py-2 cursor-pointer text-sm'
+                  >
+                    <input
+                      type='checkbox'
+                      checked={selectedStates.includes(state.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedStates([...selectedStates, state.id]);
+                        } else {
+                          setSelectedStates(selectedStates.filter((id) => id !== state.id));
+                        }
+                      }}
+                      className='rounded border-gray-400'
+                    />
+                    <span>{state.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {assignError && (
+              <div className='mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm'>
+                {assignError}
+              </div>
+            )}
+
+            <div className='flex gap-3'>
+              <button
+                onClick={() => {
+                  setShowAssignModal(false);
+                  setSelectedSupervisor(null);
+                  setSelectedStates([]);
+                  setAssignError(null);
+                }}
+                className={`flex-1 px-4 py-2 rounded-lg border ${currentTheme.border} ${currentTheme.text} hover:opacity-90 transition`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAssignStates}
+                disabled={assignLoading || !selectedSupervisor || selectedStates.length === 0}
+                className='flex-1 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium transition'
+              >
+                {assignLoading ? 'Assigning...' : 'Assign States'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

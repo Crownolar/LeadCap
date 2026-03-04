@@ -3,6 +3,7 @@ import { vendorTypes, sampleTypes } from "../../utils/constants";
 import { useRef, useState, useEffect } from "react";
 import {
   getInitialSampleFormState,
+  sampleToFormState,
   fetchFormData,
   filterLGAsByState,
   filterMarketsByLGA,
@@ -21,10 +22,13 @@ import {
 } from "../../utils/formHelpers";
 import { useTheme } from "../../context/ThemeContext";
 
-const SampleFormModal = ({ onClose, onSubmit }) => {
+const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
+  const isEdit = mode === "edit";
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [formData, setFormData] = useState(getInitialSampleFormState());
+  const [formData, setFormData] = useState(() =>
+    isEdit && initialSample ? sampleToFormState(initialSample) : getInitialSampleFormState()
+  );
   const { theme } = useTheme();
 
   const [states, setStates] = useState([]);
@@ -80,6 +84,13 @@ const SampleFormModal = ({ onClose, onSubmit }) => {
 
     initFormData();
   }, []);
+
+  // Prefill form when in edit mode and initialSample is set (after form data loaded)
+  useEffect(() => {
+    if (isEdit && initialSample && !loadingData && (states.length > 0 || categories.length > 0)) {
+      setFormData(sampleToFormState(initialSample));
+    }
+  }, [isEdit, initialSample?.id, loadingData, states.length, categories.length]);
 
   // Handle state change
   useEffect(() => {
@@ -165,10 +176,13 @@ const SampleFormModal = ({ onClose, onSubmit }) => {
     try {
       const payload = buildSamplePayload(formData);
       await onSubmit(payload);
-      alert("Sample created successfully!");
+      alert(isEdit ? "Sample updated successfully!" : "Sample created successfully!");
       onClose();
     } catch (err) {
-      const errorMsg = err.response?.data?.message || "Failed to create sample";
+      const errorMsg =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        (isEdit ? "Failed to update sample" : "Failed to create sample");
       setError(errorMsg);
       alert(errorMsg);
     } finally {
@@ -188,7 +202,7 @@ const SampleFormModal = ({ onClose, onSubmit }) => {
             <h2
               className={`${theme.text} text-xl sm:text-2xl font-bold text-center sm:text-left w-full sm:w-auto`}
             >
-              New Sample Entry
+              {isEdit ? "Edit Sample" : "New Sample Entry"}
             </h2>
             <button
               onClick={onClose}
@@ -623,40 +637,6 @@ const SampleFormModal = ({ onClose, onSubmit }) => {
                   </select>
                 </div>
 
-                <div>
-                  <label
-                    className={`block text-sm font-medium mb-2 ${theme.text}`}
-                  >
-                    NAFDAC Number
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.navdacNumber}
-                    onChange={(e) =>
-                      setFormData({ ...formData, navdacNumber: e.target.value })
-                    }
-                    className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
-                    placeholder="e.g., A7-0001-2023"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    className={`block text-sm font-medium mb-2 ${theme.text}`}
-                  >
-                    SON Number
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.sonNumber}
-                    onChange={(e) =>
-                      setFormData({ ...formData, sonNumber: e.target.value })
-                    }
-                    className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
-                    placeholder="e.g., SON/CL/2023-0001"
-                  />
-                </div>
-
                 <div className="flex items-center mt-2">
                   <input
                     type="checkbox"
@@ -677,6 +657,44 @@ const SampleFormModal = ({ onClose, onSubmit }) => {
                     Registered Product (NAFDAC/SON)
                   </label>
                 </div>
+
+                {formData.isRegistered && (
+                  <>
+                    <div>
+                      <label
+                        className={`block text-sm font-medium mb-2 ${theme.text}`}
+                      >
+                        NAFDAC Number
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.nafdacNumber}
+                        onChange={(e) =>
+                          setFormData({ ...formData, nafdacNumber: e.target.value })
+                        }
+                        className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
+                        placeholder="e.g., A7-0001-2023"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        className={`block text-sm font-medium mb-2 ${theme.text}`}
+                      >
+                        SON Number
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.sonNumber}
+                        onChange={(e) =>
+                          setFormData({ ...formData, sonNumber: e.target.value })
+                        }
+                        className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
+                        placeholder="e.g., SON/CL/2023-0001"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             </section>
 

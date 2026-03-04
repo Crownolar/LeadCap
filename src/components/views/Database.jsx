@@ -45,16 +45,16 @@ const Database = ({
   if (isDataCollector) {
     return (
       <div
-        className={`${hookTheme?.bg} min-h-screen flex items-center justify-center p-4`}
+        className={`${theme?.bg} min-h-screen flex items-center justify-center p-4`}
       >
         <div
-          className={`${hookTheme?.card} rounded-lg border ${hookTheme?.border} shadow-md p-8 text-center max-w-md`}
+          className={`${theme?.card} rounded-lg border ${theme?.border} shadow-md p-8 text-center max-w-md`}
         >
           <Lock className="w-16 h-16 mx-auto mb-4 text-yellow-600" />
-          <h2 className={`${hookTheme?.text} text-2xl font-bold mb-2`}>
+          <h2 className={`${theme?.text} text-2xl font-bold mb-2`}>
             Access Restricted
           </h2>
-          <p className={hookTheme?.textMuted}>
+          <p className={theme?.textMuted}>
             Data collectors can only view their own collected samples in the{" "}
             <strong>My Samples</strong> section.
           </p>
@@ -63,9 +63,11 @@ const Database = ({
     );
   }
 
-  // Check if user is HEAD_RESEARCHER (only role that can see Collected By column)
-  const isHeadResearcher =
-    currentUser?.role?.toLowerCase().replace(/[\s_]/g, "") === "headresearcher";
+  const normalizedRole =
+    currentUser?.role?.toLowerCase().replace(/[\s_]/g, "") ?? "";
+  const isHeadResearcher = normalizedRole === "headresearcher";
+  const isSuperAdmin = normalizedRole === "superadmin";
+  const canSeeCollector = isSuperAdmin || isHeadResearcher;
 
   // Local state for standalone mode
   const [localSearchTerm, setLocalSearchTerm] = useState("");
@@ -124,7 +126,7 @@ const Database = ({
     if (!propStates) {
       const fetchStates = async () => {
         try {
-          const response = await api.get("/management/states");
+          const response = await api.get("/management/states", { params: { activeOnly: "true" } });
           setLocalStates(response.data.data || []);
         } catch (err) {
           console.error("Failed to fetch states:", err);
@@ -271,7 +273,7 @@ const Database = ({
                   "Sample ID",
                   "Product",
                   "Location",
-                  ...(isHeadResearcher ? ["Collected By"] : []),
+                  ...(canSeeCollector ? ["Collector"] : []),
                   "Max Reading (ppm)",
                   "Status",
                   "Date",
@@ -311,11 +313,11 @@ const Database = ({
                           {sample?.lga?.name}, {sample?.state?.name}
                         </div>
                         <div className={`text-xs ${theme.textMuted}`}>
-                          {sample?.market?.name || "N/A"}
+                          {sample?.marketName || sample?.market?.name || "N/A"}
                         </div>
                       </div>
                     </td>
-                    {isHeadResearcher && (
+                    {canSeeCollector && (
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="font-medium text-sm">
                           {sample?.creator?.fullName ||
@@ -410,13 +412,13 @@ const Database = ({
                   <span className="font-semibold">Location:</span>{" "}
                   {sample?.lga?.name}, {sample?.state?.name}
                   <div className={`text-xs ${theme?.textMuted}`}>
-                    {sample?.market?.name || "N/A"}
+                    {sample?.marketName || sample?.market?.name || "N/A"}
                   </div>
                 </div>
 
-                {isHeadResearcher && (
+                {canSeeCollector && (
                   <div className="text-sm mb-1">
-                    <span className="font-semibold">Collected By:</span>{" "}
+                    <span className="font-semibold">Collector:</span>{" "}
                     {sample?.creator?.fullName ||
                       sample?.creator?.email ||
                       "Unknown"}

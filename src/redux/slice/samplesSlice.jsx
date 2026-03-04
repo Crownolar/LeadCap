@@ -84,6 +84,9 @@ export const fetchSamples = createAsyncThunk(
           vendorType: filters.vendorType || undefined,
           dateFrom: filters.dateFrom || undefined,
           dateTo: filters.dateTo || undefined,
+          productVariantId: filters.productVariantId || undefined,
+          productCategoryId: filters.productCategoryId || undefined,
+          status: filters.status || undefined,
         },
       });
 
