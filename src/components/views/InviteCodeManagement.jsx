@@ -5,8 +5,23 @@ import { useSelector } from "react-redux";
 import { useTheme } from "../../context/ThemeContext";
 
 const InviteCodeManagement = () => {
+  const [inviteCodes, setInviteCodes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [filterRole, setFilterRole] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [copiedCode, setCopiedCode] = useState(null);
+  const [formData, setFormData] = useState({
+    role: "DATA_COLLECTOR",
+    organization: "",
+  });
   const { currentUser } = useSelector((state) => state.auth);
   const { theme } = useTheme();
+  useEffect(() => {
+    fetchInviteCodes();
+  }, []);
 
   const normalizedRole = currentUser?.role?.toLowerCase().replace(/[\s_]/g, "");
 
@@ -30,18 +45,6 @@ const InviteCodeManagement = () => {
     );
   }
 
-  const [inviteCodes, setInviteCodes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-  const [filterRole, setFilterRole] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [copiedCode, setCopiedCode] = useState(null);
-  const [formData, setFormData] = useState({
-    role: "DATA_COLLECTOR",
-    organization: "",
-  });
 
   const roles = [
     "HEAD_RESEARCHER",
@@ -53,9 +56,6 @@ const InviteCodeManagement = () => {
     "POLICY_MAKER_UNIVERSITY",
   ];
 
-  useEffect(() => {
-    fetchInviteCodes();
-  }, []);
 
   const fetchInviteCodes = async () => {
     try {
