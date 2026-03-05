@@ -180,7 +180,7 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
     setError(null);
 
     const validation = validateSampleForm(formData);
-    console.log("Form", formData);
+
     if (!validation.valid) {
       setError(Object.values(validation.errors).join(", "));
       setLoading(false);
@@ -189,7 +189,7 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
 
     try {
       const payload = buildSamplePayload(formData);
-      console.log("payload", payload);
+
       await onSubmit(payload);
       alert(
         isEdit
