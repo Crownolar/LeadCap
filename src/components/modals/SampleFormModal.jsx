@@ -383,7 +383,8 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                     <option value=''>Select Vendor Type</option>
                     {vendorTypes.map((type) => (
                       <option key={type} value={type}>
-                        {type.replace(/_/g, " ")}
+                        {type.slice(0, 1).toUpperCase() +
+                          type.slice(1).toLowerCase().replace(/_/g, " ")}
                       </option>
                     ))}
                   </select>
@@ -539,7 +540,7 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                     </option>
                     {variants.map((variant) => (
                       <option key={variant.id} value={variant.id}>
-                        {variant.name || variant.displayName}
+                        {variant.displayName || variant.name}
                       </option>
                     ))}
                   </select>

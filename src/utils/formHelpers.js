@@ -135,7 +135,7 @@ export const fetchVariantsForCategory = async (categoryId) => {
     );
     const variants = response.data?.data || response.data || [];
 
-    console.log(`Fetched variants for category ${categoryId}:`, variants);
+    // console.log(`Fetched variants for category ${categoryId}:`, variants);
 
     if (!Array.isArray(variants)) {
       console.warn("Variants response is not an array:", variants);
