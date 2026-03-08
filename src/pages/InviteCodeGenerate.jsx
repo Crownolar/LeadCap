@@ -25,10 +25,10 @@ import api from "../utils/api";
 import { useEnums } from "../context/EnumsContext";
 import { useTheme } from "../context/ThemeContext";
 
-const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
+const InviteCodeGenerate = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { theme: contextTheme } = useTheme();
+  const { theme } = useTheme();
 
   const { users, selectedUser, loading } = useSelector(
     (state) => state.users,
@@ -74,14 +74,7 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
 
   const { userRoles, userRoleLabels } = useEnums();
 
-  const defaultTheme = {
-    bg: "bg-gray-900",
-    text: "text-gray-100",
-    card: "bg-gray-800",
-    border: "border-gray-700",
-    textMuted: "text-gray-400",
-  };
-  const currentTheme = { ...defaultTheme, ...contextTheme, ...themeProp };
+
 
   const [activeTab, setActiveTab] = useState("invite");
   const [inviteLoading, setInviteLoading] = useState(false);
@@ -462,13 +455,13 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
   );
 
   return (
-    <div className={`min-h-screen ${currentTheme.bg} ${currentTheme.text} p-6`}>
+    <div className={`min-h-screen ${theme.bg} ${theme.text} p-6`}>
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent mb-2">
             Super Admin Dashboard
           </h1>
-          <p className={currentTheme.textMuted}>
+          <p className={theme.textMuted}>
             Manage users, samples, and system settings
           </p>
         </div>
@@ -493,7 +486,7 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                 className={`flex items-center gap-2 px-4 py-3 rounded-t-lg transition-all whitespace-nowrap border-b-2 -mb-px focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${
                   isActive
                     ? "bg-emerald-500/10 text-emerald-400 border-emerald-500 font-semibold"
-                    : `border-transparent ${currentTheme.text} ${currentTheme.textMuted} hover:text-gray-200 hover:bg-gray-700/50`
+                    : `border-transparent ${theme.text} ${theme.textMuted} hover:text-gray-200 hover:bg-gray-700/50`
                 }`}
               >
                 <Icon size={18} className="flex-shrink-0" />
@@ -507,7 +500,7 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
           id={`panel-${activeTab}`}
           role="tabpanel"
           aria-labelledby={`tab-${activeTab}`}
-          className={`${currentTheme.card} rounded-2xl shadow-xl border ${currentTheme.border} p-6`}
+          className={`${theme.card} rounded-2xl shadow-xl border ${theme.border} p-6`}
         >
           {activeTab === "invite" && (
             <div>
@@ -598,7 +591,7 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
               )}
               <div className="space-y-4">
                 {supervisorsList.length === 0 ? (
-                  <p className={currentTheme.textMuted}>
+                  <p className={theme.textMuted}>
                     No supervisors found. Create a user with role SUPERVISOR
                     first.
                   </p>
@@ -606,7 +599,7 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                   supervisorsList.map((supervisor) => (
                     <div
                       key={supervisor.id}
-                      className={`rounded-xl border ${currentTheme.border} p-4 ${currentTheme.card} hover:shadow-md transition`}
+                      className={`rounded-xl border ${theme.border} p-4 ${theme.card} hover:shadow-md transition`}
                     >
                       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
@@ -614,7 +607,7 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                             {supervisor.fullName}
                           </h3>
                           <p
-                            className={`text-sm truncate ${currentTheme.textMuted}`}
+                            className={`text-sm truncate ${theme.textMuted}`}
                           >
                             {supervisor.email}
                           </p>
@@ -629,7 +622,7 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                       </div>
                       <div className="mt-3 pt-3 border-t border-gray-700/50">
                         <p
-                          className={`text-xs font-semibold mb-2 ${currentTheme.textMuted}`}
+                          className={`text-xs font-semibold mb-2 ${theme.textMuted}`}
                         >
                           Assigned States (
                           {supervisor.supervisorStates?.length ?? 0})
@@ -661,7 +654,7 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                             ))}
                           </div>
                         ) : (
-                          <p className={`text-sm ${currentTheme.textMuted}`}>
+                          <p className={`text-sm ${theme.textMuted}`}>
                             No states assigned
                           </p>
                         )}
@@ -679,7 +672,7 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                 <h2 className="text-xl font-bold flex items-center gap-2 mb-1">
                   <Settings className="text-emerald-500" /> State activation
                 </h2>
-                <p className={`text-sm ${currentTheme.textMuted}`}>
+                <p className={`text-sm ${theme.textMuted}`}>
                   Activate or deactivate states. Only active states appear in
                   dropdowns (e.g. Add Sample).
                 </p>
@@ -748,26 +741,26 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                   placeholder="Search by state name or code..."
                   value={stateSearch}
                   onChange={(e) => setStateSearch(e.target.value)}
-                  className={`w-full pl-10 pr-4 py-2.5 rounded-lg border ${currentTheme.input} text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-lg border ${theme.input} text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500`}
                 />
               </div>
 
               {activationLoading ? (
                 <div className="flex items-center gap-2 py-8 text-center">
                   <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
-                  <span className={currentTheme.textMuted}>
+                  <span className={theme.textMuted}>
                     Loading states...
                   </span>
                 </div>
               ) : (
                 <div
-                  className={`rounded-xl border ${currentTheme.border} overflow-hidden ${currentTheme.card}`}
+                  className={`rounded-xl border ${theme.border} overflow-hidden ${theme.card}`}
                 >
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead
                         className={
-                          currentTheme.bg === "bg-gray-800"
+                          theme.bg === "bg-gray-800"
                             ? "bg-gray-700/80"
                             : "bg-gray-100"
                         }
@@ -787,32 +780,32 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                             />
                           </th>
                           <th
-                            className={`px-4 py-3 text-left font-semibold ${currentTheme.textMuted}`}
+                            className={`px-4 py-3 text-left font-semibold ${theme.textMuted}`}
                           >
                             Name
                           </th>
                           <th
-                            className={`px-4 py-3 text-left font-semibold ${currentTheme.textMuted}`}
+                            className={`px-4 py-3 text-left font-semibold ${theme.textMuted}`}
                           >
                             Code
                           </th>
                           <th
-                            className={`px-4 py-3 text-left font-semibold ${currentTheme.textMuted}`}
+                            className={`px-4 py-3 text-left font-semibold ${theme.textMuted}`}
                           >
                             Status
                           </th>
                           <th
-                            className={`px-4 py-3 text-left font-semibold ${currentTheme.textMuted}`}
+                            className={`px-4 py-3 text-left font-semibold ${theme.textMuted}`}
                           >
                             Action
                           </th>
                         </tr>
                       </thead>
-                      <tbody className={`divide-y ${currentTheme.border}`}>
+                      <tbody className={`divide-y ${theme.border}`}>
                         {filteredActivationStates.map((state) => (
                           <tr
                             key={state.id}
-                            className={`${currentTheme.hover || "hover:bg-gray-700/30"}`}
+                            className={`${theme.hover || "hover:bg-gray-700/30"}`}
                           >
                             <td className="px-4 py-3">
                               <input
@@ -826,12 +819,12 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                               />
                             </td>
                             <td
-                              className={`px-4 py-3 font-medium ${currentTheme.text}`}
+                              className={`px-4 py-3 font-medium ${theme.text}`}
                             >
                               {state.name}
                             </td>
                             <td
-                              className={`px-4 py-3 ${currentTheme.textMuted}`}
+                              className={`px-4 py-3 ${theme.textMuted}`}
                             >
                               {state.code}
                             </td>
@@ -873,7 +866,7 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                   </div>
                   {filteredActivationStates.length === 0 && (
                     <div
-                      className={`px-4 py-8 text-center ${currentTheme.textMuted}`}
+                      className={`px-4 py-8 text-center ${theme.textMuted}`}
                     >
                       {stateSearch.trim()
                         ? "No states match your search."
@@ -906,12 +899,12 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden">
+              <div className={`${theme.card} rounded-lg shadow-xl ${theme.border}overflow-hidden`}>
                 <div className=" bg-gradient-to-r from-emerald-400 to-teal-500 px-8 py-6 border-b border-teal-700">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm">
                       <svg
-                        className="w-6 h-6 text-white"
+                        className={`w-6 h-6 ${theme.text}`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -925,10 +918,10 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                       </svg>
                     </div>
                     <div>
-                      <h3 className="text-2xl font-bold text-white">
+                      <h3 className={`text-2xl font-bold`}>
                         Register New User
                       </h3>
-                      <p className="text-blue-200 text-sm mt-1">
+                      <p className={`${theme.text} text-sm mt-1`}>
                         LeadCap Agents.
                       </p>
                     </div>
@@ -937,12 +930,12 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
 
                 <div className="p-8">
                   <div className="mb-8">
-                    <h4 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b-2 border-emerald-600">
+                    <h4 className={`text-lg font-bold ${theme.text} mb-4 pb-2 border-b-2 border-emerald-600`}>
                       User Credentials
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                        <label className={`block text-sm font-semibold ${theme.textMuted} uppercase tracking-wide`}>
                           Full Name <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -957,7 +950,7 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                        <label className={`block text-sm font-semibold ${theme.textMuted} uppercase tracking-wide`}>
                           Email Address <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -972,7 +965,7 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                        <label className={`block text-sm font-semibold ${theme.textMuted} uppercase tracking-wide`}>
                           Password <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -987,7 +980,7 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                        <label className={`block text-sm font-semibold ${theme.textMuted} uppercase tracking-wide`}>
                           System Role <span className="text-red-500">*</span>
                         </label>
                         <select
@@ -1200,7 +1193,7 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
           )}
 
           {activeTab === "viewUser" && editableUser && (
-            <div className="bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden">
+            <div className={`${theme.card} rounded-lg shadow-xl border border-gray-200 overflow-hidden`}>
               <div className="bg-gradient-to-r from-emerald-400 to-teal-500 px-8 py-6 border-b border-teal-700">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -1208,10 +1201,10 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                       <Eye className="text-white w-6 h-6" />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold text-white">
+                      <h2 className={`text-2xl font-bold ${theme.text}`}>
                         User Profile
                       </h2>
-                      <p className="text-blue-200 text-sm mt-1">
+                      <p className={`text-${theme.textMuted} text-sm mt-1`}>
                         National Health Information System
                       </p>
                     </div>
@@ -1232,12 +1225,12 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
 
               <div className="p-8">
                 <div className="mb-8">
-                  <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b-2 border-teal-600">
+                  <h3 className={`text-lg font-bold ${theme.text} mb-4 pb-2 border-b-2 border-teal-600`}>
                     Personal Information
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                      <label className={`block text-sm font-semibold ${theme.text} uppercase tracking-wide`}>
                         Full Name
                       </label>
                       {isEditing ? (
@@ -1252,17 +1245,17 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                           className="w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 focus:border-teal-600 focus:outline-none bg-white text-gray-800 font-medium transition"
                         />
                       ) : (
-                        <p className="text-gray-900 font-medium text-base px-4 py-2.5 bg-gray-50 rounded-lg">
+                        <p className={`${theme.text} font-medium text-base px-4 py-2.5 ${theme.bg} rounded-lg`}>
                           {editableUser.fullName}
                         </p>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                      <label className={`block text-sm font-semibold ${theme.text} uppercase tracking-wide`}>
                         Email Address
                       </label>
-                      <p className="text-gray-900 font-medium text-base px-4 py-2.5 bg-gray-50 rounded-lg">
+                      <p className={`${theme.text} font-medium text-base px-4 py-2.5 ${theme.bg} rounded-lg`}>
                         {editableUser.email}
                       </p>
                     </div>
@@ -1270,12 +1263,12 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                 </div>
 
                 <div className="mb-8">
-                  <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b-2 border-emerald-600">
+                  <h3 className={`text-lg font-bold ${theme.text} mb-4 pb-2 border-b-2 border-teal-600`}>
                     Role & Access Level
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                      <label className={`block text-sm font-semibold ${theme.text} uppercase tracking-wide`}>
                         System Role
                       </label>
                       {isEditing ? (
@@ -1299,7 +1292,7 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                           ))}
                         </select>
                       ) : (
-                        <p className="text-gray-900 font-medium text-base px-4 py-2.5 bg-gray-50 rounded-lg">
+                        <p className={`${theme.text} font-medium text-base px-4 py-2.5 ${theme.bg} rounded-lg`}>
                           {editableUser.role
                             .replace(/_/g, " ")
                             .replace(/\b\w/g, (l) => l.toUpperCase())}
@@ -1308,7 +1301,7 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                      <label className={`block text-sm font-semibold ${theme.text} uppercase tracking-wide`}>
                         Account Status
                       </label>
                       {isEditing ? (
@@ -1326,7 +1319,7 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                           <option value="inactive">Inactive</option>
                         </select>
                       ) : (
-                        <p className="text-gray-900 font-medium text-base px-4 py-2.5 bg-gray-50 rounded-lg capitalize">
+                        <p className={`${theme.text} font-medium text-base px-4 py-2.5 ${theme.bg} rounded-lg`}>
                           {editableUser.status}
                         </p>
                       )}
@@ -1335,24 +1328,24 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                 </div>
 
                 <div className="mb-8">
-                  <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b-2 border-teal-600">
+                  <h3 className={`text-lg font-bold ${theme.text} mb-4 pb-2 border-b-2 border-teal-600`}>
                     Account Timeline
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                      <label className={`block text-sm font-semibold ${theme.text} uppercase tracking-wide`}>
                         Date Registered
                       </label>
-                      <p className="text-gray-900 font-medium text-base px-4 py-2.5 bg-gray-50 rounded-lg">
+                      <p className={`${theme.text} font-medium text-base px-4 py-2.5 ${theme.bg} rounded-lg`}>
                         {editableUser.joinedDate}
                       </p>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                      <label className={`block text-sm font-semibold ${theme.text} uppercase tracking-wide`}>
                         Last Updated
                       </label>
-                      <p className="text-gray-900 font-medium text-base px-4 py-2.5 bg-gray-50 rounded-lg">
+                      <p className={`${theme.text} font-medium text-base px-4 py-2.5 ${theme.bg} rounded-lg`}>
                         {editableUser.updatedAt}
                       </p>
                     </div>
@@ -1360,7 +1353,7 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                 </div>
 
                 <div className="mb-8">
-                  <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b-2 border-teal-600">
+                  <h3 className={`text-lg font-bold ${theme.text} mb-4 pb-2 border-b-2 border-teal-600`}>
                     Activity Statistics
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1521,14 +1514,14 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
       {showAssignModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
           <div
-            className={`${currentTheme.card} rounded-2xl shadow-2xl border ${currentTheme.border} p-6 max-w-md w-full max-h-[90vh] overflow-y-auto`}
+            className={`${theme.card} rounded-2xl shadow-2xl border ${theme.border} p-6 max-w-md w-full max-h-[90vh] overflow-y-auto`}
           >
             <h2 className="text-xl font-bold mb-4">
               Assign States to Supervisor
             </h2>
             <div className="mb-4">
               <label
-                className={`block text-sm font-semibold mb-2 ${currentTheme.text}`}
+                className={`block text-sm font-semibold mb-2 ${theme.text}`}
               >
                 Select Supervisor
               </label>
@@ -1548,7 +1541,7 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                     setSelectedStates([]);
                   }
                 }}
-                className={`w-full px-3 py-2 rounded-lg border ${currentTheme.input}`}
+                className={`w-full px-3 py-2 rounded-lg border ${theme.input}`}
               >
                 <option value="">Choose a supervisor...</option>
                 {supervisorsList.map((sup) => (
@@ -1560,12 +1553,12 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
             </div>
             <div className="mb-6">
               <label
-                className={`block text-sm font-semibold mb-2 ${currentTheme.text}`}
+                className={`block text-sm font-semibold mb-2 ${theme.text}`}
               >
                 Select States
               </label>
               <div
-                className={`border rounded-lg p-3 max-h-48 overflow-y-auto ${currentTheme.bg}`}
+                className={`border rounded-lg p-3 max-h-48 overflow-y-auto ${theme.bg}`}
               >
                 {statesList.map((state) => (
                   <label
@@ -1606,7 +1599,7 @@ const InviteCodeGenerate = ({ theme: themeProp = {} }) => {
                   setSelectedStates([]);
                   setAssignError(null);
                 }}
-                className={`flex-1 px-4 py-2 rounded-lg border ${currentTheme.border} ${currentTheme.text} hover:opacity-90 transition`}
+                className={`flex-1 px-4 py-2 rounded-lg border ${theme.border} ${theme.text} hover:opacity-90 transition`}
               >
                 Cancel
               </button>

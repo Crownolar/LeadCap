@@ -1,4 +1,3 @@
-// src/Route/Layout.jsx
 import { Outlet } from "react-router-dom";
 import Header from "../components/layout/Header";
 import Sidebar from "../components/layout/Sidebar";
@@ -8,11 +7,11 @@ import { useTheme } from "../context/ThemeContext";
 import { useState } from "react";
 import SampleFormModal from "../components/modals/SampleFormModal";
 import HeavyMetalFormModalNew from "../components/modals/lab-result_modal/HeavyMetalFormModalNew";
-import { createSample, fetchSamples } from "../redux/slice/samplesSlice";
-import api from "../utils/api";
+import { createSample } from "../redux/slice/samplesSlice";
+// import api from "../utils/api";
 import useRoleDataLoader from "../hooks/useRoleDataLoader";
 
-const Layout = () => {
+const Layout = () => { 
   const dispatch = useDispatch();
   const { currentUser } = useSelector((state) => state.auth);
   const { theme } = useTheme();

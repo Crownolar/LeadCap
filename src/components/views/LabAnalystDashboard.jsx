@@ -1,18 +1,18 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Beaker,
-  AlertTriangle,
+  AlertTriangle, 
   CheckCircle,
   Clock,
   TrendingUp,
 } from "lucide-react";
 import StatCard from "../common/StatCard";
-import { useSelector } from "react-redux";
+// import { useSelector } from "react-redux";
 import api from "../../utils/api";
 import { useTheme } from "../../context/ThemeContext";
 import { useNavigate } from "react-router-dom";
 
-const LabAnalystDashboard = ({ theme: propTheme }) => {
+const LabAnalystDashboard = () => {
   const { theme } = useTheme();
 
   const [samplesRequiringConfirmation, setSamplesRequiringConfirmation] =

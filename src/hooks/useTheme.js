@@ -3,7 +3,7 @@ import { useState } from "react";
 export const useTheme = () => {
   const [darkMode, setDarkMode] = useState(false);
 
-  const theme = {
+  const theme = { 
     bg: darkMode ? "bg-gray-900" : "bg-gray-50",
     card: darkMode ? "bg-gray-800" : "bg-white",
     text: darkMode ? "text-gray-100" : "text-gray-900",
