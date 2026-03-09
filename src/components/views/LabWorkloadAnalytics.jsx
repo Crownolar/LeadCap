@@ -1,5 +1,5 @@
 // import React, { useEffect, useState, useCallback } from "react";
-// import { Download, Pencil } from "lucide-react";
+// import { Download, Pencil, Beaker } from "lucide-react"; // Beaker icon for lab recording
 // import api from "../../utils/api";
 // import { useTheme } from "../../context/ThemeContext";
 
@@ -49,8 +49,8 @@
 //         prev.map((rec) =>
 //           rec.id === editingRecording.id
 //             ? { ...rec, aasReading: Number(aasValue), aasNotes: aasNotes }
-//             : rec,
-//         ),
+//             : rec
+//         )
 //       );
 
 //       setEditingRecording(null);
@@ -80,7 +80,7 @@
 //         });
 
 //         const normalized = (recordingsRes.data.data || []).map(
-//           normalizeRecording,
+//           normalizeRecording
 //         );
 //         setMyRecordings(normalized);
 
@@ -114,7 +114,7 @@
 //       link.href = url;
 //       link.setAttribute(
 //         "download",
-//         `lab-results-${new Date().toISOString().split("T")[0]}.csv`,
+//         `lab-results-${new Date().toISOString().split("T")[0]}.csv`
 //       );
 //       document.body.appendChild(link);
 //       link.click();
@@ -142,42 +142,24 @@
 //         </div>
 //       )}
 
+//       {/* Workload Metrics */}
 //       {workloadMetrics && (
-//         <div
-//           className={`p-6 rounded-lg shadow-md border ${theme?.card} ${theme?.border}`}
-//         >
-//           <h2 className={`text-xl font-semibold mb-4 ${theme.text}`}>
+//         <div className={`p-6 rounded-lg shadow-md border ${theme?.card} ${theme?.border}`}>
+//           <h2 className={`text-xl font-semibold mb-4 ${theme?.text}`}>
 //             Workload Metrics
 //           </h2>
 //           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-//             <MetricCard
-//               label="Total Tests Completed"
-//               value={workloadMetrics.totalCompleted}
-//               color="blue"
-//             />
-//             <MetricCard
-//               label="This Month"
-//               value={workloadMetrics.thisMonth}
-//               color="green"
-//             />
-//             <MetricCard
-//               label="Average per Day"
-//               value={workloadMetrics.avgPerDay}
-//               color="purple"
-//             />
-//             <MetricCard
-//               label="Peak Metal"
-//               value={workloadMetrics.peakMetal}
-//               color="orange"
-//             />
+//             <MetricCard label="Total Tests Completed" value={workloadMetrics.totalCompleted} color="blue" />
+//             <MetricCard label="This Month" value={workloadMetrics.thisMonth} color="green" />
+//             <MetricCard label="Average per Day" value={workloadMetrics.avgPerDay} color="purple" />
+//             <MetricCard label="Peak Metal" value={workloadMetrics.peakMetal} color="orange" />
 //           </div>
 //         </div>
 //       )}
 
+//       {/* Comparison Report */}
 //       {comparisonReport && (
-//         <div
-//           className={`p-6 rounded-lg shadow-md border ${theme?.border} ${theme?.card}`}
-//         >
+//         <div className={`p-6 rounded-lg shadow-md border ${theme?.card} ${theme?.border}`}>
 //           <h2 className={`text-xl font-semibold mb-4 ${theme?.text}`}>
 //             XRF vs AAS Comparison Report
 //           </h2>
@@ -204,41 +186,27 @@
 //         </div>
 //       )}
 
-//       <div
-//         className={`p-6 rounded-lg shadow-md border ${theme?.border} ${theme?.card}`}
-//       >
+//       {/* AAS Recordings */}
+//       <div className={`p-6 rounded-lg shadow-md border ${theme?.card} ${theme?.border}`}>
 //         <div className="flex justify-between items-center mb-4">
-//           <h2 className={`text-xl font-semibold ${theme?.text}`}>
-//             My AAS Recordings
+//           <h2 className={`text-xl font-semibold flex items-center gap-2 ${theme?.text}`}>
+//             <Beaker size={20} /> My AAS Recordings
 //           </h2>
 //           <button
 //             onClick={handleExport}
 //             className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition"
 //           >
-//             <Download size={16} />
-//             Export CSV
+//             <Download size={16} /> Export CSV
 //           </button>
 //         </div>
 
 //         <div className="overflow-x-auto">
-//           <table
-//             className={`w-full border rounded-lg text-left ${theme?.text}`}
-//           >
-//             <thead className={theme?.card}>
+//           <table className={`w-full border rounded-lg text-left ${theme?.text}`}>
+//             <thead className={`${theme?.card}`}>
 //               <tr>
 //                 <th className="px-4 py-2">Sample Name</th>
-//                 <th className="px-4 py-2">
-//                   XRF Result{" "}
-//                   <span className="text-xs text-gray-400">
-//                     ({myRecordings[0]?.unit || ""})
-//                   </span>
-//                 </th>
-//                 <th className="px-4 py-2">
-//                   AAS Result{" "}
-//                   <span className="text-xs text-gray-400">
-//                     ({myRecordings[0]?.unit || ""})
-//                   </span>
-//                 </th>
+//                 <th className="px-4 py-2">XRF Result</th>
+//                 <th className="px-4 py-2">AAS Result</th>
 //                 <th className="px-4 py-2">Status</th>
 //                 <th className="px-4 py-2">Date Recorded</th>
 //                 <th className="px-4 py-2">Action</th>
@@ -249,9 +217,11 @@
 //                 myRecordings.map((rec) => (
 //                   <tr key={rec.id} className={`${theme?.hover}`}>
 //                     <td className="px-4 py-2 font-medium">{rec.sampleName}</td>
-//                     <td className="px-4 py-2">{rec.xrfReading}</td>
+//                     <td className="px-4 py-2">
+//                       {rec.xrfReading} <span className="text-gray-500 text-sm">{rec.unit}</span>
+//                     </td>
 //                     <td className="px-4 py-2 font-semibold">
-//                       {rec.aasReading}
+//                       {rec.aasReading} <span className="text-gray-500 text-sm">{rec.unit}</span>
 //                     </td>
 //                     <td className="px-4 py-2">
 //                       <span
@@ -264,9 +234,7 @@
 //                         {rec.status}
 //                       </span>
 //                     </td>
-//                     <td className="px-4 py-2 text-xs">
-//                       {new Date(rec.recordedAt).toLocaleDateString()}
-//                     </td>
+//                     <td className="px-4 py-2 text-xs">{new Date(rec.recordedAt).toLocaleDateString()}</td>
 //                     <td className="px-4 py-2">
 //                       <button
 //                         onClick={() => handleEdit(rec)}
@@ -279,10 +247,7 @@
 //                 ))
 //               ) : (
 //                 <tr>
-//                   <td
-//                     colSpan={6}
-//                     className="px-4 py-6 text-center text-gray-500"
-//                   >
+//                   <td colSpan={6} className="px-4 py-6 text-center text-gray-500">
 //                     No recordings found
 //                   </td>
 //                 </tr>
@@ -290,73 +255,52 @@
 //             </tbody>
 //           </table>
 //         </div>
-//         <p className="text-xs mt-3 text-gray-500">
-//           Total: {myRecordings.length} recordings
-//         </p>
+//         <p className="text-xs mt-3 text-gray-500">Total: {myRecordings.length} recordings</p>
 //       </div>
 
+//       {/* Edit Modal */}
 //       {editingRecording && (
 //         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-//           <div
-//             className={`p-6 rounded-lg shadow-lg w-full max-w-md ${theme?.card} ${theme?.border}`}
-//           >
-//             <h2 className={`text-lg font-semibold mb-4 ${theme?.text}`}>
-//               Update AAS Reading
-//             </h2>
+//           <div className={`p-6 rounded-lg shadow-lg w-full max-w-md ${theme?.card} ${theme?.border}`}>
+//             <h2 className={`text-lg font-semibold mb-4 ${theme?.text}`}>Update AAS Reading</h2>
 //             <div className="space-y-4">
-//               {/* Sample Info */}
 //               <div>
-//                 <label className={`block text-sm mb-1 ${theme?.text}`}>
-//                   Sample
-//                 </label>
-//                 <p className={`text-sm font-medium ${theme?.textMuted}`}>
-//                   {editingRecording.sampleName}
-//                 </p>
+//                 <label className={`block text-sm mb-1 ${theme?.text}`}>Sample</label>
+//                 <p className={`text-sm font-medium ${theme?.textMuted}`}>{editingRecording.sampleName}</p>
 //               </div>
 
-//               {/* AAS Reading Input */}
-//               <div>
-//                 <label className={`block text-sm mb-1 ${theme?.text}`}>
-//                   AAS Reading
-//                 </label>
-//                 <div className="flex gap-2 items-center">
-//                   <input
-//                     type="number"
-//                     value={aasValue}
-//                     onChange={(e) => setAasValue(e.target.value)}
-//                     className={`flex-1 px-3 py-2 border rounded-lg ${theme?.border} focus:outline-none focus:ring-2 focus:ring-emerald-400`}
-//                   />
-//                   <span className={`text-sm text-gray-500`}>
-//                     {editingRecording.unit}
-//                   </span>
-//                 </div>
+//               <label className={`block text-sm mb-1 ${theme?.text}`}>AAS Reading</label>
+//               <div className="flex gap-2 items-center">
+//                 <input
+//                   type="number"
+//                   value={aasValue}
+//                   onChange={(e) => setAasValue(e.target.value)}
+//                   className={`flex-1 px-3 py-2 border rounded-lg ${theme?.border} focus:outline-none focus:ring-2 focus:ring-emerald-400`}
+//                 />
+//                 <span className="text-sm text-gray-500">{editingRecording.unit}</span>
 //               </div>
 
-//               {/* Notes */}
 //               <div>
-//                 <label className="block text-sm mb-1 text-gray-500">
-//                   Notes
-//                 </label>
+//                 <label className="block text-sm mb-1 text-gray-500">Notes</label>
 //                 <textarea
 //                   value={aasNotes}
 //                   onChange={(e) => setAasNotes(e.target.value)}
 //                   rows="3"
-//                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"
+//                   className="w-full px-3 py-2 border rounded-lg"
 //                 />
 //               </div>
 
-//               {/* Actions */}
 //               <div className="flex justify-end gap-3 pt-3">
 //                 <button
 //                   onClick={() => setEditingRecording(null)}
-//                   className="px-4 py-2 rounded-lg bg-gray-400 text-white hover:bg-gray-500 transition"
+//                   className="px-4 py-2 rounded bg-gray-400 text-white"
 //                 >
 //                   Cancel
 //                 </button>
 //                 <button
 //                   onClick={handleUpdateAAS}
 //                   disabled={updating}
-//                   className="px-4 py-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition"
+//                   className="px-4 py-2 rounded bg-emerald-500 text-white hover:bg-emerald-600"
 //                 >
 //                   {updating ? "Saving..." : "Save"}
 //                 </button>
@@ -369,9 +313,18 @@
 //   );
 // };
 
+// // Metric & Comparison cards
 // const MetricCard = ({ label, value, color }) => (
 //   <div
-//     className={`p-4 rounded-lg shadow ${color === "blue" ? "bg-blue-50 text-blue-600" : color === "green" ? "bg-green-50 text-green-600" : color === "purple" ? "bg-purple-50 text-purple-600" : "bg-orange-50 text-orange-600"}`}
+//     className={`p-4 rounded-lg shadow ${
+//       color === "blue"
+//         ? "bg-blue-50 text-blue-600"
+//         : color === "green"
+//         ? "bg-green-50 text-green-600"
+//         : color === "purple"
+//         ? "bg-purple-50 text-purple-600"
+//         : "bg-orange-50 text-orange-600"
+//     }`}
 //   >
 //     <p className="text-sm">{label}</p>
 //     <p className="text-3xl font-bold">{value}</p>
@@ -380,15 +333,33 @@
 
 // const ComparisonCard = ({ label, percent, count, color }) => (
 //   <div
-//     className={`p-4 border rounded-lg ${color === "green" ? "border-green-300 bg-green-50" : color === "amber" ? "border-amber-300 bg-amber-50" : "border-red-300 bg-red-50"}`}
+//     className={`p-4 border rounded-lg ${
+//       color === "green"
+//         ? "border-green-300 bg-green-50"
+//         : color === "amber"
+//         ? "border-amber-300 bg-amber-50"
+//         : "border-red-300 bg-red-50"
+//     }`}
 //   >
 //     <p
-//       className={`text-sm font-semibold ${color === "green" ? "text-green-700" : color === "amber" ? "text-amber-700" : "text-red-700"}`}
+//       className={`text-sm font-semibold ${
+//         color === "green"
+//           ? "text-green-700"
+//           : color === "amber"
+//           ? "text-amber-700"
+//           : "text-red-700"
+//       }`}
 //     >
 //       {label}
 //     </p>
 //     <p
-//       className={`text-3xl font-bold ${color === "green" ? "text-green-600" : color === "amber" ? "text-amber-600" : "text-red-600"}`}
+//       className={`text-3xl font-bold ${
+//         color === "green"
+//           ? "text-green-600"
+//           : color === "amber"
+//           ? "text-amber-600"
+//           : "text-red-600"
+//       }`}
 //     >
 //       {percent}%
 //     </p>
@@ -400,7 +371,7 @@
 
 
 import React, { useEffect, useState, useCallback } from "react";
-import { Download, Pencil, Beaker } from "lucide-react"; // Beaker icon for lab recording
+import { Download, Pencil, Beaker } from "lucide-react";
 import api from "../../utils/api";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -589,7 +560,7 @@ const LabWorkloadAnalytics = () => {
 
       {/* AAS Recordings */}
       <div className={`p-6 rounded-lg shadow-md border ${theme?.card} ${theme?.border}`}>
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
           <h2 className={`text-xl font-semibold flex items-center gap-2 ${theme?.text}`}>
             <Beaker size={20} /> My AAS Recordings
           </h2>
@@ -601,9 +572,10 @@ const LabWorkloadAnalytics = () => {
           </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className={`w-full border rounded-lg text-left ${theme?.text}`}>
-            <thead className={`${theme?.card}`}>
+        {/* Responsive table wrapper */}
+        <div className="overflow-x-auto rounded-lg border border-gray-200">
+          <table className={`w-full min-w-[600px] border-collapse text-left ${theme?.text}`}>
+            <thead className={`sticky top-0 ${theme.bg} z-10`}>
               <tr>
                 <th className="px-4 py-2">Sample Name</th>
                 <th className="px-4 py-2">XRF Result</th>
@@ -618,10 +590,10 @@ const LabWorkloadAnalytics = () => {
                 myRecordings.map((rec) => (
                   <tr key={rec.id} className={`${theme?.hover}`}>
                     <td className="px-4 py-2 font-medium">{rec.sampleName}</td>
-                    <td className="px-4 py-2">
+                    <td className="px-4 py-2 whitespace-nowrap">
                       {rec.xrfReading} <span className="text-gray-500 text-sm">{rec.unit}</span>
                     </td>
-                    <td className="px-4 py-2 font-semibold">
+                    <td className="px-4 py-2 font-semibold whitespace-nowrap">
                       {rec.aasReading} <span className="text-gray-500 text-sm">{rec.unit}</span>
                     </td>
                     <td className="px-4 py-2">
@@ -635,8 +607,10 @@ const LabWorkloadAnalytics = () => {
                         {rec.status}
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-xs">{new Date(rec.recordedAt).toLocaleDateString()}</td>
-                    <td className="px-4 py-2">
+                    <td className="px-4 py-2 text-xs whitespace-nowrap">
+                      {new Date(rec.recordedAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-2 whitespace-nowrap">
                       <button
                         onClick={() => handleEdit(rec)}
                         className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
@@ -659,7 +633,6 @@ const LabWorkloadAnalytics = () => {
         <p className="text-xs mt-3 text-gray-500">Total: {myRecordings.length} recordings</p>
       </div>
 
-      {/* Edit Modal */}
       {editingRecording && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className={`p-6 rounded-lg shadow-lg w-full max-w-md ${theme?.card} ${theme?.border}`}>
@@ -714,7 +687,6 @@ const LabWorkloadAnalytics = () => {
   );
 };
 
-// Metric & Comparison cards
 const MetricCard = ({ label, value, color }) => (
   <div
     className={`p-4 rounded-lg shadow ${
