@@ -8,6 +8,8 @@ import {
   Upload,
   Beaker,
   Settings,
+  FlaskConical,
+  Microscope,
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useTheme } from "../../context/ThemeContext";
@@ -91,7 +93,7 @@ const Sidebar = ({
       key: "lab-samples",
     },
     {
-      icon: Beaker,
+      icon: Microscope,
       label: "Lab Recording",
       route: "/lab-recording",
       key: "lab-recording",
