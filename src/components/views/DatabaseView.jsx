@@ -36,6 +36,7 @@ const DatabaseView = ({
   filteredSamples,
   selectedSample,
   setSelectedSample,
+  fetchStateError,
 }) => {
   const isDataCollector =
     currentUser?.role?.toLowerCase().replace(/[\s_]/g, "") === "datacollector";
@@ -129,7 +130,7 @@ const DatabaseView = ({
           </div>
 
           <select
-            value={filterProductVariant}
+            value={filterCategory}
             disabled={loading}
             onChange={(e) => setFilterCategory(e.target.value)}
             className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
@@ -139,22 +140,20 @@ const DatabaseView = ({
               ...new Set(
                 samples &&
                   samples.length > 0 &&
-                  samples.map((s) => ({
-                    id: s.productVariant?.categoryId,
-                    name: s.productVariant?.category.displayName,
-                  })),
+                  samples.map((s) => s.productVariant?.categoryId),
               ),
-            ].map((category) => {
-              // const category = samples.find(
-              //   (s) => s.productVariant?.categoryId === categoryId,
-              // )?.productVariant?.category;
-              return (
-                <option key={category.id} value={category.id}>
-                  {category?.name[0] + category?.name.slice(1).toLowerCase() ||
-                    "Unknown"}
-                </option>
-              );
-            })}
+            ]
+              .filter(Boolean)
+              .map((categoryId) => {
+                const category = samples.find(
+                  (s) => s.productVariant?.categoryId === categoryId,
+                )?.productVariant?.category;
+                return (
+                  <option key={categoryId} value={categoryId}>
+                    {category?.displayName || "Unknown"}
+                  </option>
+                );
+              })}
           </select>
 
           <select
@@ -208,6 +207,11 @@ const DatabaseView = ({
             Export Excel
           </button>
         </div>
+        {fetchStateError && (
+          <p className='text-sm mt-1 text-red-600'>
+            Error occurred while fetching states. Check connection and refresh
+          </p>
+        )}
       </div>
       {/* samples */}
       {loading && (

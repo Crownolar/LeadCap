@@ -15,8 +15,7 @@ const Database = ({ theme }) => {
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [states, setStates] = useState([]);
-  const [filteredSamples, setFilteredSamples] = useState([]);
-
+  const [fetchStateError, setFetchStateError] = useState(false);
   const [selectedSample, setSelectedSample] = useState(null);
 
   useEffect(() => {
@@ -32,6 +31,7 @@ const Database = ({ theme }) => {
         setStates(response.data.data || []);
       } catch (err) {
         console.error("Failed to fetch states:", err);
+        setFetchStateError(true);
       }
     };
     fetchStates();
@@ -43,44 +43,28 @@ const Database = ({ theme }) => {
       sample.id?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesState =
-      filterState === "all" || sample.state.name === filterState;
+      filterState === "all" || sample.state.id === filterState;
 
     const matchesProduct =
-      filterProductVariant === "all" || sample.product === filterProductVariant;
+      filterProductVariant === "all" ||
+      sample.productVariantId === filterProductVariant;
 
     const matchesStatus =
       filterStatus === "all" || sample.status === filterStatus;
 
-    // const matchCategory =
-    //   filterCategory === "all" || sample.category === filterCategory;
+    const matchCategory =
+      filterCategory === "all" ||
+      sample.productVariant.categoryId === filterCategory;
 
     return (
       matchesSearch &&
-      // matchCategory &&
+      matchCategory &&
       matchesState &&
       matchesProduct &&
       matchesStatus
     );
   });
 
-  console.log({
-    samples: samples,
-    filteredState: filterState,
-    filterCategory: filterCategory,
-    filteredStatus: filterStatus,
-    filteredSamplesArray: filteredSamplesArray,
-    searchTerm: searchTerm,
-    selectedSample,
-    filterProductVariant,
-  });
-
-  // useEffect(() => {
-  //   setFilteredSamples(filteredSamplesArray);
-  // }, [searchTerm, filterState, filterProductVariant, filterCategory, filterStatus]);
-
-  // console.log("sample", samples);
-  console.log("filtered sample array", filteredSamplesArray);
-  console.log("filtered Samples", filteredSamples);
   return (
     <div>
       <DatabaseView
@@ -99,9 +83,10 @@ const Database = ({ theme }) => {
         setFilterCategory={setFilterCategory}
         filterStatus={filterStatus}
         setFilterStatus={setFilterStatus}
-        filteredSamples={filteredSamples}
+        filteredSamples={filteredSamplesArray}
         selectedSample={selectedSample}
         setSelectedSample={setSelectedSample}
+        fetchStateError={fetchStateError}
       />
     </div>
   );
