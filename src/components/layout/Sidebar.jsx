@@ -10,6 +10,7 @@ import {
   Settings,
   FlaskConical,
   Microscope,
+  TestTubeDiagonal,
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useTheme } from "../../context/ThemeContext";
@@ -41,8 +42,21 @@ const roleConfig = {
   policymakernafdac: {
     sampleButton: false,
     excelImport: false,
-    navItems: ["dashboard", "map"],
+    navItems: [
+      "dashboard",
+      "map",
+      "nafdac-upload",
+      "nafdac-history",
+      "nafdac-products",
+      "nafdac-verifications",
+      "nafdac-risk",
+    ],
   },
+  // policymakernafdac: {
+  //   sampleButton: false,
+  //   excelImport: false,
+  //   navItems: ["dashboard", "map"],
+  // },
   supervisor: {
     sampleButton: false,
     excelImport: false,
@@ -99,6 +113,12 @@ const Sidebar = ({
       key: "lab-recording",
     },
     {
+      icon: TestTubeDiagonal,
+      label: "Policy Portal",
+      route: "/policy-portal",
+      key: "policy-portal",
+    },
+    {
       icon: Database,
       label: "Sample Database",
       route: "/database",
@@ -124,11 +144,53 @@ const Sidebar = ({
       route: "/thresholds",
       key: "thresholds",
     },
-    { icon: Plus, label: "Invite Codes", route: "/invitecodes", key: "invites" },
+    {
+      icon: Plus,
+      label: "Invite Codes",
+      route: "/invitecodes",
+      key: "invites",
+    },
+
+    {
+      icon: FlaskConical,
+      label: "Registry Upload",
+      route: "/nafdac-upload",
+      key: "nafdac-upload",
+    },
+    {
+      icon: Database,
+      label: "Registry History",
+      route: "/nafdac-history",
+      key: "nafdac-history",
+    },
+    {
+      icon: Beaker,
+      label: "Product Search",
+      route: "/nafdac-products",
+      key: "nafdac-products",
+    },
+    {
+      icon: FileText,
+      label: "Verification Logs",
+      route: "/nafdac-verifications",
+      key: "nafdac-verifications",
+    },
+    {
+      icon: BarChart3,
+      label: "Risk Intelligence",
+      route: "/nafdac-risk",
+      key: "nafdac-risk",
+    },
+    {
+      icon: Users,
+      label: "User Governance",
+      route: "/nafdac-users",
+      key: "nafdac-users",
+    },
   ];
 
   const navItemsToRender = allNavItems.filter((item) =>
-    config.navItems.includes(item.key)
+    config.navItems.includes(item.key),
   );
 
   const handleSampleButtonClick = () => {
@@ -149,8 +211,8 @@ const Sidebar = ({
         className={`fixed lg:sticky top-16 lg:top-24 left-0 z-50 pt-16 md:pt-7
           h-full lg:h-fit w-64 lg:w-64 border-4 
           ${theme?.card} shadow-xl lg:shadow-md border-r lg:border ${
-          theme?.border
-        }
+            theme?.border
+          }
           p-4 lg:rounded-lg
           transform transition-transform duration-300 ease-in-out
           ${
