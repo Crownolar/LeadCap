@@ -40,7 +40,7 @@ const DatabaseView = ({
 }) => {
   const isDataCollector =
     currentUser?.role?.toLowerCase().replace(/[\s_]/g, "") === "datacollector";
-    const theme = useTheme()
+    const {theme} = useTheme()
 
 
   if (isDataCollector) {
