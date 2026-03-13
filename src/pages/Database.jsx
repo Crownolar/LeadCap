@@ -9,7 +9,7 @@ const Database = () => {
   const dispatch = useDispatch();
   const { samples, loading } = useSelector((state) => state.samples);
   const { currentUser } = useSelector((state) => state.auth);
-  const theme = useTheme()
+  const { theme } = useTheme();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterState, setFilterState] = useState("all");
