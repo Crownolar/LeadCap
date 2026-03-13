@@ -8,11 +8,15 @@ import { CheckCircle } from "lucide-react";
 const STATUS_TABS = ["PENDING", "APPROVED", "REJECTED", "FLAGGED"];
 
 const SampleReview = () => {
+  console.log("SampleReview rendered");
   const { theme } = useTheme();
   const [searchParams] = useSearchParams();
   const collectorIdFromUrl = searchParams.get("collectorId") || null;
   const [allSamples, setAllSamples] = useState([]);
   const [selectedSample, setSelectedSample] = useState(null);
+  useEffect(() => {
+    console.log("Selected Sample:", selectedSample);
+  }, [selectedSample]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterStatus, setFilterStatus] = useState("PENDING");
@@ -30,7 +34,7 @@ const SampleReview = () => {
 
   const filteredSamples = useMemo(
     () => allSamples.filter((s) => getReviewStatus(s) === filterStatus),
-    [allSamples, filterStatus]
+    [allSamples, filterStatus],
   );
 
   const statusCounts = useMemo(() => {
@@ -74,6 +78,7 @@ const SampleReview = () => {
   ];
 
   const handleSelectSample = (sample) => {
+    console.log("Clicked sample:", sample);
     setSelectedSample(sample);
     setReviewForm({
       status: sample.review?.status || "APPROVED",
@@ -102,7 +107,9 @@ const SampleReview = () => {
         (reviewForm.requestedChanges && reviewForm.requestedChanges.trim()) ||
         (reviewForm.issues && reviewForm.issues.length > 0);
       if (!hasReason) {
-        toast.error("Rejection reason is required. Add comments or select at least one issue.");
+        toast.error(
+          "Rejection reason is required. Add comments or select at least one issue.",
+        );
         return;
       }
     }
@@ -115,19 +122,26 @@ const SampleReview = () => {
           status: reviewForm.status,
           comments: reviewForm.requestedChanges || reviewForm.comments,
           issues: reviewForm.issues,
-        }
+        },
       );
 
       if (response.data.success) {
         toast.success(`Sample ${reviewForm.status.toLowerCase()}!`);
         await fetchSamples();
-        const currentIndex = filteredSamples.findIndex((s) => s.id === selectedSample.id);
+        const currentIndex = filteredSamples.findIndex(
+          (s) => s.id === selectedSample.id,
+        );
         const nextSample =
           currentIndex >= 0 && currentIndex < filteredSamples.length - 1
             ? filteredSamples[currentIndex + 1]
             : null;
         setSelectedSample(null);
-        setReviewForm({ status: "APPROVED", comments: "", issues: [], requestedChanges: "" });
+        setReviewForm({
+          status: "APPROVED",
+          comments: "",
+          issues: [],
+          requestedChanges: "",
+        });
         if (nextSample) {
           setSelectedSample(nextSample);
           setReviewForm({
@@ -140,7 +154,10 @@ const SampleReview = () => {
       }
     } catch (err) {
       console.error("Error submitting review:", err);
-      toast.error("Failed to submit review: " + (err.response?.data?.message || err.message));
+      toast.error(
+        "Failed to submit review: " +
+          (err.response?.data?.message || err.message),
+      );
     } finally {
       setReviewing(false);
     }
@@ -187,13 +204,15 @@ const SampleReview = () => {
     }
 
     if (status === "REJECTED") {
-      toast.error("Rejection requires a reason. Please review and reject samples individually.");
+      toast.error(
+        "Rejection requires a reason. Please review and reject samples individually.",
+      );
       return;
     }
 
     if (
       !window.confirm(
-        `Are you sure you want to mark ${bulkSelection.size} sample(s) as ${status}?`
+        `Are you sure you want to mark ${bulkSelection.size} sample(s) as ${status}?`,
       )
     ) {
       return;
@@ -220,12 +239,14 @@ const SampleReview = () => {
       const total = bulkSelection.size;
       if (errorCount === 0) {
         toast.success(
-          total === 1 ? "1 sample marked successfully." : `${total} samples marked successfully.`
+          total === 1
+            ? "1 sample marked successfully."
+            : `${total} samples marked successfully.`,
         );
       } else if (successCount > 0) {
         toast(
           `Updated ${successCount} of ${total} samples. ${errorCount} could not be updated.`,
-          { icon: "⚠️" }
+          { icon: "⚠️" },
         );
       } else {
         toast.error("Could not update the selected samples. Please try again.");
@@ -243,7 +264,9 @@ const SampleReview = () => {
   if (loading) {
     return (
       <div className={`${theme?.card} rounded-lg p-6 sm:p-8 text-center`}>
-        <p className={`text-sm sm:text-base ${theme?.textMuted}`}>Loading samples...</p>
+        <p className={`text-sm sm:text-base ${theme?.textMuted}`}>
+          Loading samples...
+        </p>
       </div>
     );
   }
@@ -299,7 +322,10 @@ const SampleReview = () => {
             className={`${theme?.card} border ${theme?.border} rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3`}
           >
             <div className="flex items-center gap-2 sm:gap-3">
-              <CheckCircle size={18} className="text-emerald-600 sm:w-5 sm:h-5 flex-shrink-0" />
+              <CheckCircle
+                size={18}
+                className="text-emerald-600 sm:w-5 sm:h-5 flex-shrink-0"
+              />
               <span className="text-sm sm:text-base font-semibold">
                 {bulkSelection.size} sample(s) selected
               </span>
@@ -390,7 +416,10 @@ const SampleReview = () => {
                     className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded text-emerald-600 mt-0.5 sm:mt-1 flex-shrink-0"
                   />
                   <button
-                    onClick={() => handleSelectSample(sample)}
+                    onClick={() => {
+                      console.log("button clicked");
+                      handleSelectSample(sample);
+                    }}
                     className="flex-1 text-left min-w-0"
                   >
                     <p className="font-semibold text-xs sm:text-sm truncate">
@@ -408,14 +437,16 @@ const SampleReview = () => {
                           sample.verificationStatus === "VERIFIED_ORIGINAL"
                             ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
                             : sample.verificationStatus === "VERIFIED_FAKE"
-                            ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
-                            : "bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300"
+                              ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+                              : "bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300"
                         }`}
                       >
                         {sample.verificationStatus}
                       </span>
                     </div>
-                    <p className={`text-xs ${theme?.textMuted} mt-1.5 sm:mt-2 truncate`}>
+                    <p
+                      className={`text-xs ${theme?.textMuted} mt-1.5 sm:mt-2 truncate`}
+                    >
                       by {sample.creator?.fullName}
                     </p>
                   </button>
@@ -438,52 +469,163 @@ const SampleReview = () => {
                 </p>
               )}
               {/* Sample Details */}
-              <div>
-                <h3 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3">Sample Details</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
+              <div className="space-y-4">
+                {/* Section Header */}
+                <div className="flex items-center gap-2 pb-2 border-b border-emerald-800/40">
+                  <div className="w-1 h-5 rounded-full bg-emerald-500" />
+                  <h3 className="text-sm font-semibold uppercase tracking-widest text-emerald-400">
+                    Sample Details
+                  </h3>
+                </div>
+
+                {/* Details Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 text-xs sm:text-sm">
                   <div className="min-w-0">
-                    <p className={theme?.textMuted}>Sample ID</p>
-                    <p className="font-semibold truncate">{selectedSample.sampleId}</p>
+                    <p
+                      className={`text-[10px] uppercase tracking-wider font-medium mb-0.5 ${theme?.textMuted}`}
+                    >
+                      Sample ID
+                    </p>
+                    <p className="font-semibold truncate">
+                      {selectedSample.sampleId}
+                    </p>
                   </div>
+
                   <div className="min-w-0">
-                    <p className={theme?.textMuted}>Product</p>
+                    <p
+                      className={`text-[10px] uppercase tracking-wider font-medium mb-0.5 ${theme?.textMuted}`}
+                    >
+                      Product Name
+                    </p>
                     <p className="font-semibold truncate">
                       {selectedSample.productName}
                     </p>
                   </div>
-                  <div className="min-w-0 sm:col-span-2">
-                    <p className={theme?.textMuted}>Location</p>
+
+                  <div className="min-w-0">
+                    <p
+                      className={`text-[10px] uppercase tracking-wider font-medium mb-0.5 ${theme?.textMuted}`}
+                    >
+                      Brand
+                    </p>
                     <p className="font-semibold truncate">
-                      {selectedSample.state?.name} - {selectedSample.lga?.name}{" "}
-                      - {selectedSample.market?.name}
+                      {selectedSample.brandName || "—"}
                     </p>
                   </div>
+
                   <div className="min-w-0">
-                    <p className={theme?.textMuted}>Collected By</p>
+                    <p
+                      className={`text-[10px] uppercase tracking-wider font-medium mb-0.5 ${theme?.textMuted}`}
+                    >
+                      Batch Number
+                    </p>
+                    <p className="font-semibold truncate">
+                      {selectedSample.batchNumber || "—"}
+                    </p>
+                  </div>
+
+                  <div className="min-w-0">
+                    <p
+                      className={`text-[10px] uppercase tracking-wider font-medium mb-0.5 ${theme?.textMuted}`}
+                    >
+                      Collected By
+                    </p>
                     <p className="font-semibold truncate">
                       {selectedSample.creator?.fullName}
                     </p>
                   </div>
-                  <div className="min-w-0">
-                    <p className={theme?.textMuted}>Brand</p>
-                    <p className="font-semibold truncate">
-                      {selectedSample.brandName || "-"}
+
+                  <div className="min-w-0 col-span-2 sm:col-span-3">
+                    <p
+                      className={`text-[10px] uppercase tracking-wider font-medium mb-0.5 ${theme?.textMuted}`}
+                    >
+                      Collection Location
                     </p>
-                  </div>
-                  <div className="min-w-0">
-                    <p className={theme?.textMuted}>Batch Number</p>
                     <p className="font-semibold truncate">
-                      {selectedSample.batchNumber || "-"}
+                      {selectedSample.state?.name}
+                      {selectedSample.lga?.name
+                        ? ` › ${selectedSample.lga.name}`
+                        : ""}
+                      {selectedSample.market?.name
+                        ? ` › ${selectedSample.market.name}`
+                        : ""}
                     </p>
                   </div>
                 </div>
-              </div>
 
+                {/* Product Photo */}
+                <div className="mt-2 rounded-lg border border-emerald-800/40 overflow-hidden bg-black/20">
+                  {/* Photo Header */}
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-emerald-800/30 bg-emerald-950/30">
+                    <div className="flex items-center gap-1.5">
+                      {/* Camera icon — swap with your icon library */}
+                      <svg
+                        className="w-3.5 h-3.5 text-emerald-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                      </svg>
+                      <span className="text-[10px] uppercase tracking-wider font-semibold text-emerald-400">
+                        Product Photo
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wider">
+                      Field Capture
+                    </span>
+                  </div>
+
+                  {/* Photo Body */}
+                  {selectedSample.productPhotoUrl ? (
+                    <div className="flex justify-center p-3">
+                      <img
+                        src={`${import.meta.env.VITE_BACKEND_URL}${selectedSample.productPhotoUrl}`}
+                        alt="Product Photo"
+                        className="max-h-56 w-auto rounded object-contain"
+                        id="productPhotoImage"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-36 gap-2 text-gray-500">
+                      <svg
+                        className="w-8 h-8 opacity-30"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                      <p className="text-xs text-gray-500">
+                        No product photo captured
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
               {/* Heavy Metals Readings */}
               {selectedSample.heavyMetalReadings &&
                 selectedSample.heavyMetalReadings.length > 0 && (
                   <div>
-                    <h4 className="text-sm sm:text-base font-semibold mb-2">Heavy Metal Readings</h4>
+                    <h4 className="text-sm sm:text-base font-semibold mb-2">
+                      Heavy Metal Readings
+                    </h4>
                     <div className="space-y-2">
                       {selectedSample.heavyMetalReadings.map((reading, idx) => {
                         const status = reading.finalStatus ?? reading.status;
@@ -492,7 +634,9 @@ const SampleReview = () => {
                             key={reading.id ?? idx}
                             className={`border ${theme?.border} rounded p-2 sm:p-3 text-xs sm:text-sm`}
                           >
-                            <p className="font-semibold">{reading.heavyMetal}</p>
+                            <p className="font-semibold">
+                              {reading.heavyMetal}
+                            </p>
                             <p className={theme?.textMuted}>
                               XRF: {reading.xrfReading ?? "-"} | AAS:{" "}
                               {reading.aasReading ?? "-"}
@@ -515,7 +659,9 @@ const SampleReview = () => {
 
               {/* Review Form */}
               <div className={`border-t ${theme?.border} pt-4`}>
-                <h4 className="text-sm sm:text-base font-semibold mb-3">Review Sample</h4>
+                <h4 className="text-sm sm:text-base font-semibold mb-3">
+                  Review Sample
+                </h4>
 
                 {/* Status */}
                 <div className="mb-4">
@@ -574,7 +720,10 @@ const SampleReview = () => {
                   <label className="block text-xs sm:text-sm font-semibold mb-2">
                     Comments
                     {reviewForm.status === "REJECTED" && (
-                      <span className="text-red-600 dark:text-red-400 ml-1" title="Required for rejection">
+                      <span
+                        className="text-red-600 dark:text-red-400 ml-1"
+                        title="Required for rejection"
+                      >
                         (required for reject)
                       </span>
                     )}
