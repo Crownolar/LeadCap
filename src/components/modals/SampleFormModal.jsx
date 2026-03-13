@@ -210,14 +210,14 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
   };
 
   return (
-    <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[5000]'>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[5000]">
       <div
         className={`${theme.card} rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col border ${theme.border} mx-auto sm:mx-2`}
       >
         <div
           className={`p-4 sm:p-6 border-b ${theme.border} sticky top-0 z-20 ${theme.card}`}
         >
-          <div className='flex items-center justify-between flex-wrap gap-2'>
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <h2
               className={`${theme.text} text-xl sm:text-2xl font-bold text-center sm:text-left w-full sm:w-auto`}
             >
@@ -227,7 +227,7 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
               onClick={onClose}
               className={`p-2 rounded-lg ${theme.hover} ${theme.text}`}
             >
-              <X className='w-6 h-6' />
+              <X className="w-6 h-6" />
             </button>
           </div>
         </div>
@@ -236,17 +236,17 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
           <div
             className={`flex items-center justify-center p-12 ${theme.text}`}
           >
-            <Loader className='animate-spin mr-2' />
+            <Loader className="animate-spin mr-2" />
             <span>Loading form data...</span>
           </div>
         )}
 
         {!loadingData && error && (
-          <div className='p-6 text-center'>
-            <p className='text-red-600 font-semibold text-lg mb-4'>{error}</p>
+          <div className="p-6 text-center">
+            <p className="text-red-600 font-semibold text-lg mb-4">{error}</p>
             <button
               onClick={() => window.location.reload()}
-              className='px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors'
+              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
             >
               Refresh Page
             </button>
@@ -256,13 +256,13 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
         {!loadingData && !error && (
           <form
             onSubmit={handleSubmit}
-            className='flex-1 overflow-y-auto p-6 space-y-6'
+            className="flex-1 overflow-y-auto p-6 space-y-6"
           >
             <section>
-              <h3 className='text-lg font-semibold mb-4 text-emerald-500'>
+              <h3 className="text-lg font-semibold mb-4 text-emerald-500">
                 Location Details
               </h3>
-              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label
                     className={`block text-sm font-medium mb-2 ${theme.text}`}
@@ -281,7 +281,7 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                     }
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
                   >
-                    <option value=''>Select State</option>
+                    <option value="">Select State</option>
                     {states.map((state) => (
                       <option key={state.id} value={state.id}>
                         {state.name}
@@ -305,7 +305,7 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                     disabled={!formData.stateId}
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50`}
                   >
-                    <option value=''>Select LGA</option>
+                    <option value="">Select LGA</option>
                     {lgas.map((lga) => (
                       <option key={lga.id} value={lga.id}>
                         {lga.name}
@@ -329,25 +329,25 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                     disabled={!formData.lgaId}
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50`}
                   >
-                    <option value=''>Select Market</option>
+                    <option value="">Select Market</option>
                     {markets.map((market) => (
                       <option key={market.id} value={market.id}>
                         {market.name}
                       </option>
                     ))}
-                    <option value='OTHER'>Other (Manual Entry)</option>
+                    <option value="OTHER">Other (Manual Entry)</option>
                   </select>
                 </div>
 
                 {formData.marketId === "OTHER" && (
-                  <div className='md:col-span-1 animate-in fade-in'>
+                  <div className="md:col-span-1 animate-in fade-in">
                     <label
                       className={`block text-sm font-medium mb-2 ${theme.text}`}
                     >
                       Market Name *
                     </label>
                     <input
-                      type='text'
+                      type="text"
                       required={formData.marketId === "OTHER"}
                       value={formData.marketName}
                       onChange={(e) =>
@@ -357,7 +357,7 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                         })
                       }
                       className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
-                      placeholder='e.g., Local Market, Community Center'
+                      placeholder="e.g., Local Market, Community Center"
                     />
                   </div>
                 )}
@@ -380,7 +380,7 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                     }}
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
                   >
-                    <option value=''>Select Vendor Type</option>
+                    <option value="">Select Vendor Type</option>
                     {vendorTypes.map((type) => (
                       <option key={type} value={type}>
                         {type.slice(0, 1).toUpperCase() +
@@ -391,14 +391,14 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                 </div>
 
                 {formData.vendorType === "OTHER" && (
-                  <div className='md:col-span-1 animate-in fade-in'>
+                  <div className="md:col-span-1 animate-in fade-in">
                     <label
                       className={`block text-sm font-medium mb-2 ${theme.text}`}
                     >
                       Specify Vendor Type *
                     </label>
                     <input
-                      type='text'
+                      type="text"
                       required={formData.vendorType === "OTHER"}
                       value={formData.vendorTypeOther}
                       onChange={(e) =>
@@ -408,7 +408,7 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                         })
                       }
                       className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
-                      placeholder='e.g., Online Store, Wholesale Distributor'
+                      placeholder="e.g., Online Store, Wholesale Distributor"
                     />
                   </div>
                 )}
@@ -420,14 +420,14 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                     GPS Latitude
                   </label>
                   <input
-                    type='number'
-                    step='any'
+                    type="number"
+                    step="any"
                     value={formData.gpsLatitude}
                     onChange={(e) =>
                       setFormData({ ...formData, gpsLatitude: e.target.value })
                     }
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
-                    placeholder='e.g., 8.4799'
+                    placeholder="e.g., 8.4799"
                   />
                 </div>
 
@@ -438,20 +438,20 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                     GPS Longitude
                   </label>
                   <input
-                    type='number'
-                    step='any'
+                    type="number"
+                    step="any"
                     value={formData.gpsLongitude}
                     onChange={(e) =>
                       setFormData({ ...formData, gpsLongitude: e.target.value })
                     }
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
-                    placeholder='e.g., 4.5418'
+                    placeholder="e.g., 4.5418"
                   />
                 </div>
 
-                <div className='md:col-span-2'>
+                <div className="md:col-span-2">
                   <button
-                    type='button'
+                    type="button"
                     onClick={handleGetCurrentLocation}
                     disabled={gettingLocation}
                     className={`w-full px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
@@ -460,16 +460,16 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                         : "bg-emerald-500 hover:bg-emerald-600 text-white"
                     }`}
                   >
-                    <MapPin className='w-5 h-5' />
+                    <MapPin className="w-5 h-5" />
                     {gettingLocation
                       ? "Getting Location..."
                       : "Get Current Location"}
                   </button>
                   {locationError && (
-                    <p className='text-red-500 text-sm mt-2'>{locationError}</p>
+                    <p className="text-red-500 text-sm mt-2">{locationError}</p>
                   )}
                   {formData.gpsLatitude && formData.gpsLongitude && (
-                    <p className='text-green-600 text-sm mt-2'>
+                    <p className="text-green-600 text-sm mt-2">
                       ✓ Location captured: ({formData.gpsLatitude},{" "}
                       {formData.gpsLongitude})
                     </p>
@@ -479,10 +479,10 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
             </section>
 
             <section>
-              <h3 className='text-lg font-semibold mb-4 text-emerald-500'>
+              <h3 className="text-lg font-semibold mb-4 text-emerald-500">
                 Product Details
               </h3>
-              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label
                     className={`block text-sm font-medium mb-2 ${theme.text}`}
@@ -502,7 +502,7 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
                     disabled={categories.length === 0}
                   >
-                    <option value=''>Select Product Category</option>
+                    <option value="">Select Product Category</option>
                     {categories.length > 0 ? (
                       categories.map((category) => (
                         <option key={category.id} value={category.id}>
@@ -533,7 +533,7 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                     }
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50`}
                   >
-                    <option value=''>
+                    <option value="">
                       {loadingVariants
                         ? "Loading variants..."
                         : "Select Product Variant"}
@@ -543,6 +543,58 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                         {variant.displayName || variant.name}
                       </option>
                     ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${theme.text}`}
+                  >
+                    Product Code *
+                  </label>
+                  <select
+                    required
+                    value={formData.productCode}
+                    onChange={(e) =>
+                      setFormData({ ...formData, productCode: e.target.value })
+                    }
+                    className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
+                  >
+                    <option value="">Select Product Code</option>
+                    <option value="A1">A1</option>
+                    <option value="A2">A2</option>
+                    <option value="B1">B1</option>
+                    <option value="C1">C1</option>
+                    <option value="C2">C2</option>
+                    <option value="C3">C3</option>
+                    <option value="C4">C4</option>
+                    <option value="C5">C5</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${theme.text}`}
+                  >
+                    Sample Number *
+                  </label>
+                  <select
+                    required
+                    value={formData.sampleNumber}
+                    onChange={(e) =>
+                      setFormData({ ...formData, sampleNumber: e.target.value })
+                    }
+                    className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
+                  >
+                    <option value="">Select Sample Number</option>
+                    <option value="01">01</option>
+                    <option value="02">02</option>
+                    <option value="03">03</option>
+                    <option value="04">04</option>
+                    <option value="05">05</option>
+                    <option value="06">06</option>
+                    <option value="07">07</option>
+                    <option value="08">08</option>
                   </select>
                 </div>
 
@@ -560,8 +612,8 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                     }
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
                   >
-                    <option value='SOLID'>Solid (mg/kg)</option>
-                    <option value='LIQUID'>Liquid (mg/L)</option>
+                    <option value="SOLID">Solid (mg/kg)</option>
+                    <option value="LIQUID">Liquid (mg/L)</option>
                   </select>
                 </div>
 
@@ -572,14 +624,14 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                     Product Name *
                   </label>
                   <input
-                    type='text'
+                    type="text"
                     required
                     value={formData.productName}
                     onChange={(e) =>
                       setFormData({ ...formData, productName: e.target.value })
                     }
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
-                    placeholder='e.g., Tiró Kohl'
+                    placeholder="e.g., Tiró Kohl"
                   />
                 </div>
 
@@ -590,13 +642,13 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                     Brand Name
                   </label>
                   <input
-                    type='text'
+                    type="text"
                     value={formData.brandName}
                     onChange={(e) =>
                       setFormData({ ...formData, brandName: e.target.value })
                     }
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
-                    placeholder='e.g., BeautyGlow or N/A'
+                    placeholder="e.g., BeautyGlow or N/A"
                   />
                 </div>
 
@@ -607,13 +659,13 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                     Batch Number
                   </label>
                   <input
-                    type='text'
+                    type="text"
                     value={formData.batchNumber}
                     onChange={(e) =>
                       setFormData({ ...formData, batchNumber: e.target.value })
                     }
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
-                    placeholder='e.g., BT2025001'
+                    placeholder="e.g., BT2025001"
                   />
                 </div>
 
@@ -624,14 +676,14 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                     Price (₦) *
                   </label>
                   <input
-                    type='number'
+                    type="number"
                     required
                     value={formData.price}
                     onChange={(e) =>
                       setFormData({ ...formData, price: e.target.value })
                     }
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
-                    placeholder='e.g., 500'
+                    placeholder="e.g., 500"
                   />
                 </div>
 
@@ -652,15 +704,15 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                     }
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
                   >
-                    <option value='LOCAL'>Local</option>
-                    <option value='IMPORTED'>Imported</option>
+                    <option value="LOCAL">Local</option>
+                    <option value="IMPORTED">Imported</option>
                   </select>
                 </div>
 
-                <div className='flex items-center mt-2'>
+                <div className="flex items-center mt-2">
                   <input
-                    type='checkbox'
-                    id='registered'
+                    type="checkbox"
+                    id="registered"
                     checked={formData.isRegistered}
                     onChange={(e) =>
                       setFormData({
@@ -668,10 +720,10 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                         isRegistered: e.target.checked,
                       })
                     }
-                    className='w-4 h-4 text-emerald-500 rounded focus:ring-emerald-500'
+                    className="w-4 h-4 text-emerald-500 rounded focus:ring-emerald-500"
                   />
                   <label
-                    htmlFor='registered'
+                    htmlFor="registered"
                     className={`ml-2 text-sm font-medium ${theme.text}`}
                   >
                     Registered Product (NAFDAC/SON)
@@ -687,7 +739,7 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                         NAFDAC Number
                       </label>
                       <input
-                        type='text'
+                        type="text"
                         value={formData.nafdacNumber}
                         onChange={(e) =>
                           setFormData({
@@ -696,7 +748,7 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                           })
                         }
                         className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
-                        placeholder='e.g., A7-0001-2023'
+                        placeholder="e.g., A7-0001-2023"
                       />
                     </div>
 
@@ -707,7 +759,7 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                         SON Number
                       </label>
                       <input
-                        type='text'
+                        type="text"
                         value={formData.sonNumber}
                         onChange={(e) =>
                           setFormData({
@@ -716,7 +768,7 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                           })
                         }
                         className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
-                        placeholder='e.g., SON/CL/2023-0001'
+                        placeholder="e.g., SON/CL/2023-0001"
                       />
                     </div>
                   </>
@@ -725,12 +777,12 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
             </section>
 
             <section>
-              <h3 className='text-lg font-semibold mb-4 text-emerald-500'>
+              <h3 className="text-lg font-semibold mb-4 text-emerald-500">
                 Documentation
               </h3>
-              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <PhotoUpload
-                  label='Product Photo'
+                  label="Product Photo"
                   photo={formData.productPhoto}
                   refInput={productPhotoRef}
                   onUpload={(e) =>
@@ -742,7 +794,7 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                   theme={theme}
                 />
                 <FileUpload
-                  label='Calibration Curve Photo'
+                  label="Calibration Curve Photo"
                   file={formData.calibrationCurveFile}
                   refInput={calibrationCurveRef}
                   onUpload={(e) =>
@@ -752,21 +804,21 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                     setFormData({ ...formData, calibrationCurveFile: null })
                   }
                   theme={theme}
-                  acceptType='.png,.jpg,.jpeg'
+                  acceptType=".png,.jpg,.jpeg"
                 />
               </div>
             </section>
 
-            <div className='flex gap-4 pt-4'>
+            <div className="flex gap-4 pt-4">
               <button
-                type='button'
+                type="button"
                 onClick={onClose}
                 className={`flex-1 px-6 py-3 border ${theme.border} rounded-lg font-medium ${theme.hover} ${theme.text}`}
               >
                 Cancel
               </button>
               <button
-                type='submit'
+                type="submit"
                 disabled={loading}
                 className={`flex-1 px-6 py-3 ${
                   loading
@@ -779,7 +831,7 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
             </div>
 
             {error && (
-              <p className='text-red-500 text-sm text-center mt-2'>
+              <p className="text-red-500 text-sm text-center mt-2">
                 {error?.toString()}
               </p>
             )}
@@ -824,28 +876,28 @@ const PhotoUpload = ({ label, photo, refInput, onUpload, onRemove, theme }) => {
         {label}
       </label>
       {photo ? (
-        <div className='relative group'>
+        <div className="relative group">
           <img
             src={photo}
             alt={label}
-            className='w-full h-48 object-cover rounded-lg shadow-md'
+            className="w-full h-48 object-cover rounded-lg shadow-md"
             onError={() => setPreviewError(true)}
           />
           {previewError && (
-            <div className='absolute inset-0 bg-red-500/20 rounded-lg flex items-center justify-center'>
-              <p className='text-red-400 text-sm'>Image preview error</p>
+            <div className="absolute inset-0 bg-red-500/20 rounded-lg flex items-center justify-center">
+              <p className="text-red-400 text-sm">Image preview error</p>
             </div>
           )}
           <button
-            type='button'
+            type="button"
             onClick={onRemove}
-            className='absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg opacity-0 group-hover:opacity-100'
-            title='Remove image'
+            className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg opacity-0 group-hover:opacity-100"
+            title="Remove image"
           >
-            <Trash2 className='w-4 h-4' />
+            <Trash2 className="w-4 h-4" />
           </button>
-          <div className='absolute inset-0 bg-black/40 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center'>
-            <span className='text-white text-sm font-medium'>
+          <div className="absolute inset-0 bg-black/40 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <span className="text-white text-sm font-medium">
               Click X to remove
             </span>
           </div>
@@ -866,9 +918,9 @@ const PhotoUpload = ({ label, photo, refInput, onUpload, onRemove, theme }) => {
       )}
       <input
         ref={refInput}
-        type='file'
-        accept='image/*'
-        className='hidden'
+        type="file"
+        accept="image/*"
+        className="hidden"
         onChange={handleUpload}
       />
     </div>
@@ -907,26 +959,26 @@ const FileUpload = ({
         {label}
       </label>
       {file ? (
-        <div className='relative group'>
+        <div className="relative group">
           <div
             className={`border rounded-lg p-4 ${theme.border} flex items-center gap-3 bg-emerald-50 dark:bg-emerald-900/20`}
           >
-            <File className='w-6 h-6 text-emerald-600 flex-shrink-0' />
-            <div className='flex-1 min-w-0'>
-              <p className='text-sm font-medium text-emerald-700 dark:text-emerald-400 truncate'>
+            <File className="w-6 h-6 text-emerald-600 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400 truncate">
                 {file.name}
               </p>
-              <p className='text-xs text-emerald-600 dark:text-emerald-500'>
+              <p className="text-xs text-emerald-600 dark:text-emerald-500">
                 {(file.size / 1024).toFixed(2)} KB
               </p>
             </div>
             <button
-              type='button'
+              type="button"
               onClick={onRemove}
-              className='bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg opacity-0 group-hover:opacity-100'
-              title='Remove file'
+              className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg opacity-0 group-hover:opacity-100"
+              title="Remove file"
             >
-              <Trash2 className='w-4 h-4' />
+              <Trash2 className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -946,9 +998,9 @@ const FileUpload = ({
       )}
       <input
         ref={refInput}
-        type='file'
+        type="file"
         accept={acceptType}
-        className='hidden'
+        className="hidden"
         onChange={handleUpload}
       />
     </div>

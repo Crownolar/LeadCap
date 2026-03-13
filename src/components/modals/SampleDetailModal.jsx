@@ -1,29 +1,27 @@
 import { X, AlertTriangle, Pencil } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
+import { buildFieldSampleId } from "../../utils/formHelpers";
 
-// Helper to format vendor type for display
 const formatVendorType = (vendorType, vendorTypeOther) => {
   if (vendorType === "OTHER" && vendorTypeOther) {
     return vendorTypeOther;
   }
   return vendorType?.replace(/_/g, " ") || "N/A";
-}; 
+};
 
-// Helper to get contamination info from heavy metal readings
 const getContaminationInfo = (heavyMetalReadings) => {
   if (!heavyMetalReadings || heavyMetalReadings.length === 0) {
     return { hasReadings: false, maxReading: null, contaminatedMetals: [] };
   }
-
+  
   console.log(getContaminationInfo);
-
-  // Determine status with priority: finalStatus > aasStatus > xrfStatus > PENDING
+  
   const getReadingStatus = (r) =>
     r.finalStatus || r.aasStatus || r.xrfStatus || "PENDING";
   console.log(getReadingStatus);
-
+  
   const contaminatedMetals = heavyMetalReadings.filter(
-    (r) => getReadingStatus(r) === "CONTAMINATED"
+    (r) => getReadingStatus(r) === "CONTAMINATED",
   );
   const allReadings = heavyMetalReadings.map((r) => ({
     metal: r.heavyMetal,
@@ -31,7 +29,7 @@ const getContaminationInfo = (heavyMetalReadings) => {
     aas: r.aasReading ? parseFloat(r.aasReading) : null,
     status: getReadingStatus(r),
   }));
-
+  
   return {
     hasReadings: true,
     readings: allReadings,
@@ -41,7 +39,8 @@ const getContaminationInfo = (heavyMetalReadings) => {
 
 const SampleDetailModal = ({ sample, onClose, onEditRequest }) => {
   const contaminationInfo = getContaminationInfo(sample?.heavyMetalReadings);
-  const {theme} = useTheme();
+  const fieldSampleId = buildFieldSampleId(sample);
+  const { theme } = useTheme();
 
   const handleEdit = () => {
     if (onEditRequest && sample) {
@@ -68,7 +67,7 @@ const SampleDetailModal = ({ sample, onClose, onEditRequest }) => {
             <p
               className={`text-xs sm:text-sm ${theme.textMuted} mt-1 truncate`}
             >
-              {sample?.sampleId}
+              {fieldSampleId}
             </p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -105,6 +104,7 @@ const SampleDetailModal = ({ sample, onClose, onEditRequest }) => {
                 </h3>
                 <div className="space-y-2 text-sm sm:text-base">
                   {[
+                    ["Serial Sample ID:", sample?.sampleId || "N/A"],
                     [
                       "Product Category:",
                       sample?.productVariant?.category?.name || "Unknown",
@@ -158,10 +158,10 @@ const SampleDetailModal = ({ sample, onClose, onEditRequest }) => {
                         sample?.status?.toUpperCase() === "SAFE"
                           ? "bg-green-100 text-green-800"
                           : sample?.status?.toUpperCase() === "CONTAMINATED"
-                          ? "bg-red-100 text-red-800"
-                          : sample?.status?.toUpperCase() === "MODERATE"
-                          ? "bg-orange-100 text-orange-800"
-                          : "bg-yellow-100 text-yellow-800"
+                            ? "bg-red-100 text-red-800"
+                            : sample?.status?.toUpperCase() === "MODERATE"
+                              ? "bg-orange-100 text-orange-800"
+                              : "bg-yellow-100 text-yellow-800"
                       }`}
                     >
                       {sample?.status?.toUpperCase() || "PENDING"}
@@ -189,7 +189,7 @@ const SampleDetailModal = ({ sample, onClose, onEditRequest }) => {
                       "Vendor Type:",
                       formatVendorType(
                         sample?.vendorType,
-                        sample?.vendorTypeOther
+                        sample?.vendorTypeOther,
                       ),
                     ],
                     [
@@ -259,10 +259,10 @@ const SampleDetailModal = ({ sample, onClose, onEditRequest }) => {
                                 reading.status === "SAFE"
                                   ? "bg-green-100 text-green-800"
                                   : reading.status === "CONTAMINATED"
-                                  ? "bg-red-100 text-red-800"
-                                  : reading.status === "MODERATE"
-                                  ? "bg-orange-100 text-orange-800"
-                                  : "bg-yellow-100 text-yellow-800"
+                                    ? "bg-red-100 text-red-800"
+                                    : reading.status === "MODERATE"
+                                      ? "bg-orange-100 text-orange-800"
+                                      : "bg-yellow-100 text-yellow-800"
                               }`}
                             >
                               {reading.status || "PENDING"}

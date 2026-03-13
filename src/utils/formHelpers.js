@@ -1,38 +1,36 @@
-/**
- * Form Helper Utilities
- * Centralized functions to reduce repetition in form components
- */
-
 import api from "./api";
-import { productCategories, sampleTypes, vendorTypes } from "./constants";
+import { productCategories } from "./constants";
 
-// ===== FORM INITIALIZATION =====
-
-/**
- * Get initial form state for sample creation
- */
 export const getInitialSampleFormState = () => ({
   stateId: "",
   lgaId: "",
+  marketId: "",
+  marketName: "",
+  vendorType: "",
+  vendorTypeOther: "",
+
   productCategoryId: "",
   productVariantId: "",
+
+  productCode: "",
+  sampleNumber: "",
+
   productName: "",
   brandName: "",
   batchNumber: "",
   price: "",
-  marketId: "",
-  marketName: "",
   sampleType: "SOLID",
-  calibrationCurveFile: null,
-  vendorType: "",
-  vendorTypeOther: "",
-  isRegistered: false,
+  productOrigin: "LOCAL",
+
   gpsLatitude: "",
   gpsLongitude: "",
-  productOrigin: "LOCAL",
+
+  isRegistered: false,
   nafdacNumber: "",
   sonNumber: "",
+
   productPhoto: null,
+  calibrationCurveFile: null,
 });
 
 /**
@@ -71,11 +69,6 @@ export const sampleToFormState = (sample) => {
   };
 };
 
-// ===== DATA FETCHING =====
-
-/**
- * Fetch all required dropdown data in parallel
- */
 export const fetchFormData = async () => {
   try {
     const [statesRes, lgasRes, marketsRes, categoriesRes] = await Promise.all([
@@ -85,7 +78,6 @@ export const fetchFormData = async () => {
       api.get("/products/categories"),
     ]);
 
-    // Log responses for debugging
     console.log("States response:", statesRes.data);
     console.log("LGAs response:", lgasRes.data);
     console.log("Markets response:", marketsRes.data);
@@ -125,9 +117,6 @@ export const fetchFormData = async () => {
   }
 };
 
-/**
- * Fetch variants for a specific product category
- */
 export const fetchVariantsForCategory = async (categoryId) => {
   try {
     const response = await api.get(
@@ -135,7 +124,6 @@ export const fetchVariantsForCategory = async (categoryId) => {
     );
     const variants = response.data?.data || response.data || [];
 
-    // console.log(`Fetched variants for category ${categoryId}:`, variants);
 
     if (!Array.isArray(variants)) {
       console.warn("Variants response is not an array:", variants);
@@ -154,27 +142,16 @@ export const fetchVariantsForCategory = async (categoryId) => {
   }
 };
 
-// ===== FILTERING LOGIC =====
-
-/**
- * Filter LGAs based on selected state
- */
 export const filterLGAsByState = (stateId, allLgas) => {
   if (!stateId) return [];
   return allLgas.filter((lga) => lga.stateId === stateId);
 };
 
-/**
- * Filter markets based on selected LGA
- */
 export const filterMarketsByLGA = (lgaId, allMarkets) => {
   if (!lgaId) return [];
   return allMarkets.filter((market) => market.lgaId === lgaId);
 };
 
-/**
- * Get product variants for selected category
- */
 export const getVariantsForCategory = (categoryId) => {
   const category = productCategories[categoryId];
   if (!category) return [];
@@ -184,11 +161,6 @@ export const getVariantsForCategory = (categoryId) => {
   }));
 };
 
-// ===== FORM CHANGE HANDLERS =====
-
-/**
- * Handle state selection - reset dependent fields
- */
 export const handleStateChange = (stateId, formData, setFormData) => {
   setFormData({
     ...formData,
@@ -199,9 +171,6 @@ export const handleStateChange = (stateId, formData, setFormData) => {
   });
 };
 
-/**
- * Handle LGA selection - reset dependent fields
- */
 export const handleLGAChange = (lgaId, formData, setFormData) => {
   setFormData({
     ...formData,
@@ -211,9 +180,6 @@ export const handleLGAChange = (lgaId, formData, setFormData) => {
   });
 };
 
-/**
- * Handle market selection - support "OTHER" for manual entry
- */
 export const handleMarketChange = (marketId, formData, setFormData) => {
   if (marketId === "OTHER") {
     setFormData({
@@ -230,9 +196,6 @@ export const handleMarketChange = (marketId, formData, setFormData) => {
   }
 };
 
-/**
- * Handle product category change - reset variant selection
- */
 export const handleCategoryChange = (categoryId, formData, setFormData) => {
   setFormData({
     ...formData,
@@ -241,9 +204,6 @@ export const handleCategoryChange = (categoryId, formData, setFormData) => {
   });
 };
 
-/**
- * Handle vendor type change
- */
 export const handleVendorTypeChange = (vendorType, formData, setFormData) => {
   if (vendorType === "OTHER") {
     setFormData({
@@ -260,11 +220,6 @@ export const handleVendorTypeChange = (vendorType, formData, setFormData) => {
   }
 };
 
-// ===== FILE HANDLING =====
-
-/**
- * Handle file upload for photo fields
- */
 export const handleFileUpload = (e, field, setFormData) => {
   const file = e.target.files?.[0];
   console.log(file);
@@ -291,9 +246,6 @@ export const handleFileUpload = (e, field, setFormData) => {
   reader.readAsDataURL(file);
 };
 
-/**
- * Remove uploaded file
- */
 export const removeFile = (field, setFormData, refInput) => {
   setFormData((prev) => ({ ...prev, [field]: null }));
   if (refInput?.current) {
@@ -301,11 +253,6 @@ export const removeFile = (field, setFormData, refInput) => {
   }
 };
 
-// ===== LOCATION HANDLING =====
-
-/**
- * Get current geolocation using browser API
- */
 export const getCurrentLocation = () => {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
@@ -344,11 +291,6 @@ export const getCurrentLocation = () => {
   });
 };
 
-// ===== PAYLOAD CONSTRUCTION =====
-
-/**
- * Build sample submission payload
- */
 export const buildSamplePayload = (formData) => {
   return {
     stateId: formData.stateId,
@@ -373,21 +315,28 @@ export const buildSamplePayload = (formData) => {
     sonNumber: formData.sonNumber || null,
     productPhotoUrl: formData.productPhoto || null,
     calibrationCurveFile: formData.calibrationCurveFile?.data || null,
+    productCode: formData.productCode,
+    sampleNumber: formData.sampleNumber,
   };
 };
 
-// ===== VALIDATION =====
+export const buildFieldSampleId = (sample) => {
+  const stateCode = sample?.state?.code || sample?.state?.name?.slice(0,2)?.toUpperCase();
+  const lgaCode = sample?.lga?.code || sample?.lga?.name?.slice(0,2)?.toUpperCase();
+  const productCode = sample?.productCode || "XX";
+  const sampleNumber = sample?.sampleNumber || "00";
 
-/**
- * Validate sample form data before submission
- */
+  if (!stateCode || !lgaCode) return "N/A";
+
+  return `${stateCode}-${lgaCode}-${productCode}-${sampleNumber}`;
+};
+
 export const validateSampleForm = (formData) => {
   const errors = {};
 
   if (!formData.stateId) errors.stateId = "State is required";
   if (!formData.lgaId) errors.lgaId = "LGA is required";
 
-  // Market validation: either select from dropdown OR enter manual name
   if (!formData.marketId && !formData.marketName) {
     errors.marketId =
       "Either select a market from the list or enter a custom market name";
@@ -408,6 +357,14 @@ export const validateSampleForm = (formData) => {
   if (!formData.price) errors.price = "Price is required";
   if (isNaN(parseFloat(formData.price)))
     errors.price = "Price must be a number";
+
+  if (!formData.productCode) {
+    errors.productCode = "Product code is required";
+  }
+
+  if (!formData.sampleNumber) {
+    errors.sampleNumber = "Sample number is required";
+  }
 
   return {
     valid: Object.keys(errors).length === 0,
