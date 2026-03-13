@@ -8,12 +8,17 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Attach token
+// Attach token (never on login/register/refresh so stale JWT is not sent)
+const AUTH_PATHS = ["/auth/login", "/auth/register", "/auth/refresh-token"];
 api.interceptors.request.use(
   (config) => {
-    const token = sessionStorage.getItem("accessToken");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const url = config.url || "";
+    const isAuthEndpoint = AUTH_PATHS.some((path) => url.includes(path));
+    if (!isAuthEndpoint) {
+      const token = sessionStorage.getItem("accessToken");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
