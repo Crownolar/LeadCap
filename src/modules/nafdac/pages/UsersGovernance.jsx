@@ -1,10 +1,11 @@
-import { Table } from "lucide-react";
+import Table from "../components/Table";
 import Badge from "../components/Badge";
 import Btn from "../components/Btn";
 import { mockUsers } from "../data/mockData";
 import PageHeader from "../components/PageHeader";
 import { useState } from "react";
 
+// GET /api/users is restricted to SUPER_ADMIN/HEAD_RESEARCHER; NAFDAC roles cannot list users. Using mock data until a NAFDAC user list endpoint exists.
 const UsersGovernance = () => {
   const [showInvite, setShowInvite] = useState(false);
 
