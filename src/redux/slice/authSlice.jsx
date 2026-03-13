@@ -11,6 +11,11 @@ export const handleLogin = createAsyncThunk(
       if (res.data?.success && res.data?.data) {
         const { user, tokens } = res.data.data;
 
+        // Reset auth state before storing new tokens (avoid stale JWT)
+        sessionStorage.removeItem("accessToken");
+        sessionStorage.removeItem("refreshToken");
+        sessionStorage.removeItem("user");
+
         sessionStorage.setItem("accessToken", tokens.accessToken);
         sessionStorage.setItem("refreshToken", tokens.refreshToken);
         sessionStorage.setItem("user", JSON.stringify(user));

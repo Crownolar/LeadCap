@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import Sidebar from "./components/Sidebar";
 import RegistryUpload from "./pages/RegistryUpload";
 import RegistryHistory from "./pages/RegistryHistory";
 import ProductSearch from "./pages/ProductSearch";
@@ -22,7 +23,7 @@ export default function NAFDACPortal() {
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar setActivePage={setActivePage} />
+      <Sidebar activePage={activePage} setActivePage={setActivePage} />
       <main className="flex-1 p-6">
         {pages[activePage]}
       </main>
