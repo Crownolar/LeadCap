@@ -407,11 +407,11 @@ const DataCollectorDashboard = () => {
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className={`border-b ${theme?.border} bg-gray-50 dark:bg-gray-800/60`}>
+                  <tr className={`border-b ${theme?.border} ${theme.bg}`}>
                     {["Sample ID", "Product / Variant", "Location", "Price", "Metals Recorded", "Status", "Actions"].map((col) => (
                       <th
                         key={col}
-                        className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${theme?.textMuted} whitespace-nowrap`}
+                        className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${theme?.text} whitespace-nowrap`}
                       >
                         {col}
                       </th>
