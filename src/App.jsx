@@ -211,7 +211,7 @@ const App = () => {
             />
 
             <Route
-              path="sample-review"
+              path="sample-review/:collectorId"
               element={
                 <PrivateRoute allowedRoles={["supervisor"]}>
                   <SampleReview theme={theme} darkMode={darkMode} />

@@ -11,7 +11,6 @@ const CollectorManagement = () => {
   const [selectedCollector, setSelectedCollector] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   useEffect(() => {
     const fetchCollectors = async () => {
       try {
@@ -121,7 +120,7 @@ const CollectorManagement = () => {
                 <button
                   type="button"
                   onClick={() =>
-                    navigate(`/sample-review?collectorId=${selectedCollector.id}`)
+                    navigate(`/sample-review/${selectedCollector.id}`)
                   }
                   className="mb-4 text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 focus:outline-none focus:underline"
                 >

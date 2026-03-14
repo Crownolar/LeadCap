@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import api from "../../utils/api";
 import toast from "react-hot-toast";
@@ -8,15 +8,12 @@ import { CheckCircle } from "lucide-react";
 const STATUS_TABS = ["PENDING", "APPROVED", "REJECTED", "FLAGGED"];
 
 const SampleReview = () => {
-  console.log("SampleReview rendered");
   const { theme } = useTheme();
-  const [searchParams] = useSearchParams();
-  const collectorIdFromUrl = searchParams.get("collectorId") || null;
+  const { collectorId } = useParams();
+  const collectorIdFromUrl = collectorId || null;
   const [allSamples, setAllSamples] = useState([]);
   const [selectedSample, setSelectedSample] = useState(null);
-  useEffect(() => {
-    console.log("Selected Sample:", selectedSample);
-  }, [selectedSample]);
+  useEffect(() => {}, [selectedSample]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterStatus, setFilterStatus] = useState("PENDING");
@@ -78,7 +75,6 @@ const SampleReview = () => {
   ];
 
   const handleSelectSample = (sample) => {
-    console.log("Clicked sample:", sample);
     setSelectedSample(sample);
     setReviewForm({
       status: sample.review?.status || "APPROVED",
