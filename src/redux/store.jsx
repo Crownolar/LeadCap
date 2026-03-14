@@ -1,6 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { persistReducer, persistStore } from "redux-persist";
-import storage from "redux-persist/lib/storage";
+import sessionStorage from "redux-persist/lib/storage/session";
 import authReducer from "../redux/slice/authSlice";
 import samplesReducer from "./slice/samplesSlice";
 import userReducer from "./slice/userSlice";
@@ -9,7 +9,8 @@ import heavyMetalReducer from "./slice/heavyMetalSlice";
 
 const persistConfig = {
   key: "root",
-  storage,
+  storage: sessionStorage,
+  whitelist: ["auth", "heavyMetal"], // Only persist the auth and heavyMetal slices in session storage
 };
 
 const rootReducer = combineReducers({

@@ -11,7 +11,7 @@ import { createSample } from "../redux/slice/samplesSlice";
 // import api from "../utils/api";
 import useRoleDataLoader from "../hooks/useRoleDataLoader";
 
-const Layout = () => { 
+const Layout = () => {
   const dispatch = useDispatch();
   const { currentUser } = useSelector((state) => state.auth);
   const { theme } = useTheme();
@@ -41,6 +41,7 @@ const Layout = () => {
     }
   };
 
+  // fetch all data for the user (data fetched depends on role)
   useRoleDataLoader(currentUser);
 
   return (
@@ -52,7 +53,7 @@ const Layout = () => {
         setMobileMenuOpen={setMobileMenuOpen}
       />
 
-      <div className="flex flex-1">
+      <div className='flex flex-1'>
         <Sidebar
           mobileMenuOpen={mobileMenuOpen}
           setMobileMenuOpen={setMobileMenuOpen}

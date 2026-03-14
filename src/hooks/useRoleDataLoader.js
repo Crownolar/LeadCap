@@ -29,14 +29,13 @@ const ROLE_LOADERS = {
 export default function useRoleDataLoader(currentUser) {
   const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((s) => s.auth);
-  const { hasFetched } = useSelector((s) => s.samples);
 
   useEffect(() => {
-    if (!isAuthenticated || !currentUser || hasFetched) return;
+    if (!isAuthenticated || !currentUser) return;
 
     const role = normalizeRole(currentUser.role);
     const loader = ROLE_LOADERS[role];
 
     if (loader) loader(dispatch);
-  }, [dispatch, isAuthenticated, currentUser, hasFetched]);
+  }, [dispatch, isAuthenticated, currentUser]);
 }
