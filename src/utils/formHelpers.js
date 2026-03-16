@@ -19,7 +19,7 @@ export const getInitialSampleFormState = () => ({
   brandName: "",
   batchNumber: "",
   price: "",
-  sampleType: "SOLID",
+  // sampleType: "SOLID",
   productOrigin: "LOCAL",
 
   gpsLatitude: "",
@@ -123,7 +123,6 @@ export const fetchVariantsForCategory = async (categoryId) => {
       `/products/categories/${categoryId}/variants`,
     );
     const variants = response.data?.data || response.data || [];
-
 
     if (!Array.isArray(variants)) {
       console.warn("Variants response is not an array:", variants);
@@ -321,8 +320,10 @@ export const buildSamplePayload = (formData) => {
 };
 
 export const buildFieldSampleId = (sample) => {
-  const stateCode = sample?.state?.code || sample?.state?.name?.slice(0,2)?.toUpperCase();
-  const lgaCode = sample?.lga?.code || sample?.lga?.name?.slice(0,2)?.toUpperCase();
+  const stateCode =
+    sample?.state?.code || sample?.state?.name?.slice(0, 2)?.toUpperCase();
+  const lgaCode =
+    sample?.lga?.code || sample?.lga?.name?.slice(0, 2)?.toUpperCase();
   const productCode = sample?.productCode || "XX";
   const sampleNumber = sample?.sampleNumber || "00";
 
@@ -349,7 +350,7 @@ export const validateSampleForm = (formData) => {
   if (!formData.productVariantId)
     errors.productVariantId = "Product variant is required";
   if (!formData.productName) errors.productName = "Product name is required";
-  if (!formData.sampleType) errors.sampleType = "Sample type is required";
+  // if (!formData.sampleType) errors.sampleType = "Sample type is required";
   if (!formData.vendorType) errors.vendorType = "Vendor type is required";
   if (formData.vendorType === "OTHER" && !formData.vendorTypeOther) {
     errors.vendorTypeOther = "Vendor type specification is required";

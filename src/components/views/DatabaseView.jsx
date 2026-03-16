@@ -106,7 +106,6 @@ const DatabaseView = ({
         console.log(res.data);
         setTimeout(() => {
           setDeleteConfirmModal({ isOpen: false, sample: null });
-          navigate(0);
         }, 1000);
       })
       .catch((e) => {
