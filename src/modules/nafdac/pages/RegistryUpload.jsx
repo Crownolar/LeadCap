@@ -5,27 +5,114 @@ import Btn from "../components/Btn";
 import Badge from "../components/Badge";
 import { icons } from "../utils/icons";
 import Icon from "../components/icons/Icon";
-import { getRegistrySummary, uploadRegistryFile, activateRegistryVersion } from "../api/nafdacService";
+import {
+  getRegistrySummary,
+  uploadRegistryFile,
+  activateRegistryVersion,
+  getRegistryVersions,
+} from "../api/nafdacService";
 
-const formatDate = (d) => (d ? new Date(d).toLocaleDateString("en-NG", { month: "short", day: "numeric", year: "numeric" }) : "—");
+const formatDate = (d) =>
+  d
+    ? new Date(d).toLocaleDateString("en-NG", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "—";
 
 const RegistryUpload = () => {
   const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [clickedVersion, setClickedVersion] = useState(null);
   const [activating, setActivating] = useState(false);
-  const [uploadResult, setUploadResult] = useState(null);
+  const [uploadResult, setUploadResult] = useState({ recordsProcessed: 12 });
   const [error, setError] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
 
+  // testing
+
+  const mockVersions = [
+    {
+      id: "123",
+      versionLabel: "2024-03-16",
+      isActive: false,
+      uploadedAt: "2013-03-16T11:58:06.023Z",
+      uploadedBy: {
+        id: "wer3",
+        fullName: "dele alli",
+        email: "dele@gmail",
+      },
+      recordCount: 1627,
+      errorCount: 2441,
+    },
+    {
+      id: "1234",
+      versionLabel: "1962-11-06",
+      isActive: false,
+      uploadedAt: "1962-11-06T20:59:23.168Z",
+      uploadedBy: {
+        id: "werey",
+        fullName: "colin powell",
+        email: "colin@gmail.com",
+      },
+      recordCount: 2968,
+      errorCount: 5213,
+    },
+    {
+      id: "12345",
+      versionLabel: "1962-11-06",
+      isActive: true,
+      uploadedAt: "1962-11-06T20:59:23.168Z",
+      uploadedBy: {
+        id: "were",
+        fullName: "donal trump",
+        email: "donal@gmail.com",
+      },
+      recordCount: 2968,
+      errorCount: 5213,
+    },
+  ];
+  const [versions, setVersions] = useState(null);
+
+  const [version, setVersion] = useState(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    if (!version && versions && versions.length > 0) {
+      const active = versions.find((v) => v.isActive) || versions[0];
+      setVersion(active);
+    }
+  }, [versions, version]);
+
+  useEffect(() => {
+    async function fetch() {
+      await getRegistryVersions().then((versions) => {
+        if (versions.length == 0) return setVersions(mockVersions);
+        setVersions(versions);
+      });
+    }
+
+    fetch();
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     getRegistrySummary()
-      .then((data) => { if (!cancelled) setSummary(data); })
-      .catch((err) => { if (!cancelled) setError(err.response?.data?.error || err.message); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+      .then((data) => {
+        if (!cancelled) setSummary(data);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err.response?.data?.error || err.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [uploadResult]);
 
   const handleFileSelect = (file) => {
@@ -33,26 +120,73 @@ const RegistryUpload = () => {
     setError(null);
     setUploadResult(null);
     setUploading(true);
+
     const formData = new FormData();
     formData.append("file", file);
     const versionLabel = new Date().toISOString().slice(0, 10);
     formData.append("versionLabel", versionLabel);
     uploadRegistryFile(formData)
       .then((data) => setUploadResult(data))
-      .catch((err) => setError(err.response?.data?.error || err.message || "Upload failed"))
+      .catch((err) =>
+        setError(err.response?.data?.error || err.message || "Upload failed"),
+      )
       .finally(() => setUploading(false));
   };
 
-  const handleActivate = () => {
+  const handleActivateRecentUpload = () => {
     if (!uploadResult?.versionId) return;
     setActivating(true);
     activateRegistryVersion(uploadResult.versionId)
       .then(() => {
         setUploadResult(null);
-        setSummary((s) => (s ? { ...s, status: "ACTIVE", versionLabel: uploadResult.versionLabel } : s));
+        setVersions((prev) =>
+          prev
+            ? prev.map((v) => ({
+                ...v,
+                isActive: v.id === uploadResult.versionId,
+              }))
+            : prev,
+        );
+        setVersion((v) =>
+          v ? { ...v, isActive: v.id === uploadResult.versionId } : v,
+        );
+        setSummary((s) =>
+          s
+            ? {
+                ...s,
+                status: "ACTIVE",
+                versionLabel: uploadResult.versionLabel,
+              }
+            : s,
+        );
       })
-      .catch((err) => setError(err.response?.data?.error || err.message || "Activate failed"))
+      .catch((err) =>
+        setError(err.response?.data?.error || err.message || "Activate failed"),
+      )
       .finally(() => setActivating(false));
+  };
+
+  const handleActivate = (v) => {
+    if (!v?.id) return;
+    setActivating(true);
+    activateRegistryVersion(v.id)
+      .then(() => {
+        setVersions((prev) =>
+          prev ? prev.map((pv) => ({ ...pv, isActive: pv.id === v.id })) : prev,
+        );
+        setVersion({ ...v, isActive: true });
+        // setSummary((s) =>
+        //   s ? { ...s, status: "ACTIVE", versionLabel: v.versionLabel } : s,
+        // );
+      })
+      .catch((err) =>
+        setError(err.response?.data?.error || err.message || "Activate failed"),
+      )
+      .finally(() => {
+        setDropdownOpen(false);
+        setActivating(false);
+        setClickedVersion(null);
+      });
   };
 
   const onDrop = (e) => {
@@ -72,115 +206,234 @@ const RegistryUpload = () => {
   return (
     <div>
       <PageHeader
-        title="Registry Upload"
-        subtitle="Upload and publish the NAFDAC product registry. Only active version is used for verification."
+        title='Registry Upload'
+        subtitle='Upload and publish the NAFDAC product registry. Only active version is used for verification.'
         action={summary?.status ? <Badge status={summary.status} /> : null}
       />
 
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className='grid grid-cols-3 gap-4 mb-8'>
         <StatCard
-          label="Current Registry"
-          value={loading ? "…" : (summary?.currentRegistryCount ?? 0).toLocaleString()}
-          sub="Active records"
-          icon="upload"
+          label='Current Registry'
+          value={
+            loading
+              ? "…"
+              : (summary?.currentRegistryCount ?? 0).toLocaleString()
+          }
+          sub='Active records'
+          icon='upload'
         />
         <StatCard
-          label="Last Published"
+          label='Last Published'
           value={loading ? "…" : formatDate(summary?.lastPublishedDate)}
           sub={summary?.versionLabel ?? "—"}
-          icon="history"
-          color="sky"
+          icon='history'
+          color='sky'
         />
         <StatCard
-          label="Pending Errors"
+          label='Pending Errors'
           value={loading ? "…" : (summary?.pendingErrors ?? 0)}
-          sub="From last upload"
-          icon="alert"
-          color="amber"
+          sub='From last upload'
+          icon='alert'
+          color='amber'
         />
       </div>
 
-      <div className="grid grid-cols-5 gap-6">
-        <div className="col-span-3 space-y-4">
+      <div className='grid grid-cols-5 gap-6'>
+        <div className='col-span-3 space-y-4'>
           <div
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
             onDragLeave={() => setDragOver(false)}
             onDrop={onDrop}
             className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer ${dragOver ? "border-emerald-400 bg-emerald-50" : "border-slate-200 hover:border-emerald-300 hover:bg-slate-50"}`}
           >
             <input
               ref={fileInputRef}
-              type="file"
-              accept=".csv,.xlsx,.xls"
-              className="hidden"
+              type='file'
+              accept='.csv,.xlsx,.xls'
+              className='hidden'
               onChange={onInputChange}
               disabled={uploading}
             />
-            <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Icon d={icons.upload} size={26} className="text-emerald-600" />
+            <div className='w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4'>
+              <Icon d={icons.upload} size={26} className='text-emerald-600' />
             </div>
-            <p className="text-slate-700 font-semibold mb-1">Drop registry file here</p>
-            <p className="text-xs text-slate-400 mb-4">Supports .csv — max 50MB</p>
-            <Btn variant="outline" icon="upload" onClick={onBrowse} disabled={uploading}>
+            <p className='text-slate-700 font-semibold mb-1'>
+              Drop registry file here
+            </p>
+            <p className='text-xs text-slate-400 mb-4'>
+              Supports .csv — max 50MB
+            </p>
+            <Btn
+              variant='outline'
+              icon='upload'
+              onClick={onBrowse}
+              disabled={uploading}
+            >
               {uploading ? "Uploading…" : "Browse File"}
             </Btn>
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-100 rounded-2xl p-4 flex items-start gap-2">
-              <Icon d={icons.alert} size={18} className="text-red-500 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-700">{error}</p>
+            <div className='bg-red-50 border border-red-100 rounded-2xl p-4 flex items-start gap-2'>
+              <Icon
+                d={icons.alert}
+                size={18}
+                className='text-red-500 flex-shrink-0 mt-0.5'
+              />
+              <p className='text-sm text-red-700'>{error}</p>
             </div>
           )}
 
           {uploadResult && (
-            <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
-              <p className="font-semibold text-slate-700 mb-4">Upload complete</p>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm py-2 border-b border-slate-50">
-                  <span className="text-slate-500">Records processed</span>
-                  <span className="font-semibold text-slate-700">{uploadResult.recordsProcessed?.toLocaleString() ?? "—"}</span>
+            <div>
+              <h3 className='text-xl font-semibold text-slate-400 uppercase tracking-widest mb-2 mt-5'>
+                Recent Upload
+              </h3>
+              <div className='bg-white border border-slate-100 rounded-2xl p-5 shadow-sm'>
+                <p className='font-semibold text-slate-700 mb-4'>
+                  Upload complete
+                </p>
+                <div className='space-y-2'>
+                  <div className='flex items-center justify-between text-sm py-2 border-b border-slate-50'>
+                    <span className='text-slate-500'>Records processed</span>
+                    <span className='font-semibold text-slate-700'>
+                      {uploadResult.recordsProcessed?.toLocaleString() ?? "—"}
+                    </span>
+                  </div>
+                  <div className='flex items-center justify-between text-sm py-2 border-b border-slate-50'>
+                    <span className='text-slate-500'>Errors</span>
+                    <span className='font-semibold text-slate-700'>
+                      {uploadResult.errorsCount ?? 0}
+                    </span>
+                  </div>
+                  <div className='flex items-center justify-between text-sm py-2 border-b border-slate-50'>
+                    <span className='text-slate-500'>Version</span>
+                    <span className='font-semibold text-slate-700'>
+                      {uploadResult.versionLabel ?? uploadResult.versionId}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between text-sm py-2 border-b border-slate-50">
-                  <span className="text-slate-500">Errors</span>
-                  <span className="font-semibold text-slate-700">{uploadResult.errorsCount ?? 0}</span>
+                <div className='pt-3 flex gap-3'>
+                  <Btn
+                    variant='primary'
+                    icon='refresh'
+                    onClick={handleActivateRecentUpload}
+                    disabled={activating}
+                  >
+                    {activating ? "Activating…" : "Activate this version"}
+                  </Btn>
                 </div>
-                <div className="flex items-center justify-between text-sm py-2 border-b border-slate-50">
-                  <span className="text-slate-500">Version</span>
-                  <span className="font-semibold text-slate-700">{uploadResult.versionLabel ?? uploadResult.versionId}</span>
-                </div>
-              </div>
-              <div className="pt-3 flex gap-3">
-                <Btn variant="primary" icon="refresh" onClick={handleActivate} disabled={activating}>
-                  {activating ? "Activating…" : "Activate this version"}
-                </Btn>
               </div>
             </div>
           )}
         </div>
 
-        <div className="col-span-2 space-y-3">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">API Endpoints</p>
-          {[
-            { method: "GET", path: "/api/nafdac/registry/summary", desc: "Summary and active registry stats" },
-            { method: "POST", path: "/api/nafdac/registry/upload", desc: "Upload CSV file (multipart)" },
-            { method: "GET", path: "/api/nafdac/registry/versions", desc: "List registry versions" },
-            { method: "POST", path: "/api/nafdac/registry/versions/:id/activate", desc: "Make a version live" },
-          ].map((e) => (
-            <div key={e.path} className="bg-white border border-slate-100 rounded-xl p-3.5 shadow-sm">
-              <div className="flex items-center gap-2 mb-1">
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${e.method === "POST" ? "bg-emerald-100 text-emerald-700" : "bg-sky-100 text-sky-700"}`}>{e.method}</span>
-                <code className="text-xs text-slate-600 font-mono">{e.path}</code>
-              </div>
-              <p className="text-xs text-slate-400">{e.desc}</p>
+        <div className='col-span-2 space-y-3'>
+          <p className='text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2'>
+            Registry Versions
+          </p>
+          <div className='bg-white border border-slate-100 rounded-xl p-3.5 shadow-sm mb-3'>
+            <label className='text-xs text-slate-500 font-semibold mb-2 block'>
+              Registry Versions
+            </label>
+            <div className='relative'>
+              <button
+                type='button'
+                onClick={() => setDropdownOpen((s) => !s)}
+                className='w-full text-left bg-slate-50 border border-slate-100 rounded-md px-3 py-2 flex items-center justify-between gap-3'
+              >
+                <div className='flex items-center gap-3'>
+                  <div className='text-sm text-slate-700'>
+                    {version ? (
+                      <>
+                        <span className='font-semibold'>
+                          {version.versionLabel}
+                        </span>
+                      </>
+                    ) : (
+                      <span className='text-slate-400'>No versions</span>
+                    )}
+                  </div>
+                </div>
+                <div className='flex items-center gap-2'>
+                  {version?.isActive && <Badge status={"ACTIVE"} />}
+                  <Icon
+                    d={icons.chevronDown}
+                    size={16}
+                    className='text-slate-400'
+                  />
+                </div>
+              </button>
+
+              {dropdownOpen && (
+                <div className='absolute z-20 left-0 right-0 mt-2 bg-white border border-slate-100 rounded-xl shadow-lg max-h-56 overflow-auto'>
+                  {versions?.map((v) => (
+                    <button
+                      key={v.id}
+                      onClick={() => {
+                        setClickedVersion(v.id);
+                        handleActivate(v);
+                      }}
+                      className='w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center justify-between gap-3'
+                    >
+                      <div>
+                        <div className='text-sm text-slate-700 font-semibold'>
+                          {v.versionLabel || "—"}
+                        </div>
+                        <div className='text-xs text-slate-400'>
+                          {formatDate(v.uploadedAt)} •{" "}
+                          {v.recordCount?.toLocaleString() ?? "—"} records
+                        </div>
+                      </div>
+                      <div className='flex items-center gap-2'>
+                        {v.isActive && <Badge status={"ACTIVE"} />}
+                        {version?.id === v.id && (
+                          <Icon
+                            d={icons.check}
+                            size={16}
+                            className='text-emerald-600'
+                          />
+                        )}
+                        {clickedVersion == v.id && (
+                          <Icon
+                            d={icons.refresh}
+                            size={16}
+                            className='text-slate-400 animate-spin'
+                          />
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          ))}
-          <div className="mt-4 p-3.5 bg-amber-50 border border-amber-100 rounded-xl">
-            <div className="flex gap-2">
-              <Icon d={icons.alert} size={15} className="text-amber-500 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-700">Activating a version makes it the one used for verification. You can switch to another version from Registry History.</p>
+
+            <div className='mt-3'>
+              <div className='p-3 rounded-md bg-sky-50 border border-sky-100 text-sm text-sky-700'>
+                <span className='font-semibold'>Active version:</span>{" "}
+                <span className='font-medium text-slate-700'>
+                  {version ? version.versionLabel : "—"}
+                </span>
+              </div>
             </div>
           </div>
+
+          {/* <div className='mt-4 p-3.5 bg-amber-50 border border-amber-100 rounded-xl'>
+            <div className='flex gap-2'>
+              <Icon
+                d={icons.alert}
+                size={15}
+                className='text-amber-500 flex-shrink-0 mt-0.5'
+              />
+              <p className='text-xs text-amber-700'>
+                Activating a version makes it the one used for verification. You
+                can switch to another version from Registry History.
+              </p>
+            </div>
+          </div> */}
         </div>
       </div>
     </div>
