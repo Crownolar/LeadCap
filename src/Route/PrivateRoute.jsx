@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 // Helper function to normalize role for comparison
 const normalizeRole = (role) => {
   if (!role) return "";
-  return role.toLowerCase().replace(/[\s_]/g, "");
+  return role.toLowerCase().replace(/[\s_.]/g, "");
 };
 
 const PrivateRoute = ({ children, allowedRoles = [] }) => {
@@ -15,17 +15,20 @@ const PrivateRoute = ({ children, allowedRoles = [] }) => {
     return <Navigate to="/auth" replace />;
   }
 
+  if (!currentUser) return null;
+
   const userRole = currentUser?.role;
   const normalizedRole = normalizeRole(userRole);
+  console.log("PrivateRoute", { isAuthenticated, currentUser, normalizedRole, location: location.pathname });
 
-  // POLICY-MAKER RESTRICTIONS
-  // Check for all policy maker roles (POLICY_MAKER_SON, POLICY_MAKER_NAFDAC, etc.)
-  if (normalizedRole.startsWith("policymaker")) {
-    const blockedRoutes = ["/reports", "/database", "/agents"];
-    if (blockedRoutes.includes(location.pathname)) {
-      return <Navigate to="/map" replace />;
-    }
+if (normalizedRole.startsWith("policymaker") && normalizedRole !== "policymakerfmohsw") {
+  const blockedRoutes = ["/reports", "/database", "/agents"];
+  if (blockedRoutes.includes(location.pathname)) {
+    return <Navigate to="/map" replace />;
   }
+}
+
+
 
   // SUPERVISOR RESTRICTIONS
   if (normalizedRole === "supervisor") {

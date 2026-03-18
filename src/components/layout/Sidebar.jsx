@@ -52,11 +52,17 @@ const roleConfig = {
       "nafdac-risk",
     ],
   },
-  // policymakernafdac: {
-  //   sampleButton: false,
-  //   excelImport: false,
-  //   navItems: ["dashboard", "map"],
-  // },
+  policymakerfmohsw: {
+    sampleButton: false,
+    excelImport: false,
+    navItems: [
+      "moh-dashboard",
+      "moh-samples",
+      "moh-reports",
+      "moh-verification",
+      "moh-contamination",
+    ],
+  },
   supervisor: {
     sampleButton: false,
     excelImport: false,
@@ -111,12 +117,6 @@ const Sidebar = ({
       label: "Lab Recording",
       route: "/lab-recording",
       key: "lab-recording",
-    },
-    {
-      icon: TestTubeDiagonal,
-      label: "Policy Portal",
-      route: "/policy-portal",
-      key: "policy-portal",
     },
     {
       icon: Database,
@@ -186,6 +186,36 @@ const Sidebar = ({
       label: "User Governance",
       route: "/nafdac-users",
       key: "nafdac-users",
+    },
+    {
+      icon: BarChart3,
+      label: "MOH Dashboard",
+      route: "/moh/dashboard",
+      key: "moh-dashboard",
+    },
+    {
+      icon: Database,
+      label: "MOH Samples",
+      route: "/moh/samples",
+      key: "moh-samples",
+    },
+    {
+      icon: FileText,
+      label: "MOH Reports",
+      route: "/moh/reports",
+      key: "moh-reports",
+    },
+    {
+      icon: Microscope,
+      label: "Verification",
+      route: "/moh/verification",
+      key: "moh-verification",
+    },
+    {
+      icon: Beaker,
+      label: "Contamination",
+      route: "/moh/contamination",
+      key: "moh-contamination",
     },
   ];
 

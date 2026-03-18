@@ -71,11 +71,11 @@ const AuthModal = () => {
   };
 
   const navigateBasedOnRole = (user) => {
-    const normalizedRole = user.role
-      ?.toLowerCase()
-      .replace(/[\s_]/g, "");
+    const normalizedRole = user.role?.toLowerCase().replace(/[\s_.]/g, "");
 
-    if (normalizedRole?.startsWith("policymaker")) {
+    if (normalizedRole === "policymakerfmohsw") {
+      navigate("/moh/dashboard", { replace: true });
+    } else if (normalizedRole?.startsWith("policymaker")) {
       navigate("/map");
     } else if (normalizedRole === "supervisor") {
       navigate("/collectors");
@@ -103,12 +103,10 @@ const AuthModal = () => {
           handleLogin({
             email: authForm.email,
             password: authForm.password,
-          })
+          }),
         ).unwrap();
 
-        setPopupMessage(
-          `Welcome back, ${data.user.fullName || "User"}!`
-        );
+        setPopupMessage(`Welcome back, ${data.user.fullName || "User"}!`);
         setPopupType("success");
         setShowPopup(true);
 
@@ -116,7 +114,6 @@ const AuthModal = () => {
           setShowPopup(false);
           navigateBasedOnRole(data.user);
         }, 800);
-
       } catch (errMessage) {
         handleBackendFieldErrors(errMessage);
       }
@@ -132,7 +129,6 @@ const AuthModal = () => {
           setShowPopup(false);
           setAuthMode("login");
         }, 1200);
-
       } catch (errMessage) {
         handleBackendFieldErrors(errMessage);
       }
@@ -165,9 +161,7 @@ const AuthModal = () => {
                 setFieldErrors({});
               }}
               className={`flex-1 py-2 rounded-lg font-medium transition-colors ${
-                authMode === mode
-                  ? "bg-emerald-500 text-white"
-                  : theme.hover
+                authMode === mode ? "bg-emerald-500 text-white" : theme.hover
               }`}
             >
               {mode === "login" ? "Login" : "Sign Up"}
@@ -181,9 +175,7 @@ const AuthModal = () => {
               <Input
                 label="Full Name"
                 value={authForm.name}
-                onChange={(e) =>
-                  handleChange("name", e.target.value)
-                }
+                onChange={(e) => handleChange("name", e.target.value)}
                 placeholder="Enter your full name"
                 theme={theme}
               />
@@ -191,9 +183,7 @@ const AuthModal = () => {
               <Input
                 label="Invite Code"
                 value={authForm.inviteCode}
-                onChange={(e) =>
-                  handleChange("inviteCode", e.target.value)
-                }
+                onChange={(e) => handleChange("inviteCode", e.target.value)}
                 placeholder="Enter invite code"
                 theme={theme}
               />
@@ -204,9 +194,7 @@ const AuthModal = () => {
             label="Email"
             type="email"
             value={authForm.email}
-            onChange={(e) =>
-              handleChange("email", e.target.value)
-            }
+            onChange={(e) => handleChange("email", e.target.value)}
             placeholder="user@ledacap.ng"
             theme={theme}
             error={fieldErrors.email}
@@ -220,13 +208,9 @@ const AuthModal = () => {
               <input
                 type={showPassword ? "text" : "password"}
                 value={authForm.password}
-                onChange={(e) =>
-                  handleChange("password", e.target.value)
-                }
+                onChange={(e) => handleChange("password", e.target.value)}
                 className={`w-full px-4 py-2 border rounded-lg ${
-                  fieldErrors.password
-                    ? "border-red-500"
-                    : theme.input
+                  fieldErrors.password ? "border-red-500" : theme.input
                 }`}
                 placeholder="••••••••"
               />
@@ -261,8 +245,8 @@ const AuthModal = () => {
                 ? "Logging in..."
                 : "Signing up..."
               : authMode === "login"
-              ? "Login"
-              : "Sign Up"}
+                ? "Login"
+                : "Sign Up"}
           </button>
         </form>
       </div>
@@ -299,11 +283,7 @@ const Input = ({
         error ? "border-red-500" : theme.input
       }`}
     />
-    {error && (
-      <p className="text-red-500 text-sm mt-1">
-        {error}
-      </p>
-    )}
+    {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
   </div>
 );
 

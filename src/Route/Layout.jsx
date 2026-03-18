@@ -29,19 +29,13 @@ const Layout = () => {
   const handleFormSubmit = async (formData) => {
     try {
       await dispatch(createSample(formData)).unwrap();
-      // await api.post("/samples", formData);
-      // // Refresh samples after successful creation
-      // dispatch(fetchSamples());
       setShowForm(false);
-      // Optional: Show success message
-      // Toast or notification could go here
     } catch (error) {
       console.error("Failed to create sample:", error);
       throw error;
     }
   };
 
-  // fetch all data for the user (data fetched depends on role)
   useRoleDataLoader(currentUser);
 
   return (

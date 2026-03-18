@@ -10,7 +10,6 @@ const STATUS_TABS = ["PENDING", "APPROVED", "REJECTED", "FLAGGED"];
 const SampleReview = () => {
   const { theme } = useTheme();
   const { collectorId } = useParams();
-  const collectorIdFromUrl = collectorId || null;
   const [allSamples, setAllSamples] = useState([]);
   const [selectedSample, setSelectedSample] = useState(null);
   useEffect(() => {}, [selectedSample]);
@@ -42,13 +41,13 @@ const SampleReview = () => {
     });
     return counts;
   }, [allSamples]);
-
+  
   const fetchSamples = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const params = { status: "ALL" };
-      if (collectorIdFromUrl) params.collectorId = collectorIdFromUrl;
+      if (collectorId) params.collectorId = collectorId;
       const res = await api.get("/supervisor/samples", { params });
       if (res.data.success) setAllSamples(res.data.data || []);
     } catch (err) {
@@ -57,7 +56,7 @@ const SampleReview = () => {
     } finally {
       setLoading(false);
     }
-  }, [collectorIdFromUrl]);
+  }, [collectorId]);
 
   useEffect(() => {
     fetchSamples();

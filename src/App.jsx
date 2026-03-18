@@ -33,6 +33,11 @@ import VerificationLogs from "./modules/nafdac/pages/VerificationLogs";
 import ProductSearch from "./modules/nafdac/pages/ProductSearch";
 import RegistryHistory from "./modules/nafdac/pages/RegistryHistory";
 import RegistryUpload from "./modules/nafdac/pages/RegistryUpload";
+import MohDashboard from "./modules/modulesMoh/pages/dashboard/MohDashboard";
+import MohSamples from "./modules/modulesMoh/pages/MohSamples";
+import MohReports from "./modules/modulesMoh/pages/MohReports";
+import MohVerification from "./modules/modulesMoh/pages/MohVerification";
+import MohContamination from "./modules/modulesMoh/pages/MohContamination";
 
 const lightTheme = {
   bg: "bg-gray-100",
@@ -106,6 +111,7 @@ const App = () => {
                     "policymakerresolve",
                     "policymakeruniversity",
                     "labanalyst",
+                    "policymakerfmohsw",
                   ]}
                 >
                   {currentUser?.role?.toLowerCase() === "supervisor" ? (
@@ -167,6 +173,7 @@ const App = () => {
                     "policymakernafdac",
                     "policymakerresolve",
                     "policymakeruniversity",
+                    "policymakerfmohsw",
                   ]}
                 >
                   <MapView theme={theme} />
@@ -212,6 +219,14 @@ const App = () => {
 
             <Route
               path="sample-review/:collectorId"
+              element={
+                <PrivateRoute allowedRoles={["supervisor"]}>
+                  <SampleReview theme={theme} darkMode={darkMode} />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="sample-review"
               element={
                 <PrivateRoute allowedRoles={["supervisor"]}>
                   <SampleReview theme={theme} darkMode={darkMode} />
@@ -314,6 +329,59 @@ const App = () => {
                 </PrivateRoute>
               }
             />
+
+            <Route path="moh">
+              <Route
+                path="dashboard"
+                element={
+                  <PrivateRoute
+                    allowedRoles={["superadmin", "policymakerfmohsw"]}
+                  >
+                    <MohDashboard theme={theme} />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="samples"
+                element={
+                  <PrivateRoute
+                    allowedRoles={["superadmin", "policymakerfmohsw"]}
+                  >
+                    <MohSamples theme={theme} />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="verification"
+                element={
+                  <PrivateRoute
+                    allowedRoles={["superadmin", "policymakerfmohsw"]}
+                  >
+                    <MohVerification theme={theme} />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="contamination"
+                element={
+                  <PrivateRoute
+                    allowedRoles={["superadmin", "policymakerfmohsw"]}
+                  >
+                    <MohContamination theme={theme} />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="reports"
+                element={
+                  <PrivateRoute
+                    allowedRoles={["superadmin", "policymakerfmohsw"]}
+                  >
+                    <MohReports theme={theme} />
+                  </PrivateRoute>
+                }
+              />
+            </Route>
           </Route>
         </Routes>
       </div>
