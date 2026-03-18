@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import api from "../../utils/api";
@@ -41,7 +41,7 @@ const SampleReview = () => {
     });
     return counts;
   }, [allSamples]);
-  
+
   const fetchSamples = useCallback(async () => {
     try {
       setLoading(true);
@@ -268,21 +268,21 @@ const SampleReview = () => {
 
   return (
     <div className={`${theme?.text} space-y-4 sm:space-y-6`}>
-      <div className="mb-2">
-        <h1 className="text-xl sm:text-2xl font-bold">Review samples</h1>
+      <div className='mb-2'>
+        <h1 className='text-xl sm:text-2xl font-bold'>Review samples</h1>
         <p className={`text-sm ${theme?.textMuted} mt-1`}>
           Review and approve samples from your collectors
         </p>
       </div>
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 sm:px-4 sm:py-3 rounded-lg text-sm">
+        <div className='bg-red-50 border border-red-200 text-red-700 px-3 py-2 sm:px-4 sm:py-3 rounded-lg text-sm'>
           Error: {error}
         </div>
       )}
 
       {/* Filter Tabs with badge counts & Bulk Actions */}
-      <div className="space-y-3 sm:space-y-4">
-        <div className="flex gap-2 flex-wrap">
+      <div className='space-y-3 sm:space-y-4'>
+        <div className='flex gap-2 flex-wrap'>
           {STATUS_TABS.map((status) => {
             const count = statusCounts[status] ?? 0;
             const isActive = filterStatus === status;
@@ -316,41 +316,41 @@ const SampleReview = () => {
           <div
             className={`${theme?.card} border ${theme?.border} rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3`}
           >
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className='flex items-center gap-2 sm:gap-3'>
               <CheckCircle
                 size={18}
-                className="text-emerald-600 sm:w-5 sm:h-5 flex-shrink-0"
+                className='text-emerald-600 sm:w-5 sm:h-5 flex-shrink-0'
               />
-              <span className="text-sm sm:text-base font-semibold">
+              <span className='text-sm sm:text-base font-semibold'>
                 {bulkSelection.size} sample(s) selected
               </span>
             </div>
-            <div className="flex gap-2 flex-wrap w-full sm:w-auto">
+            <div className='flex gap-2 flex-wrap w-full sm:w-auto'>
               <button
                 onClick={() => handleBulkAction("APPROVED")}
                 disabled={bulkProcessing}
-                className="flex-1 sm:flex-none px-3 py-1.5 sm:px-4 sm:py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-xs sm:text-sm"
+                className='flex-1 sm:flex-none px-3 py-1.5 sm:px-4 sm:py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-xs sm:text-sm'
               >
                 ✓ Approve
               </button>
               <button
                 onClick={() => handleBulkAction("REJECTED")}
                 disabled={bulkProcessing}
-                className="flex-1 sm:flex-none px-3 py-1.5 sm:px-4 sm:py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-xs sm:text-sm"
+                className='flex-1 sm:flex-none px-3 py-1.5 sm:px-4 sm:py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-xs sm:text-sm'
               >
                 ✗ Reject
               </button>
               <button
                 onClick={() => handleBulkAction("FLAGGED")}
                 disabled={bulkProcessing}
-                className="flex-1 sm:flex-none px-3 py-1.5 sm:px-4 sm:py-2 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-xs sm:text-sm"
+                className='flex-1 sm:flex-none px-3 py-1.5 sm:px-4 sm:py-2 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-xs sm:text-sm'
               >
                 ⚠ Flag
               </button>
               <button
                 onClick={() => setBulkSelection(new Set())}
                 disabled={bulkProcessing}
-                className="flex-1 sm:flex-none px-3 py-1.5 sm:px-4 sm:py-2 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-xs sm:text-sm"
+                className='flex-1 sm:flex-none px-3 py-1.5 sm:px-4 sm:py-2 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-xs sm:text-sm'
               >
                 Clear
               </button>
@@ -359,33 +359,33 @@ const SampleReview = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className='grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6'>
         {/* Samples List */}
         <div
           className={`${theme?.card} rounded-lg p-4 sm:p-6 border ${theme?.border}`}
         >
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <h3 className="text-base sm:text-lg font-semibold inline-flex items-center gap-2">
+          <div className='flex items-center justify-between mb-3 sm:mb-4'>
+            <h3 className='text-base sm:text-lg font-semibold inline-flex items-center gap-2'>
               {filterStatus}
-              <span className="inline-flex items-center justify-center min-w-[1.5rem] h-6 px-2 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
+              <span className='inline-flex items-center justify-center min-w-[1.5rem] h-6 px-2 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'>
                 {filteredSamples.length}
               </span>
             </h3>
             {filteredSamples.length > 0 && (
-              <label className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm cursor-pointer">
+              <label className='flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm cursor-pointer'>
                 <input
-                  type="checkbox"
+                  type='checkbox'
                   checked={bulkSelection.size === filteredSamples.length}
                   onChange={handleSelectAll}
-                  className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded text-emerald-600"
+                  className='w-3.5 h-3.5 sm:w-4 sm:h-4 rounded text-emerald-600'
                 />
-                <span className="whitespace-nowrap">Select All</span>
+                <span className='whitespace-nowrap'>Select All</span>
               </label>
             )}
           </div>
-          <div className="space-y-2 max-h-[400px] sm:max-h-96 overflow-y-auto">
+          <div className='space-y-2 max-h-[400px] sm:max-h-96 overflow-y-auto'>
             {filteredSamples.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 sm:py-12 text-center">
+              <div className='flex flex-col items-center justify-center py-10 sm:py-12 text-center'>
                 <p className={`text-sm font-medium ${theme?.text} mb-1`}>
                   No {filterStatus.toLowerCase()} samples
                 </p>
@@ -404,27 +404,27 @@ const SampleReview = () => {
                   }`}
                 >
                   <input
-                    type="checkbox"
+                    type='checkbox'
                     checked={bulkSelection.has(sample.id)}
                     onChange={() => handleToggleBulkSelection(sample.id)}
                     onClick={(e) => e.stopPropagation()}
-                    className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded text-emerald-600 mt-0.5 sm:mt-1 flex-shrink-0"
+                    className='w-3.5 h-3.5 sm:w-4 sm:h-4 rounded text-emerald-600 mt-0.5 sm:mt-1 flex-shrink-0'
                   />
                   <button
                     onClick={() => {
                       console.log("button clicked");
                       handleSelectSample(sample);
                     }}
-                    className="flex-1 text-left min-w-0"
+                    className='flex-1 text-left min-w-0'
                   >
-                    <p className="font-semibold text-xs sm:text-sm truncate">
+                    <p className='font-semibold text-xs sm:text-sm truncate'>
                       {sample.productName}
                     </p>
                     <p className={`text-xs ${theme?.textMuted} truncate`}>
                       {sample.sampleId}
                     </p>
-                    <div className="flex gap-1 mt-1.5 sm:mt-2 flex-wrap">
-                      <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs px-2 py-0.5 rounded">
+                    <div className='flex gap-1 mt-1.5 sm:mt-2 flex-wrap'>
+                      <span className='bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs px-2 py-0.5 rounded'>
                         {sample.state?.name}
                       </span>
                       <span
@@ -452,7 +452,7 @@ const SampleReview = () => {
         </div>
 
         {/* Sample Details & Review Form */}
-        <div className="lg:col-span-2">
+        <div className='lg:col-span-2'>
           {selectedSample ? (
             <div
               className={`${theme?.card} rounded-lg p-4 sm:p-6 border ${theme?.border} space-y-4 sm:space-y-6`}
@@ -464,79 +464,79 @@ const SampleReview = () => {
                 </p>
               )}
               {/* Sample Details */}
-              <div className="space-y-4">
+              <div className='space-y-4'>
                 {/* Section Header */}
-                <div className="flex items-center gap-2 pb-2 border-b border-emerald-800/40">
-                  <div className="w-1 h-5 rounded-full bg-emerald-500" />
-                  <h3 className="text-sm font-semibold uppercase tracking-widest text-emerald-400">
+                <div className='flex items-center gap-2 pb-2 border-b border-emerald-800/40'>
+                  <div className='w-1 h-5 rounded-full bg-emerald-500' />
+                  <h3 className='text-sm font-semibold uppercase tracking-widest text-emerald-400'>
                     Sample Details
                   </h3>
                 </div>
 
                 {/* Details Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 text-xs sm:text-sm">
-                  <div className="min-w-0">
+                <div className='grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 text-xs sm:text-sm'>
+                  <div className='min-w-0'>
                     <p
                       className={`text-[10px] uppercase tracking-wider font-medium mb-0.5 ${theme?.textMuted}`}
                     >
                       Sample ID
                     </p>
-                    <p className="font-semibold truncate">
+                    <p className='font-semibold truncate'>
                       {selectedSample.sampleId}
                     </p>
                   </div>
 
-                  <div className="min-w-0">
+                  <div className='min-w-0'>
                     <p
                       className={`text-[10px] uppercase tracking-wider font-medium mb-0.5 ${theme?.textMuted}`}
                     >
                       Product Name
                     </p>
-                    <p className="font-semibold truncate">
+                    <p className='font-semibold truncate'>
                       {selectedSample.productName}
                     </p>
                   </div>
 
-                  <div className="min-w-0">
+                  <div className='min-w-0'>
                     <p
                       className={`text-[10px] uppercase tracking-wider font-medium mb-0.5 ${theme?.textMuted}`}
                     >
                       Brand
                     </p>
-                    <p className="font-semibold truncate">
+                    <p className='font-semibold truncate'>
                       {selectedSample.brandName || "—"}
                     </p>
                   </div>
 
-                  <div className="min-w-0">
+                  <div className='min-w-0'>
                     <p
                       className={`text-[10px] uppercase tracking-wider font-medium mb-0.5 ${theme?.textMuted}`}
                     >
                       Batch Number
                     </p>
-                    <p className="font-semibold truncate">
+                    <p className='font-semibold truncate'>
                       {selectedSample.batchNumber || "—"}
                     </p>
                   </div>
 
-                  <div className="min-w-0">
+                  <div className='min-w-0'>
                     <p
                       className={`text-[10px] uppercase tracking-wider font-medium mb-0.5 ${theme?.textMuted}`}
                     >
                       Collected By
                     </p>
-                    <p className="font-semibold truncate">
+                    <p className='font-semibold truncate'>
                       {selectedSample.creator?.fullName}
                     </p>
                   </div>
 
-                  <div className="min-w-0 col-span-2 sm:col-span-3">
+                  <div className='min-w-0 col-span-2 sm:col-span-3'>
                     <p
                       className={`text-[10px] uppercase tracking-wider font-medium mb-0.5 ${theme?.textMuted}`}
                     >
                       Collection Location
                     </p>
-                    <p className="font-semibold truncate">
+                    <p className='font-semibold truncate'>
                       {selectedSample.state?.name}
                       {selectedSample.lga?.name
                         ? ` › ${selectedSample.lga.name}`
@@ -549,68 +549,65 @@ const SampleReview = () => {
                 </div>
 
                 {/* Product Photo */}
-                <div className="mt-2 rounded-lg border border-emerald-800/40 overflow-hidden bg-black/20">
+                <div className='mt-2 rounded-lg border border-emerald-800/40 overflow-hidden bg-black/20'>
                   {/* Photo Header */}
-                  <div className="flex items-center justify-between px-3 py-2 border-b border-emerald-800/30 bg-emerald-950/30">
-                    <div className="flex items-center gap-1.5">
+                  <div className='flex items-center justify-between px-3 py-2 border-b border-emerald-800/30 bg-emerald-950/30'>
+                    <div className='flex items-center gap-1.5'>
                       {/* Camera icon — swap with your icon library */}
                       <svg
-                        className="w-3.5 h-3.5 text-emerald-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                        className='w-3.5 h-3.5 text-emerald-400'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
                       >
                         <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
                           strokeWidth={2}
-                          d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                          d='M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z'
                         />
                         <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
                           strokeWidth={2}
-                          d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                          d='M15 13a3 3 0 11-6 0 3 3 0 016 0z'
                         />
                       </svg>
-                      <span className="text-[10px] uppercase tracking-wider font-semibold text-emerald-400">
+                      <span className='text-[10px] uppercase tracking-wider font-semibold text-emerald-400'>
                         Product Photo
                       </span>
                     </div>
-                    <span className="text-[10px] text-gray-500 uppercase tracking-wider">
+                    <span className='text-[10px] text-gray-500 uppercase tracking-wider'>
                       Field Capture
                     </span>
                   </div>
 
                   {/* Photo Body */}
                   {selectedSample.productPhotoUrl ? (
-                    <div className="flex justify-center p-3">
+                    <div className='flex justify-center p-3'>
                       <img
-                        src={`${
-                          import.meta.env.VITE_BACKEND_URL ||
-                          "https://api.leadcap.ng"
-                        }${selectedSample.productPhotoUrl}`}
-                        alt="Product Photo"
-                        className="max-h-56 w-auto rounded object-contain"
-                        id="productPhotoImage"
+                        src={`${selectedSample.productPhotoUrl}`}
+                        alt='Product Photo'
+                        className='max-h-56 w-auto rounded object-contain'
+                        id='productPhotoImage'
                       />
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center h-36 gap-2 text-gray-500">
+                    <div className='flex flex-col items-center justify-center h-36 gap-2 text-gray-500'>
                       <svg
-                        className="w-8 h-8 opacity-30"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                        className='w-8 h-8 opacity-30'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
                       >
                         <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
                           strokeWidth={1.5}
-                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          d='M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z'
                         />
                       </svg>
-                      <p className="text-xs text-gray-500">
+                      <p className='text-xs text-gray-500'>
                         No product photo captured
                       </p>
                     </div>
@@ -621,10 +618,10 @@ const SampleReview = () => {
               {selectedSample.heavyMetalReadings &&
                 selectedSample.heavyMetalReadings.length > 0 && (
                   <div>
-                    <h4 className="text-sm sm:text-base font-semibold mb-2">
+                    <h4 className='text-sm sm:text-base font-semibold mb-2'>
                       Heavy Metal Readings
                     </h4>
-                    <div className="space-y-2">
+                    <div className='space-y-2'>
                       {selectedSample.heavyMetalReadings.map((reading, idx) => {
                         const status = reading.finalStatus ?? reading.status;
                         return (
@@ -632,7 +629,7 @@ const SampleReview = () => {
                             key={reading.id ?? idx}
                             className={`border ${theme?.border} rounded p-2 sm:p-3 text-xs sm:text-sm`}
                           >
-                            <p className="font-semibold">
+                            <p className='font-semibold'>
                               {reading.heavyMetal}
                             </p>
                             <p className={theme?.textMuted}>
@@ -657,16 +654,16 @@ const SampleReview = () => {
 
               {/* Review Form */}
               <div className={`border-t ${theme?.border} pt-4`}>
-                <h4 className="text-sm sm:text-base font-semibold mb-3">
+                <h4 className='text-sm sm:text-base font-semibold mb-3'>
                   Review Sample
                 </h4>
 
                 {/* Status */}
-                <div className="mb-4">
-                  <label className="block text-xs sm:text-sm font-semibold mb-2">
+                <div className='mb-4'>
+                  <label className='block text-xs sm:text-sm font-semibold mb-2'>
                     Decision
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className='grid grid-cols-2 gap-2'>
                     {[
                       "APPROVED",
                       "REJECTED",
@@ -691,36 +688,36 @@ const SampleReview = () => {
                 </div>
 
                 {/* Issues */}
-                <div className="mb-4">
-                  <label className="block text-xs sm:text-sm font-semibold mb-2">
+                <div className='mb-4'>
+                  <label className='block text-xs sm:text-sm font-semibold mb-2'>
                     Flag Issues (if any)
                   </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
                     {ISSUE_OPTIONS.map((issue) => (
                       <label
                         key={issue}
-                        className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm cursor-pointer"
+                        className='flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm cursor-pointer'
                       >
                         <input
-                          type="checkbox"
+                          type='checkbox'
                           checked={reviewForm.issues.includes(issue)}
                           onChange={() => handleIssueToggle(issue)}
-                          className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded text-emerald-600 flex-shrink-0"
+                          className='w-3.5 h-3.5 sm:w-4 sm:h-4 rounded text-emerald-600 flex-shrink-0'
                         />
-                        <span className="break-words">{issue}</span>
+                        <span className='break-words'>{issue}</span>
                       </label>
                     ))}
                   </div>
                 </div>
 
                 {/* Comments - required when rejecting */}
-                <div className="mb-4">
-                  <label className="block text-xs sm:text-sm font-semibold mb-2">
+                <div className='mb-4'>
+                  <label className='block text-xs sm:text-sm font-semibold mb-2'>
                     Comments
                     {reviewForm.status === "REJECTED" && (
                       <span
-                        className="text-red-600 dark:text-red-400 ml-1"
-                        title="Required for rejection"
+                        className='text-red-600 dark:text-red-400 ml-1'
+                        title='Required for rejection'
                       >
                         (required for reject)
                       </span>
@@ -734,7 +731,7 @@ const SampleReview = () => {
                         comments: e.target.value,
                       }))
                     }
-                    rows="3"
+                    rows='3'
                     placeholder={
                       reviewForm.status === "REJECTED"
                         ? "Provide a reason for rejection..."
@@ -746,8 +743,8 @@ const SampleReview = () => {
 
                 {/* Requested Changes */}
                 {reviewForm.status === "CORRECTION_REQUESTED" && (
-                  <div className="mb-4">
-                    <label className="block text-xs sm:text-sm font-semibold mb-2">
+                  <div className='mb-4'>
+                    <label className='block text-xs sm:text-sm font-semibold mb-2'>
                       What needs to be corrected?
                     </label>
                     <textarea
@@ -758,27 +755,27 @@ const SampleReview = () => {
                           requestedChanges: e.target.value,
                         }))
                       }
-                      rows="3"
-                      placeholder="Describe what the collector needs to fix..."
+                      rows='3'
+                      placeholder='Describe what the collector needs to fix...'
                       className={`w-full px-3 py-2 text-sm sm:text-base border ${theme?.border} rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 ${theme?.card}`}
                     />
                   </div>
                 )}
 
                 {/* Submit and Next */}
-                <div className="flex flex-col sm:flex-row gap-2">
+                <div className='flex flex-col sm:flex-row gap-2'>
                   <button
                     onClick={handleSubmitReview}
                     disabled={reviewing}
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white font-semibold py-2 sm:py-2.5 px-4 rounded-lg transition-colors text-sm sm:text-base"
+                    className='flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white font-semibold py-2 sm:py-2.5 px-4 rounded-lg transition-colors text-sm sm:text-base'
                   >
                     {reviewing ? "Submitting..." : "Submit Review"}
                   </button>
                   {totalInFilter > 1 && (
                     <button
-                      type="button"
+                      type='button'
                       onClick={goToNextSample}
-                      className="px-4 py-2 sm:py-2.5 border border-emerald-600 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg font-semibold text-sm sm:text-base transition-colors"
+                      className='px-4 py-2 sm:py-2.5 border border-emerald-600 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg font-semibold text-sm sm:text-base transition-colors'
                     >
                       Next sample
                     </button>
