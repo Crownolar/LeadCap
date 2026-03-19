@@ -100,7 +100,7 @@ const VerificationLogs = () => {
         </div>
       )}
 
-      <div className='grid grid-cols-4 gap-4 mb-8'>
+      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8'>
         <StatCard
           label='Total Verifications'
           value={
@@ -138,9 +138,9 @@ const VerificationLogs = () => {
         />
       </div>
 
-      <div className='bg-white border border-slate-100 rounded-2xl shadow-sm'>
-        <div className='p-4 border-b border-slate-50 flex  gap-3  j'>
-          <div className='flex gap-2 ml-auto flex-wrap items-center'>
+      <div className='bg-white border border-slate-100 rounded-2xl shadow-sm overflow-auto'>
+        <div className='p-4 border-b border-slate-50 flex flex-col sm:flex-row gap-3'>
+          <div className='flex gap-2 flex-wrap items-center w-full sm:w-auto ml-0 sm:ml-auto'>
             <Icon d={icons.filter} size={15} className='text-slate-400' />
             {[
               "ALL",
@@ -160,7 +160,7 @@ const VerificationLogs = () => {
                 {s === "ALL" ? "All" : s.replace(/_/g, " ")}
               </button>
             ))}
-            <div className='flex gap-2 items-center'>
+            <div className='flex gap-2 items-center mt-2 sm:mt-0 flex-col sm:flex-row '>
               <div className='relative'>
                 <input
                   type='text'

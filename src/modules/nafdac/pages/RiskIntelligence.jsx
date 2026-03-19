@@ -82,7 +82,7 @@ const RiskIntelligence = () => {
         </div>
       )}
 
-      <div className='grid grid-cols-3 gap-4 mb-8'>
+      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8'>
         <StatCard
           label='High-Risk Regions'
           value={loading ? "..." : highRiskCount}
@@ -110,8 +110,8 @@ const RiskIntelligence = () => {
         />
       </div>
 
-      <div className='grid grid-cols-5 gap-6'>
-        <div className='col-span-3 bg-white border border-slate-100 rounded-2xl shadow-sm p-5'>
+      <div className='grid grid-cols-1 lg:grid-cols-5 gap-6'>
+        <div className='lg:col-span-3 col-span-1 bg-white border border-slate-100 rounded-2xl shadow-sm p-4 sm:p-5 overflow-auto'>
           <p className='font-semibold text-slate-700 text-sm mb-4'>
             Regional Risk Scores
           </p>
@@ -149,8 +149,8 @@ const RiskIntelligence = () => {
           )}
         </div>
 
-        <div className='col-span-2 space-y-4'>
-          <div className='bg-red-50 border border-red-100 rounded-2xl p-5'>
+        <div className='lg:col-span-2 col-span-1 space-y-4'>
+          <div className='bg-red-50 border border-red-100 rounded-2xl p-4 sm:p-5'>
             <p className='text-xs font-semibold text-red-600 uppercase tracking-widest mb-3'>
               Reused NAFDAC Numbers
             </p>
@@ -181,7 +181,7 @@ const RiskIntelligence = () => {
             )}
           </div>
 
-          <div className='bg-white border border-slate-100 rounded-2xl p-5 shadow-sm'>
+          <div className='bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 shadow-sm'>
             <p className='text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3'>
               Fake Products by Category
             </p>

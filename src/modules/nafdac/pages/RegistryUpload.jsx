@@ -210,7 +210,7 @@ const RegistryUpload = () => {
         action={summary?.status ? <Badge status={summary.status} /> : null}
       />
 
-      <div className='grid grid-cols-3 gap-4 mb-8'>
+      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8'>
         <StatCard
           label='Current Registry'
           value={
@@ -237,8 +237,8 @@ const RegistryUpload = () => {
         />
       </div>
 
-      <div className='grid grid-cols-5 gap-6'>
-        <div className='col-span-3 space-y-4'>
+      <div className='grid grid-cols-1 lg:grid-cols-5 gap-6'>
+        <div className='lg:col-span-3 col-span-1 space-y-4'>
           <div
             onDragOver={(e) => {
               e.preventDefault();
@@ -246,7 +246,7 @@ const RegistryUpload = () => {
             }}
             onDragLeave={() => setDragOver(false)}
             onDrop={onDrop}
-            className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer ${dragOver ? "border-emerald-400 bg-emerald-50" : "border-slate-200 hover:border-emerald-300 hover:bg-slate-50"}`}
+            className={`border-2 border-dashed rounded-2xl p-6 sm:p-8 lg:p-10 text-center transition-all cursor-pointer ${dragOver ? "border-emerald-400 bg-emerald-50" : "border-slate-200 hover:border-emerald-300 hover:bg-slate-50"}`}
           >
             <input
               ref={fileInputRef}
@@ -330,7 +330,7 @@ const RegistryUpload = () => {
           )}
         </div>
 
-        <div className='col-span-2 space-y-3'>
+        <div className='lg:col-span-2 col-span-1 space-y-3'>
           <p className='text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2'>
             Registry Versions
           </p>

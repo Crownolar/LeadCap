@@ -69,7 +69,7 @@ const ProductSearch = () => {
         </div>
       )}
 
-      <div className='flex gap-3 mb-6'>
+      <div className='flex flex-col sm:flex-row gap-3 mb-6'>
         <div className='flex-1 relative'>
           <Icon
             d={icons.search}
@@ -106,22 +106,24 @@ const ProductSearch = () => {
             }}
           />
         </div> */}
-        {["ALL", "ACTIVE", "SUSPENDED"].map((s) => (
-          <button
-            key={s}
-            onClick={() => {
-              setFilter(s);
-              setPage(1);
-            }}
-            className={`px-4 py-2.5 text-xs font-semibold rounded-xl border transition-all ${filter === s ? "bg-emerald-600 text-white border-emerald-600" : "border-slate-200 text-slate-500 hover:border-emerald-300 bg-white"}`}
-          >
-            {s}
-          </button>
-        ))}
+        <div className='flex gap-2 flex-wrap'>
+          {["ALL", "ACTIVE", "SUSPENDED"].map((s) => (
+            <button
+              key={s}
+              onClick={() => {
+                setFilter(s);
+                setPage(1);
+              }}
+              className={`px-4 py-2.5 text-xs font-semibold rounded-xl border transition-all ${filter === s ? "bg-emerald-600 text-white border-emerald-600" : "border-slate-200 text-slate-500 hover:border-emerald-300 bg-white"}`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className='bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden'>
-        <div className='p-4 border-b border-slate-50 flex items-center justify-between'>
+      <div className='bg-white border border-slate-100 rounded-2xl shadow-sm overflow-auto'>
+        <div className='p-4 border-b border-slate-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3'>
           <p className='text-xl text-slate-400'>
             {loading
               ? "Loading..."
@@ -177,9 +179,9 @@ const ProductSearch = () => {
               p.manufacturer ?? "—",
               p.category ?? "—",
               <Badge key='st' status={p.status ?? "ACTIVE"} />,
-              <Btn key='v' variant='ghost' icon='eye' small>
-                View
-              </Btn>,
+              // <Btn key='v' variant='ghost' icon='eye' small>
+              //   View
+              // </Btn>,
             ])}
           />
         </div>
