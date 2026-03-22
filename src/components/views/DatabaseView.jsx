@@ -195,9 +195,9 @@ const DatabaseView = ({
             <option value='all'>All Categories</option>
             {[
               ...new Set(
-                samples &&
-                  samples.length > 0 &&
-                  samples.map((s) => s.productVariant?.categoryId),
+                samples && samples.length > 0
+                  ? samples.map((s) => s.productVariant?.categoryId)
+                  : [],
               ),
             ]
               .filter(Boolean)
@@ -222,9 +222,9 @@ const DatabaseView = ({
             <option value='all'>All Products</option>
             {[
               ...new Set(
-                samples &&
-                  samples.length > 0 &&
-                  samples.map((s) => s.productVariant?.id),
+                samples && samples.length > 0
+                  ? samples.map((s) => s.productVariant?.categoryId)
+                  : [],
               ),
             ]
               .filter(Boolean)

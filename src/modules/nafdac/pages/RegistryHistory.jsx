@@ -4,9 +4,21 @@ import Btn from "../components/Btn";
 import PageHeader from "../components/PageHeader";
 import { icons } from "../utils/icons";
 import Icon from "../components/icons/Icon";
-import { getRegistryVersions, getRegistryVersion, exportRegistryVersion, activateRegistryVersion } from "../api/nafdacService";
+import {
+  getRegistryVersions,
+  getRegistryVersion,
+  exportRegistryVersion,
+  activateRegistryVersion,
+} from "../api/nafdacService";
 
-const formatDate = (d) => (d ? new Date(d).toLocaleDateString("en-NG", { month: "short", day: "numeric", year: "numeric" }) : "—");
+const formatDate = (d) =>
+  d
+    ? new Date(d).toLocaleDateString("en-NG", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "—";
 
 const RegistryHistory = () => {
   const [versions, setVersions] = useState([]);
@@ -71,48 +83,58 @@ const RegistryHistory = () => {
   return (
     <div>
       <PageHeader
-        title="Registry Versions"
-        subtitle="Full audit trail of all uploaded registries. Activate any version to make it live for verification."
+        title='Registry Versions'
+        subtitle='Full audit trail of all uploaded registries. Activate any version to make it live for verification.'
       />
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2">
-          <Icon d={icons.alert} size={18} className="text-red-500 flex-shrink-0" />
-          <p className="text-sm text-red-700">{error}</p>
+        <div className='mb-4 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2'>
+          <Icon
+            d={icons.alert}
+            size={18}
+            className='text-red-500 flex-shrink-0'
+          />
+          <p className='text-sm text-red-700'>{error}</p>
         </div>
       )}
-      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-slate-50">
-          <p className="font-semibold text-slate-700 text-sm">Version History</p>
+      <div className='bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden'>
+        <div className='p-5 border-b border-slate-50'>
+          <p className='font-semibold text-slate-700 text-sm'>
+            Version History
+          </p>
         </div>
         {loading ? (
-          <div className="p-8 text-center text-slate-500 text-sm">Loading…</div>
+          <div className='p-8 text-center text-slate-500 text-sm'>Loading…</div>
         ) : (
-          <div className="divide-y divide-slate-50">
+          <div className='divide-y divide-slate-50'>
             {versions.map((v) => (
-              <div
-                key={v.id}
-                className="p-5 transition-colors"
-              >
+              <div key={v.id} className='p-5 transition-colors'>
                 <div
-                  className="flex items-center justify-between cursor-pointer"
+                  className='flex items-center justify-between cursor-pointer'
                   onClick={() => handleViewVersion(v.id)}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-2 h-2 rounded-full ${v.isActive ? "bg-emerald-500" : "bg-slate-300"}`} />
+                  <div className='flex items-center gap-3'>
+                    <div
+                      className={`w-2 h-2 rounded-full ${v.isActive ? "bg-emerald-500" : "bg-slate-300"}`}
+                    />
                     <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-slate-700 text-sm">{v.versionLabel || v.id}</span>
-                        {v.isActive && <Badge status="ACTIVE" />}
+                      <div className='flex items-center gap-2'>
+                        <span className='font-semibold text-slate-700 text-sm'>
+                          {v.versionLabel || v.id}
+                        </span>
+                        {v.isActive && <Badge status='ACTIVE' />}
                       </div>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        Uploaded {formatDate(v.uploadedAt)} by {v.uploadedBy?.fullName ?? "—"}
+                      <p className='text-xs text-slate-400 mt-0.5'>
+                        Uploaded {formatDate(v.uploadedAt)} by{" "}
+                        {v.uploadedBy?.fullName ?? "—"}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-slate-700">{(v.recordCount ?? 0).toLocaleString()}</p>
-                      <p className="text-xs text-slate-400">records</p>
+                  <div className='flex items-center gap-4'>
+                    <div className='text-right'>
+                      <p className='text-sm font-bold text-slate-700'>
+                        {(v.recordCount ?? 0).toLocaleString()}
+                      </p>
+                      <p className='text-xs text-slate-400'>records</p>
                     </div>
                     <Icon
                       d={icons.chevronDown}
@@ -123,43 +145,61 @@ const RegistryHistory = () => {
                 </div>
 
                 {selected === v.id && (
-                  <div className="mt-4 pt-4 border-t border-slate-100">
+                  <div className='mt-4 pt-4 border-t border-slate-100'>
                     {loadingDetail ? (
-                      <p className="text-sm text-slate-500">Loading details…</p>
+                      <p className='text-sm text-slate-500'>Loading details…</p>
                     ) : versionDetail?.id === v.id ? (
-                      <div className="mb-4">
-                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Sample products ({versionDetail.sampleProducts?.length ?? 0} shown)</p>
+                      <div className='mb-4'>
+                        <p className='text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2'>
+                          Sample products (
+                          {versionDetail.sampleProducts?.length ?? 0} shown)
+                        </p>
                         {versionDetail.sampleProducts?.length > 0 && (
-                          <div className="bg-slate-50 rounded-xl p-3 text-xs space-y-1 max-h-40 overflow-y-auto">
+                          <div className='bg-slate-50 rounded-xl p-3 text-xs space-y-1 max-h-40 overflow-y-auto'>
                             {versionDetail.sampleProducts.map((p, i) => (
-                              <div key={i} className="flex justify-between gap-2">
-                                <code className="text-emerald-700">{p.nafdacNumber}</code>
-                                <span className="text-slate-600 truncate">{p.productName}</span>
+                              <div
+                                key={i}
+                                className='flex justify-between gap-2'
+                              >
+                                <code className='text-emerald-700'>
+                                  {p.nafdacNumber}
+                                </code>
+                                <span className='text-slate-600 truncate'>
+                                  {p.productName}
+                                </span>
                               </div>
                             ))}
                           </div>
                         )}
                       </div>
                     ) : null}
-                    <div className="flex items-center gap-3 flex-wrap">
+                    <div className='flex items-center gap-3 flex-wrap'>
                       <Btn
-                        variant="outline"
-                        icon="download"
+                        variant='outline'
+                        icon='download'
                         small
-                        onClick={(e) => { e.stopPropagation(); handleDownloadCsv(v.id, v.versionLabel); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownloadCsv(v.id, v.versionLabel);
+                        }}
                         disabled={exportingId === v.id}
                       >
                         {exportingId === v.id ? "Downloading…" : "Download CSV"}
                       </Btn>
                       {!v.isActive && (
                         <Btn
-                          variant="outline"
-                          icon="refresh"
+                          variant='outline'
+                          icon='refresh'
                           small
-                          onClick={(e) => { e.stopPropagation(); handleActivate(v.id); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleActivate(v.id);
+                          }}
                           disabled={activatingId === v.id}
                         >
-                          {activatingId === v.id ? "Activating…" : "Activate this version"}
+                          {activatingId === v.id
+                            ? "Activating…"
+                            : "Activate this version"}
                         </Btn>
                       )}
                     </div>
@@ -170,7 +210,9 @@ const RegistryHistory = () => {
           </div>
         )}
         {!loading && versions.length === 0 && (
-          <div className="p-8 text-center text-slate-500 text-sm">No registry versions yet. Upload one from Registry Upload.</div>
+          <div className='p-8 text-center text-slate-500 text-sm'>
+            No registry versions yet. Upload one from Registry Upload.
+          </div>
         )}
       </div>
     </div>
