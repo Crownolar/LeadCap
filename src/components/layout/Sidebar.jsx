@@ -32,7 +32,7 @@ const roleConfig = {
   headresearcher: {
     sampleButton: false,
     excelImport: false,
-    navItems: ["dashboard", "database", "map", "reports"],
+    navItems: ["dashboard", "database", "map", "reports", "invites"],
   },
   policymakerson: {
     sampleButton: false,
@@ -229,10 +229,10 @@ const Sidebar = ({
   };
 
   return (
-    <div className="pt-5 pl-6 z-[2000] lg:flex lg:gap-6 ">
+    <div className='pt-5 pl-6 z-[2000] lg:flex lg:gap-6 '>
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden "
+          className='fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden '
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
@@ -252,7 +252,7 @@ const Sidebar = ({
           }
         `}
       >
-        <nav className="space-y-2  max-h-[500px]  overflow-y-auto ">
+        <nav className='space-y-2  max-h-[500px]  overflow-y-auto '>
           {navItemsToRender.map((item) => (
             <NavItem
               key={item.key}
@@ -271,9 +271,9 @@ const Sidebar = ({
           {config.sampleButton && (
             <button
               onClick={handleSampleButtonClick}
-              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
+              className='w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors'
             >
-              <Plus className="w-5 h-5" />
+              <Plus className='w-5 h-5' />
               New Sample
             </button>
           )}
@@ -284,7 +284,7 @@ const Sidebar = ({
               onClick={() => excelImportRef?.current?.click()}
               className={`w-full border ${theme?.border} font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 ${theme?.text} transition-colors ${theme?.hover}`}
             >
-              <Upload className="w-5 h-5" />
+              <Upload className='w-5 h-5' />
               Import Excel
             </button>
           )}
