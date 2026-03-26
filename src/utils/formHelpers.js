@@ -16,6 +16,7 @@ export const getInitialSampleFormState = () => ({
   batchNumber: "",
   price: "",
   productOrigin: "LOCAL",
+  brandLetter: "",
 
   gpsLatitude: "",
   gpsLongitude: "",
@@ -291,6 +292,7 @@ export const buildSamplePayload = (formData) => {
     // sampleType: formData.sampleType,
     price: parseFloat(formData.price),
     batchNumber: formData.batchNumber || null,
+    brandLetter: formData.brandLetter || null,
     brandName: formData.brandName || null,
     gpsLatitude: formData.gpsLatitude ? parseFloat(formData.gpsLatitude) : null,
     gpsLongitude: formData.gpsLongitude
@@ -337,6 +339,7 @@ export const validateSampleForm = (formData) => {
     errors.productVariantId = "Product variant is required";
   if (!formData.productName) errors.productName = "Product name is required";
   if (!formData.vendorType) errors.vendorType = "Vendor type is required";
+  if (!formData.brandLetter) errors.brandLetter = "Brand letter is required";
   if (formData.vendorType === "OTHER" && !formData.vendorTypeOther) {
     errors.vendorTypeOther = "Vendor type specification is required";
   }
