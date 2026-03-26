@@ -50,7 +50,7 @@ const SampleReview = () => {
     try {
       setLoading(true);
       setError(null);
-      const params = { status: "ALL" };
+      const params = { status: "ALL",limit:5000 };
       if (collectorId) params.collectorId = collectorId;
       const res = await api.get("/supervisor/samples", { params });
       if (res.data.success) setAllSamples(res.data.data || []);
