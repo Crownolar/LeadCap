@@ -252,7 +252,7 @@ const Sidebar = ({
           }
         `}
       >
-        <nav className='space-y-2  max-h-[500px]  overflow-y-auto '>
+        <nav className='space-y-2  max-h-[500px]  overflow-y-auto  md:mt-4 lg:mt-0'>
           {navItemsToRender.map((item) => (
             <NavItem
               key={item.key}
