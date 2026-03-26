@@ -69,3 +69,32 @@ export const getRiskAssessmentReport = async ({
 
   return response.data;
 };
+
+export const getSavedReports = async () => {
+  const response = await api.get("/moh/reports", {
+    headers: { Accept: "application/json" },
+  });
+  return response.data;
+};
+
+export const getReportById = async (id) => {
+  const response = await api.get(`/moh/reports/${id}`, {
+    headers: { Accept: "application/json" },
+  });
+  return response.data;
+};
+
+export const getContaminationSummary = async ({ state, dateFrom, dateTo }) => {
+  const response = await api.get("/moh/contamination-summary", {
+    params: {
+      state,
+      dateFrom,
+      dateTo,
+    },
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  return response.data;
+};

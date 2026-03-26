@@ -1,14 +1,27 @@
-export function MetricCard({ label, value, sub, color = "text-gray-900", clickable, onClick }) {
+import { useTheme } from "../../../context/ThemeContext";
+
+export const MetricCard = ({
+  label,
+  value,
+  sub,
+  color,
+  clickable = false,
+  onClick,
+}) => {
+  const { theme } = useTheme();
+
   return (
     <div
-      className={`bg-white rounded-xl p-4 border border-gray-200 ${
-        clickable ? "cursor-pointer hover:border-green-400 transition-colors" : ""
-      }`}
       onClick={onClick}
+      className={`
+        ${theme.card} ${theme.border} border rounded-2xl p-4 shadow-sm
+        ${clickable ? `cursor-pointer ${theme.hover}` : ""}
+        transition
+      `}
     >
-      <div className="text-xs font-medium text-gray-500 uppercase tracking-widest mb-2">{label}</div>
-      <div className={`text-2xl font-medium ${color}`}>{value}</div>
-      <div className="text-xs text-gray-400 mt-1">{sub}</div>
+      <p className={`text-xs ${theme.textMuted} mb-1`}>{label}</p>
+      <h2 className={`text-2xl font-bold ${color || theme.text}`}>{value}</h2>
+      <p className={`text-xs mt-1 ${theme.textMuted}`}>{sub}</p>
     </div>
   );
-}
+};

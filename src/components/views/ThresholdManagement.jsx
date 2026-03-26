@@ -143,7 +143,7 @@ const ThresholdManagement = () => {
           </h1>
           <p className={`${theme?.textMuted} text-sm sm:text-base`}>
             Set safe, warning, and danger limits for heavy metals in products
-            (in ppm)
+            (in ppm).
           </p>
         </div>
 

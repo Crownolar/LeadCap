@@ -12,4 +12,13 @@ export default defineConfig({
       },
     },
   },
+
+   test: {
+    environment: "jsdom",   // simulate browser
+    globals: true,          // so you can use test(), expect() directly
+    setupFiles: "./src/test/setup.js"
+  },
+
 });
+
+

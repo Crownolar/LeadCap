@@ -1,4 +1,7 @@
+import { useTheme } from "../../../context/ThemeContext";
+
 export function Pagination({ page, setPage, totalPages }) {
+  const theme = useTheme();
   const pages = [];
 
   if (totalPages <= 7) {
@@ -8,7 +11,7 @@ export function Pagination({ page, setPage, totalPages }) {
   }
 
   return (
-    <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+    <div className={`px-4 py-3 ${theme.border} flex items-center justify-between text-xs text-gray-500`}>
       <span>
         Page {page} of {totalPages}
       </span>

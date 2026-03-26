@@ -26,7 +26,6 @@ import LabConfirmationForm from "./components/views/LabConfirmationForm";
 import { EnumsProvider } from "./context/EnumsContext";
 import { Toaster } from "react-hot-toast";
 import LabWorkloadAnalytics from "./components/views/LabWorkloadAnalytics";
-import { useState } from "react";
 import UsersGovernance from "./modules/nafdac/pages/UsersGovernance";
 import RiskIntelligence from "./modules/nafdac/pages/RiskIntelligence";
 import VerificationLogs from "./modules/nafdac/pages/VerificationLogs";
@@ -38,35 +37,14 @@ import MohSamples from "./modules/modulesMoh/pages/MohSamples";
 import MohReports from "./modules/modulesMoh/pages/reports/MohReports";
 import MohVerification from "./modules/modulesMoh/pages/MohVerification";
 import MohContamination from "./modules/modulesMoh/pages/MohContamination";
+import { useTheme } from "./context/ThemeContext";
 
-const lightTheme = {
-  bg: "bg-gray-100",
-  text: "text-gray-900",
-  textMuted: "text-gray-500",
-  card: "bg-white",
-  border: "border-gray-200",
-  input: "bg-white text-gray-900 border-gray-300",
-  hover: "hover:bg-gray-200",
-};
-
-const darkTheme = {
-  bg: "bg-gray-900",
-  text: "text-white",
-  textMuted: "text-gray-400",
-  card: "bg-gray-800",
-  border: "border-gray-700",
-  input: "bg-gray-700 text-white border-gray-600",
-  hover: "hover:bg-gray-700",
-};
 
 const App = () => {
   const dispatch = useDispatch();
 
   const { currentUser, isAuthenticated } = useSelector((state) => state.auth);
-
-  const [darkMode, setDarkMode] = useState(false);
-  const toggleDarkMode = () => setDarkMode((prev) => !prev);
-  const theme = darkMode ? darkTheme : lightTheme;
+  const { theme, darkMode, toggleDarkMode } = useTheme();
 
   const logout = () => dispatch(handleLogout());
 

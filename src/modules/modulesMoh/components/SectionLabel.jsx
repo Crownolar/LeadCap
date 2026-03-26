@@ -1,7 +1,11 @@
-export function SectionLabel({ children }) {
+import { useTheme } from "../../../context/ThemeContext";
+
+export const SectionLabel = ({ children }) => {
+  const { theme } = useTheme();
+
   return (
-    <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+    <h3 className={`text-xs font-medium mb-3 uppercase tracking-wide ${theme.text}`}>
       {children}
-    </div>
+    </h3>
   );
-}
+};
