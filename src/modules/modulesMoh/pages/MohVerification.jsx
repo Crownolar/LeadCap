@@ -92,6 +92,7 @@ const Verification = () => {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     fetchVerificationLogs();
   }, [activeTab, page, pageSize]);
@@ -151,9 +152,6 @@ const Verification = () => {
     return () => chartInst.current?.destroy();
   }, []);
 
-  // const startItem = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
-  // const endItem = Math.min(page * pageSize, totalCount);
-
   const verifiedCount = logs.filter(
     (row) =>
       (row.status || row.verificationStatus || row.result) === "VERIFIED",
@@ -204,7 +202,8 @@ const Verification = () => {
 
   return (
     <div>
-      <div className="grid grid-cols-4 gap-3 mb-5">
+      {/* Metrics grid — 2 cols on mobile, 4 on sm+ */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
         {metrics.map((m) => (
           <MetricCard key={m.label} {...m} />
         ))}
@@ -223,7 +222,7 @@ const Verification = () => {
           type="date"
           value={fromDate}
           onChange={(e) => setFromDate(e.target.value)}
-          className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+          className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
         />
 
         <label className="text-xs text-gray-500 whitespace-nowrap">To</label>
@@ -231,13 +230,13 @@ const Verification = () => {
           type="date"
           value={toDate}
           onChange={(e) => setToDate(e.target.value)}
-          className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+          className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
         />
 
         <FilterSep />
 
         <label className="text-xs text-gray-500">State</label>
-        <select className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500">
+        <select className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500">
           <option>All States</option>
           <option>Lagos</option>
           <option>Kano</option>
@@ -255,7 +254,8 @@ const Verification = () => {
         </BtnPrimary>
       </FilterBar>
 
-      <div className="flex gap-1 mb-4">
+      {/* Status tabs — wrap on mobile */}
+      <div className="flex flex-wrap gap-1 mb-4">
         {STATUS_TABS.map((t) => (
           <button
             key={t}
@@ -275,7 +275,8 @@ const Verification = () => {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+        {/* Table header — stack on mobile, row on sm+ */}
+        <div className="px-4 py-3 border-b border-gray-100 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="text-sm font-medium text-gray-900">
               Verification log
@@ -291,7 +292,7 @@ const Verification = () => {
               setPageSize(Number(e.target.value));
               setPage(1);
             }}
-            className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+            className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
           >
             <option value={10}>10 per page</option>
             <option value={20}>20 per page</option>
@@ -300,7 +301,7 @@ const Verification = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-xs">
+          <table className="w-full min-w-[720px] border-collapse text-xs">
             <thead>
               <tr>
                 {[

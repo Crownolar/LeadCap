@@ -1,11 +1,20 @@
 import api from "../utils/api";
 
-export const getMOHSamples = async ({ page, limit, stateId, lgaId, fromDate, toDate }) => {
+export const getMOHSamples = async ({
+  page = 1,
+  pageSize = 10,
+  stateId,
+  lgaId,
+  marketId,
+  fromDate,
+  toDate,
+}) => {
   const params = {
     page,
-    limit,
+    pageSize,
     ...(stateId && { stateId }),
     ...(lgaId && { lgaId }),
+    ...(marketId && { marketId }),
     ...(fromDate && { fromDate }),
     ...(toDate && { toDate }),
   };

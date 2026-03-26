@@ -138,7 +138,7 @@ const StateSummaryReport = () => {
           onChange={(e) =>
             setFilters((prev) => ({ ...prev, state: e.target.value }))
           }
-          className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+          className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
         >
           <option value="">— Select state —</option>
           <option value="Lagos">Lagos</option>
@@ -156,7 +156,7 @@ const StateSummaryReport = () => {
           onChange={(e) =>
             setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))
           }
-          className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+          className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
         />
 
         <label className="text-xs text-gray-500 whitespace-nowrap">To</label>
@@ -166,7 +166,7 @@ const StateSummaryReport = () => {
           onChange={(e) =>
             setFilters((prev) => ({ ...prev, dateTo: e.target.value }))
           }
-          className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+          className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
         />
 
         <FilterSep />
@@ -183,7 +183,7 @@ const StateSummaryReport = () => {
       )}
 
       {generated && reportData && (
-        <div className="mt-5 overflow-hidden rounded-xl border border-gray-200">
+        <div className="mt-5 overflow-hidden rounded-xl border border-gray-200 w-full">
           <ReportHeader
             title="State summary"
             subtitle={`Generated: ${generatedAt || "—"} · ${summary.state || filters.state} · ${
@@ -194,7 +194,7 @@ const StateSummaryReport = () => {
           />
 
           <div className="bg-white">
-            <div className="border-b border-gray-100 px-5 py-4">
+            <div className="border-b border-gray-100 px-4 sm:px-5 py-4">
               <SectionLabel>Summary</SectionLabel>
 
               <div className="flex justify-between border-b border-gray-50 py-1.5 text-sm">
@@ -275,7 +275,7 @@ const StateSummaryReport = () => {
               </div>
             </div>
 
-            <div className="border-b border-gray-100 px-5 py-4">
+            <div className="border-b border-gray-100 px-4 sm:px-5 py-4">
               <SectionLabel>Verification breakdown</SectionLabel>
 
               <div className="flex justify-between border-b border-gray-50 py-1.5 text-sm">
@@ -307,46 +307,48 @@ const StateSummaryReport = () => {
               </div>
             </div>
 
-            <div className="border-b border-gray-100 px-5 py-4">
+            <div className="border-b border-gray-100 px-4 sm:px-5 py-4">
               <SectionLabel>Top LGAs by activity</SectionLabel>
 
-              <table className="w-full border-collapse text-xs">
-                <thead>
-                  <tr>
-                    {["LGA", "Samples", "Contaminated", "Rate"].map((h) => (
-                      <th key={h} className={TH}>
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {topLgas.length > 0 ? (
-                    topLgas.map((item, index) => (
-                      <tr
-                        key={item.lgaName || index}
-                        className="hover:bg-gray-50"
-                      >
-                        <td className={TD}>{item.lgaName}</td>
-                        <td className={TD}>{item.samples}</td>
-                        <td className={TD}>{item.contaminated}</td>
-                        <td className={TD}>
-                          <RateBadge rate={item.rate} />
+              <div className="overflow-x-auto w-full">
+                <table className="w-full min-w-[360px] border-collapse text-xs">
+                  <thead>
+                    <tr>
+                      {["LGA", "Samples", "Contaminated", "Rate"].map((h) => (
+                        <th key={h} className={TH}>
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {topLgas.length > 0 ? (
+                      topLgas.map((item, index) => (
+                        <tr
+                          key={item.lgaName || index}
+                          className="hover:bg-gray-50"
+                        >
+                          <td className={TD}>{item.lgaName}</td>
+                          <td className={TD}>{item.samples}</td>
+                          <td className={TD}>{item.contaminated}</td>
+                          <td className={TD}>
+                            <RateBadge rate={item.rate} />
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td className={TD} colSpan={4}>
+                          No LGA data available.
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td className={TD} colSpan={4}>
-                        No LGA data available.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
-            <div className="px-5 py-4">
+            <div className="px-4 sm:px-5 py-4">
               <SectionLabel>Recommendations</SectionLabel>
               <div className="text-sm leading-relaxed text-gray-500">
                 {recommendations.length > 0 ? (
