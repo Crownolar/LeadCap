@@ -11,6 +11,7 @@ import {
   activateRegistryVersion,
   getRegistryVersions,
 } from "../api/nafdacService";
+import { LoaderSpinner } from "../utils/iconComponent";
 
 const formatDate = (d) =>
   d
@@ -112,7 +113,7 @@ const RegistryUpload = () => {
     return () => {
       cancelled = true;
     };
-  }, [uploadResult]);
+  }, [uploadResult, version]);
 
   const handleFileSelect = (file) => {
     if (!file) return;
@@ -405,13 +406,7 @@ const RegistryUpload = () => {
                             className='text-emerald-600'
                           />
                         )}
-                        {clickedVersion == v.id && (
-                          <Icon
-                            d={icons.loader}
-                            size={16}
-                            className='text-slate-400 animate-spin'
-                          />
-                        )}
+                        {clickedVersion == v.id && <LoaderSpinner />}
                       </div>
                     </button>
                   ))}

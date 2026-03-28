@@ -21,6 +21,7 @@ import toast from "react-hot-toast";
 const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
   const isEdit = mode === "edit";
   const [loading, setLoading] = useState(false);
+  const [variantError, setVariantError] = useState(null);
   const [error, setError] = useState(null);
   const [formData, setFormData] = useState(() =>
     isEdit && initialSample
@@ -45,39 +46,38 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
   const productPhotoRef = useRef(null);
   const calibrationCurveRef = useRef(null);
 
+  const initFormData = async () => {
+    const token = sessionStorage.getItem("accessToken");
+    if (!token) {
+      console.warn("No authentication token found. User must be logged in.");
+      setError("Please log in first to create a sample.");
+      setLoadingData(false);
+      return;
+    }
+
+    setLoadingData(true);
+    try {
+      const data = await fetchFormData();
+      setStates(data?.states || []);
+      setAllLgas(data?.allLgas || []);
+      setAllMarkets(data?.allMarkets || []);
+      setCategories(data?.categories || []);
+    } catch (err) {
+      console.error("Error fetching form data:");
+
+      setError(
+        `Failed to load form data. Please check your internet connection`,
+      );
+      setStates([]);
+      setAllLgas([]);
+      setAllMarkets([]);
+      setCategories([]);
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
   useEffect(() => {
-    const initFormData = async () => {
-      const token = sessionStorage.getItem("accessToken");
-      if (!token) {
-        console.warn("No authentication token found. User must be logged in.");
-        setError("Please log in first to create a sample.");
-        setLoadingData(false);
-        return;
-      }
-
-      setLoadingData(true);
-      try {
-        const data = await fetchFormData();
-        setStates(data.states || []);
-        setAllLgas(data.allLgas || []);
-        setAllMarkets(data.allMarkets || []);
-        setCategories(data.categories || []);
-      } catch (err) {
-        console.error("Error fetching form data:", err);
-        setError(
-          `Failed to load form data: ${
-            err.message || "Please check your internet connection"
-          }`,
-        );
-        setStates([]);
-        setAllLgas([]);
-        setAllMarkets([]);
-        setCategories([]);
-      } finally {
-        setLoadingData(false);
-      }
-    };
-
     initFormData();
   }, []);
 
@@ -121,20 +121,20 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
     const loadVariants = async () => {
       if (formData.productCategoryId) {
         setLoadingVariants(true);
-        setError(null);
+        setVariantError(null);
         try {
           const fetchedVariants = await fetchVariantsForCategory(
             formData.productCategoryId,
           );
           if (fetchedVariants.length === 0) {
-            setError(
-              "No product variants found for this category. Please try again or select a different category.",
+            setVariantError(
+              "No product variants found for this category. Please select a different category.",
             );
           }
           setVariants(fetchedVariants);
         } catch (err) {
           console.error("Error loading variants:", err);
-          setError("Failed to load product variants. Please try again.");
+          setVariantError("Failed to load product variants. Please try again.");
           setVariants([]);
         } finally {
           setLoadingVariants(false);
@@ -239,10 +239,10 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
           <div className='p-6 text-center'>
             <p className='text-red-600 font-semibold text-lg mb-4'>{error}</p>
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => initFormData()}
               className='px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors'
             >
-              Refresh Page
+              Refresh
             </button>
           </div>
         )}
@@ -513,6 +513,32 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                   <label
                     className={`block text-sm font-medium mb-2 ${theme.text}`}
                   >
+                    Brand letter *
+                  </label>
+                  <select
+                    required
+                    value={formData.brandLetter}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        brandLetter: e.target.value,
+                      })
+                    }
+                    className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
+                  >
+                    <option value=''>Select Brand Letter</option>
+                    {["A", "B", "C", "D"].map((letter) => (
+                      <option key={letter} value={letter}>
+                        {letter}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${theme.text}`}
+                  >
                     Product Variant *
                   </label>
                   <select
@@ -538,78 +564,10 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                       </option>
                     ))}
                   </select>
+                  <p className='text-red-500 text-sm text-center mt-2'>
+                    {variantError && variantError}
+                  </p>
                 </div>
-
-                <div>
-                  <label
-                    className={`block text-sm font-medium mb-2 ${theme.text}`}
-                  >
-                    Product Code *
-                  </label>
-                  <select
-                    required
-                    value={formData.productCode}
-                    onChange={(e) =>
-                      setFormData({ ...formData, productCode: e.target.value })
-                    }
-                    className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
-                  >
-                    <option value=''>Select Product Code</option>
-                    <option value='A1'>A1</option>
-                    <option value='A2'>A2</option>
-                    <option value='B1'>B1</option>
-                    <option value='C1'>C1</option>
-                    <option value='C2'>C2</option>
-                    <option value='C3'>C3</option>
-                    <option value='C4'>C4</option>
-                    <option value='C5'>C5</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    className={`block text-sm font-medium mb-2 ${theme.text}`}
-                  >
-                    Sample Number *
-                  </label>
-                  <select
-                    required
-                    value={formData.sampleNumber}
-                    onChange={(e) =>
-                      setFormData({ ...formData, sampleNumber: e.target.value })
-                    }
-                    className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
-                  >
-                    <option value=''>Select Sample Number</option>
-                    <option value='01'>01</option>
-                    <option value='02'>02</option>
-                    <option value='03'>03</option>
-                    <option value='04'>04</option>
-                    <option value='05'>05</option>
-                    <option value='06'>06</option>
-                    <option value='07'>07</option>
-                    <option value='08'>08</option>
-                  </select>
-                </div>
-
-                {/* <div>
-                  <label
-                    className={`block text-sm font-medium mb-2 ${theme.text}`}
-                  >
-                    Sample Type *
-                  </label>
-                  <select
-                    required
-                    value={formData.sampleType}
-                    onChange={(e) =>
-                      setFormData({ ...formData, sampleType: e.target.value })
-                    }
-                    className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
-                  >
-                    <option value="SOLID">Solid (mg/kg)</option>
-                    <option value="LIQUID">Liquid (mg/L)</option>
-                  </select>
-                </div> */}
 
                 <div>
                   <label

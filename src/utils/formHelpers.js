@@ -11,16 +11,12 @@ export const getInitialSampleFormState = () => ({
 
   productCategoryId: "",
   productVariantId: "",
-
-  productCode: "",
-  sampleNumber: "",
-
   productName: "",
   brandName: "",
   batchNumber: "",
   price: "",
-  // sampleType: "SOLID",
   productOrigin: "LOCAL",
+  brandLetter: "",
 
   gpsLatitude: "",
   gpsLongitude: "",
@@ -88,13 +84,6 @@ export const fetchFormData = async () => {
     const allMarkets = marketsRes.data?.data || marketsRes.data || [];
     const categories = categoriesRes.data?.data || categoriesRes.data || [];
 
-    console.log("Processed data:", {
-      states: states?.length,
-      allLgas: allLgas?.length,
-      allMarkets: allMarkets?.length,
-      categories: categories?.length,
-    });
-
     return {
       states: Array.isArray(states) ? states : [],
       allLgas: Array.isArray(allLgas) ? allLgas : [],
@@ -108,12 +97,12 @@ export const fetchFormData = async () => {
       status: error.response?.status,
       config: error.config?.url,
     });
-    return {
-      states: [],
-      allLgas: [],
-      allMarkets: [],
-      categories: [],
-    };
+    throw new Error({
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      config: error.config?.url,
+    });
   }
 };
 
@@ -300,9 +289,10 @@ export const buildSamplePayload = (formData) => {
     vendorTypeOther: formData.vendorTypeOther || null,
     productVariantId: formData.productVariantId,
     productName: formData.productName,
-    sampleType: formData.sampleType,
+    // sampleType: formData.sampleType,
     price: parseFloat(formData.price),
     batchNumber: formData.batchNumber || null,
+    brandLetter: formData.brandLetter || null,
     brandName: formData.brandName || null,
     gpsLatitude: formData.gpsLatitude ? parseFloat(formData.gpsLatitude) : null,
     gpsLongitude: formData.gpsLongitude
@@ -314,8 +304,6 @@ export const buildSamplePayload = (formData) => {
     sonNumber: formData.sonNumber || null,
     productPhotoUrl: formData.productPhoto || null,
     calibrationCurveFile: formData.calibrationCurveFile?.data || null,
-    productCode: formData.productCode,
-    sampleNumber: formData.sampleNumber,
   };
 };
 
@@ -350,22 +338,14 @@ export const validateSampleForm = (formData) => {
   if (!formData.productVariantId)
     errors.productVariantId = "Product variant is required";
   if (!formData.productName) errors.productName = "Product name is required";
-  // if (!formData.sampleType) errors.sampleType = "Sample type is required";
   if (!formData.vendorType) errors.vendorType = "Vendor type is required";
+  if (!formData.brandLetter) errors.brandLetter = "Brand letter is required";
   if (formData.vendorType === "OTHER" && !formData.vendorTypeOther) {
     errors.vendorTypeOther = "Vendor type specification is required";
   }
   if (!formData.price) errors.price = "Price is required";
   if (isNaN(parseFloat(formData.price)))
     errors.price = "Price must be a number";
-
-  if (!formData.productCode) {
-    errors.productCode = "Product code is required";
-  }
-
-  if (!formData.sampleNumber) {
-    errors.sampleNumber = "Sample number is required";
-  }
 
   return {
     valid: Object.keys(errors).length === 0,

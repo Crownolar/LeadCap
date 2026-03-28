@@ -133,7 +133,7 @@ const RiskAssessmentReport = () => {
             setFilters((prev) => ({ ...prev, minLeadLevel: e.target.value }))
           }
           placeholder="0.0"
-          className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+          className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
           style={{ width: 100 }}
         />
 
@@ -146,7 +146,7 @@ const RiskAssessmentReport = () => {
           onChange={(e) =>
             setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))
           }
-          className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+          className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
         />
 
         <label className="text-xs text-gray-500 whitespace-nowrap">To</label>
@@ -156,7 +156,7 @@ const RiskAssessmentReport = () => {
           onChange={(e) =>
             setFilters((prev) => ({ ...prev, dateTo: e.target.value }))
           }
-          className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+          className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
         />
 
         <FilterSep />
@@ -173,7 +173,7 @@ const RiskAssessmentReport = () => {
       )}
 
       {generated && reportData && (
-        <div className="mt-5 overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className="mt-5 overflow-hidden rounded-xl border border-gray-200 bg-white w-full">
           <ReportHeader
             title="Risk assessment"
             subtitle={`Generated: ${generatedAt || "—"} · Lead threshold: ${
@@ -183,7 +183,7 @@ const RiskAssessmentReport = () => {
             onExportExcel={handleExportExcel}
           />
 
-          <div className="border-b border-gray-100 px-5 py-4">
+          <div className="border-b border-gray-100 px-4 sm:px-5 py-4">
             <SectionLabel>Summary</SectionLabel>
 
             <div className="flex justify-between border-b border-gray-50 py-1.5 text-sm">
@@ -223,227 +223,246 @@ const RiskAssessmentReport = () => {
           </div>
 
           {!hasAnyData ? (
-            <div className="px-5 py-8 text-sm text-gray-500">
+            <div className="px-4 sm:px-5 py-8 text-sm text-gray-500">
               No risk assessment data is available for the selected filters.
             </div>
           ) : (
             <>
-              <div className="border-b border-gray-100 px-5 py-4">
+              <div className="border-b border-gray-100 px-4 sm:px-5 py-4">
                 <SectionLabel>Top risk areas</SectionLabel>
-                <table className="w-full border-collapse text-xs mt-3">
-                  <thead>
-                    <tr>
-                      {["Area", "State", "Count", "Risk level"].map((h) => (
-                        <th key={h} className={TH}>
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {topRiskAreas.length > 0 ? (
-                      topRiskAreas.map((item, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className={TD}>
-                            {item.area ||
-                              item.location ||
-                              item.market ||
-                              item.name ||
-                              "-"}
-                          </td>
-                          <td className={TD}>
-                            {item.state || item.stateName || "-"}
-                          </td>
-                          <td className={TD}>
-                            {item.count ?? item.total ?? 0}
-                          </td>
-                          <td className={TD}>
-                            {item.riskLevel || item.risk || "-"}
+                <div className="overflow-x-auto w-full mt-3">
+                  <table className="w-full min-w-[360px] border-collapse text-xs">
+                    <thead>
+                      <tr>
+                        {["Area", "State", "Count", "Risk level"].map((h) => (
+                          <th key={h} className={TH}>
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {topRiskAreas.length > 0 ? (
+                        topRiskAreas.map((item, index) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className={TD}>
+                              {item.area ||
+                                item.location ||
+                                item.market ||
+                                item.name ||
+                                "-"}
+                            </td>
+                            <td className={TD}>
+                              {item.state || item.stateName || "-"}
+                            </td>
+                            <td className={TD}>
+                              {item.count ?? item.total ?? 0}
+                            </td>
+                            <td className={TD}>
+                              {item.riskLevel || item.risk || "-"}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td className={TD} colSpan={4}>
+                            No top risk areas available.
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td className={TD} colSpan={4}>
-                          No top risk areas available.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
-              <div className="border-b border-gray-100 px-5 py-4">
+              <div className="border-b border-gray-100 px-4 sm:px-5 py-4">
                 <SectionLabel>Critical samples</SectionLabel>
-                <table className="w-full border-collapse text-xs mt-3">
-                  <thead>
-                    <tr>
-                      {["Sample", "State", "Lead level", "Status"].map((h) => (
-                        <th key={h} className={TH}>
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {criticalSamples.length > 0 ? (
-                      criticalSamples.map((item, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className={TD}>
-                            {item.sampleId ||
-                              item.sampleCode ||
-                              item.sampleName ||
-                              "-"}
-                          </td>
-                          <td className={TD}>
-                            {item.state || item.stateName || "-"}
-                          </td>
-                          <td className={TD}>
-                            {item.leadLevel ?? item.reading ?? "-"}
-                          </td>
-                          <td className={TD}>
-                            {item.status || item.riskLevel || "-"}
+                <div className="overflow-x-auto w-full mt-3">
+                  <table className="w-full min-w-[360px] border-collapse text-xs">
+                    <thead>
+                      <tr>
+                        {["Sample", "State", "Lead level", "Status"].map(
+                          (h) => (
+                            <th key={h} className={TH}>
+                              {h}
+                            </th>
+                          )
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {criticalSamples.length > 0 ? (
+                        criticalSamples.map((item, index) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className={TD}>
+                              {item.sampleId ||
+                                item.sampleCode ||
+                                item.sampleName ||
+                                "-"}
+                            </td>
+                            <td className={TD}>
+                              {item.state || item.stateName || "-"}
+                            </td>
+                            <td className={TD}>
+                              {item.leadLevel ?? item.reading ?? "-"}
+                            </td>
+                            <td className={TD}>
+                              {item.status || item.riskLevel || "-"}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td className={TD} colSpan={4}>
+                            No critical samples available.
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td className={TD} colSpan={4}>
-                          No critical samples available.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
-              <div className="border-b border-gray-100 px-5 py-4">
+              <div className="border-b border-gray-100 px-4 sm:px-5 py-4">
                 <SectionLabel>Unregistered high-risk products</SectionLabel>
-                <table className="w-full border-collapse text-xs mt-3">
-                  <thead>
-                    <tr>
-                      {["Product", "Sample", "State", "Lead level"].map((h) => (
-                        <th key={h} className={TH}>
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {unregisteredHighRisk.length > 0 ? (
-                      unregisteredHighRisk.map((item, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className={TD}>
-                            {item.productName ||
-                              item.product ||
-                              item.name ||
-                              "-"}
-                          </td>
-                          <td className={TD}>
-                            {item.sampleId || item.sampleCode || "-"}
-                          </td>
-                          <td className={TD}>
-                            {item.state || item.stateName || "-"}
-                          </td>
-                          <td className={TD}>
-                            {item.leadLevel ?? item.reading ?? "-"}
+                <div className="overflow-x-auto w-full mt-3">
+                  <table className="w-full min-w-[360px] border-collapse text-xs">
+                    <thead>
+                      <tr>
+                        {["Product", "Sample", "State", "Lead level"].map(
+                          (h) => (
+                            <th key={h} className={TH}>
+                              {h}
+                            </th>
+                          )
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {unregisteredHighRisk.length > 0 ? (
+                        unregisteredHighRisk.map((item, index) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className={TD}>
+                              {item.productName ||
+                                item.product ||
+                                item.name ||
+                                "-"}
+                            </td>
+                            <td className={TD}>
+                              {item.sampleId || item.sampleCode || "-"}
+                            </td>
+                            <td className={TD}>
+                              {item.state || item.stateName || "-"}
+                            </td>
+                            <td className={TD}>
+                              {item.leadLevel ?? item.reading ?? "-"}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td className={TD} colSpan={4}>
+                            No unregistered high-risk products available.
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td className={TD} colSpan={4}>
-                          No unregistered high-risk products available.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
-              <div className="border-b border-gray-100 px-5 py-4">
+              <div className="border-b border-gray-100 px-4 sm:px-5 py-4">
                 <SectionLabel>Counterfeit high-risk products</SectionLabel>
-                <table className="w-full border-collapse text-xs mt-3">
-                  <thead>
-                    <tr>
-                      {["Product", "Sample", "State", "Lead level"].map((h) => (
-                        <th key={h} className={TH}>
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {counterfeitsHighRisk.length > 0 ? (
-                      counterfeitsHighRisk.map((item, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className={TD}>
-                            {item.productName ||
-                              item.product ||
-                              item.name ||
-                              "-"}
-                          </td>
-                          <td className={TD}>
-                            {item.sampleId || item.sampleCode || "-"}
-                          </td>
-                          <td className={TD}>
-                            {item.state || item.stateName || "-"}
-                          </td>
-                          <td className={TD}>
-                            {item.leadLevel ?? item.reading ?? "-"}
+                <div className="overflow-x-auto w-full mt-3">
+                  <table className="w-full min-w-[360px] border-collapse text-xs">
+                    <thead>
+                      <tr>
+                        {["Product", "Sample", "State", "Lead level"].map(
+                          (h) => (
+                            <th key={h} className={TH}>
+                              {h}
+                            </th>
+                          )
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {counterfeitsHighRisk.length > 0 ? (
+                        counterfeitsHighRisk.map((item, index) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className={TD}>
+                              {item.productName ||
+                                item.product ||
+                                item.name ||
+                                "-"}
+                            </td>
+                            <td className={TD}>
+                              {item.sampleId || item.sampleCode || "-"}
+                            </td>
+                            <td className={TD}>
+                              {item.state || item.stateName || "-"}
+                            </td>
+                            <td className={TD}>
+                              {item.leadLevel ?? item.reading ?? "-"}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td className={TD} colSpan={4}>
+                            No counterfeit high-risk products available.
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td className={TD} colSpan={4}>
-                          No counterfeit high-risk products available.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
-              <div className="border-b border-gray-100 px-5 py-4">
+              <div className="border-b border-gray-100 px-4 sm:px-5 py-4">
                 <SectionLabel>Risk by product type</SectionLabel>
-                <table className="w-full border-collapse text-xs mt-3">
-                  <thead>
-                    <tr>
-                      {["Product Type", "Count", "Risk level"].map((h) => (
-                        <th key={h} className={TH}>
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {riskByProductType.length > 0 ? (
-                      riskByProductType.map((item, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className={TD}>
-                            {item.productType || item.type || item.name || "-"}
-                          </td>
-                          <td className={TD}>
-                            {item.count ?? item.total ?? 0}
-                          </td>
-                          <td className={TD}>
-                            {item.riskLevel || item.risk || "-"}
+                <div className="overflow-x-auto w-full mt-3">
+                  <table className="w-full min-w-[280px] border-collapse text-xs">
+                    <thead>
+                      <tr>
+                        {["Product Type", "Count", "Risk level"].map((h) => (
+                          <th key={h} className={TH}>
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {riskByProductType.length > 0 ? (
+                        riskByProductType.map((item, index) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className={TD}>
+                              {item.productType ||
+                                item.type ||
+                                item.name ||
+                                "-"}
+                            </td>
+                            <td className={TD}>
+                              {item.count ?? item.total ?? 0}
+                            </td>
+                            <td className={TD}>
+                              {item.riskLevel || item.risk || "-"}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td className={TD} colSpan={3}>
+                            No risk-by-product-type data available.
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td className={TD} colSpan={3}>
-                          No risk-by-product-type data available.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
-              <div className="px-5 py-4">
+              <div className="px-4 sm:px-5 py-4">
                 <SectionLabel>Action items</SectionLabel>
                 <div className="text-sm leading-relaxed text-gray-500">
                   {actionItems.length > 0 ? (

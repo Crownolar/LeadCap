@@ -209,6 +209,7 @@ const Contamination = () => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+      {/* ── Left column ── */}
       <div>
         <div className="mb-3">
           <div className="text-sm font-medium text-gray-900">
@@ -224,7 +225,7 @@ const Contamination = () => {
             onChange={(e) =>
               setFilters((prev) => ({ ...prev, state: e.target.value }))
             }
-            className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+            className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
           >
             <option value="ALL_STATES">All States</option>
             <option value="Lagos">Lagos</option>
@@ -242,7 +243,7 @@ const Contamination = () => {
             onChange={(e) =>
               setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))
             }
-            className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+            className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
           />
 
           <label className="text-xs text-gray-500 whitespace-nowrap">To</label>
@@ -252,7 +253,7 @@ const Contamination = () => {
             onChange={(e) =>
               setFilters((prev) => ({ ...prev, dateTo: e.target.value }))
             }
-            className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+            className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
           />
 
           <BtnPrimary onClick={handleLoadSummary} disabled={loading}>
@@ -306,6 +307,7 @@ const Contamination = () => {
         />
       </div>
 
+      {/* ── Right column ── */}
       <div>
         <div className="mb-3">
           <div className="text-sm font-medium text-gray-900">
@@ -327,7 +329,7 @@ const Contamination = () => {
             onChange={(e) =>
               setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))
             }
-            className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+            className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
           />
 
           <label className="text-xs text-gray-500 whitespace-nowrap">To</label>
@@ -337,7 +339,7 @@ const Contamination = () => {
             onChange={(e) =>
               setFilters((prev) => ({ ...prev, dateTo: e.target.value }))
             }
-            className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+            className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
           />
 
           <BtnPrimary onClick={handleLoadSummary} disabled={hotspotLoading}>
@@ -352,50 +354,50 @@ const Contamination = () => {
           </div>
         </WhiteCard>
 
-          <ReportListSection
-            title="High-risk samples"
-            items={highRiskSamples}
-            emptyMessage="No high-risk samples available."
-            className="mb-3"
-            renderItem={(item, index) => {
-              const label =
-                item.label ||
-                `${item.state || "Unknown"} — ${
-                  item.sampleId ||
-                  item.sampleCode ||
-                  item.sampleName ||
-                  `Sample ${index + 1}`
-                }`;
+        <ReportListSection
+          title="High-risk samples"
+          items={highRiskSamples}
+          emptyMessage="No high-risk samples available."
+          className="mb-3"
+          renderItem={(item, index) => {
+            const label =
+              item.label ||
+              `${item.state || "Unknown"} — ${
+                item.sampleId ||
+                item.sampleCode ||
+                item.sampleName ||
+                `Sample ${index + 1}`
+              }`;
 
-              const value =
-                item.value ||
-                `Lead: ${item.leadLevel ?? item.reading ?? "-"} ppm`;
+            const value =
+              item.value ||
+              `Lead: ${item.leadLevel ?? item.reading ?? "-"} ppm`;
 
-              const numericReading = Number(
-                item.leadLevel ?? item.reading ?? 0,
-              );
-              const color =
-                numericReading >= 3 ? "text-red-600" : "text-amber-600";
+            const numericReading = Number(
+              item.leadLevel ?? item.reading ?? 0,
+            );
+            const color =
+              numericReading >= 3 ? "text-red-600" : "text-amber-600";
 
-              return (
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-500">{label}</span>
-                  <span className={`font-medium ${color}`}>{value}</span>
-                </div>
-              );
-            }}
-          />
-
-          <ReportListSection
-            title="Recommendations"
-            items={recommendations}
-            emptyMessage="No recommendations available."
-            renderItem={(item, index) => (
-              <div className="text-xs text-gray-600">
-                {index + 1}. {item}
+            return (
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-500">{label}</span>
+                <span className={`font-medium ${color}`}>{value}</span>
               </div>
-            )}
-          />
+            );
+          }}
+        />
+
+        <ReportListSection
+          title="Recommendations"
+          items={recommendations}
+          emptyMessage="No recommendations available."
+          renderItem={(item, index) => (
+            <div className="text-xs text-gray-600">
+              {index + 1}. {item}
+            </div>
+          )}
+        />
       </div>
     </div>
   );
