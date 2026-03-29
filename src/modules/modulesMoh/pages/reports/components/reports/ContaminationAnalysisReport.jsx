@@ -10,6 +10,7 @@ import {
 } from "../../../../utils/reportExport";
 import ReportHeader from "./ReportHeader";
 import api from "../../../../../../utils/api";
+import { useTheme } from "../../../../../../context/ThemeContext";
 
 const STATES_CACHE_KEY = "moh_report_states_cache_v1";
 
@@ -20,6 +21,7 @@ const ContaminationAnalysisReport = () => {
   const [error, setError] = useState("");
   const [reportData, setReportData] = useState(null);
   const [states, setStates] = useState([]);
+  const { theme } = useTheme();
 
   const [filters, setFilters] = useState({
     state: "",
@@ -215,14 +217,14 @@ const ContaminationAnalysisReport = () => {
   return (
     <>
       <FilterBar>
-        <label className="text-xs text-gray-500">State</label>
+        <label className={`text-xs ${theme.textMuted}`}>State</label>
         <select
           value={filters.state}
           onChange={(e) =>
             setFilters((prev) => ({ ...prev, state: e.target.value }))
           }
           disabled={statesLoading}
-          className="w-full sm:w-auto min-w-[220px] text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500 disabled:opacity-60 disabled:cursor-not-allowed"
+          className={`w-full sm:w-auto min-w-[220px] text-xs px-2 py-1.5 ${theme.border} ${theme.input} rounded-md outline-none focus:border-green-500 disabled:opacity-60 disabled:cursor-not-allowed`}
         >
           <option value="">
             {statesLoading ? "Loading states..." : "All states"}
@@ -235,7 +237,7 @@ const ContaminationAnalysisReport = () => {
           ))}
         </select>
 
-        <label className="text-xs text-gray-500">Product variant IDs</label>
+        <label className={`text-xs ${theme.textMuted}`}>Product variant IDs</label>
         <input
           type="text"
           value={filters.productVariantIds}
@@ -246,30 +248,30 @@ const ContaminationAnalysisReport = () => {
             }))
           }
           placeholder="Optional: comma-separated variant IDs"
-          className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+          className={`w-full sm:w-auto text-xs px-2 py-1.5 ${theme.border} ${theme.input} rounded-md outline-none focus:border-green-500`}
           style={{ minWidth: 220 }}
         />
 
         <FilterSep />
 
-        <label className="text-xs text-gray-500 whitespace-nowrap">From</label>
+        <label className={`text-xs ${theme.textMuted} whitespace-nowrap`}>From</label>
         <input
           type="date"
           value={filters.dateFrom}
           onChange={(e) =>
             setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))
           }
-          className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+          className={`w-full sm:w-auto text-xs px-2 py-1.5 ${theme.border} ${theme.input} rounded-md outline-none focus:border-green-500`}
         />
 
-        <label className="text-xs text-gray-500 whitespace-nowrap">To</label>
+        <label className={`text-xs ${theme.textMuted} whitespace-nowrap`}>To</label>
         <input
           type="date"
           value={filters.dateTo}
           onChange={(e) =>
             setFilters((prev) => ({ ...prev, dateTo: e.target.value }))
           }
-          className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+          className={`w-full sm:w-auto text-xs px-2 py-1.5 ${theme.border} ${theme.input} rounded-md outline-none focus:border-green-500`}
         />
 
         <FilterSep />
@@ -286,7 +288,7 @@ const ContaminationAnalysisReport = () => {
       )}
 
       {generated && reportData && (
-        <div className="mt-5 overflow-hidden rounded-xl border border-gray-200 bg-white w-full">
+        <div className={`mt-5 overflow-hidden rounded-xl border ${theme.border} ${theme.bg} w-full`}>
           <ReportHeader
             title="Contamination analysis"
             subtitle={`Generated: ${generatedAt || "—"} · ${filters.dateFrom} to ${
@@ -300,57 +302,57 @@ const ContaminationAnalysisReport = () => {
             onExportExcel={handleExportExcel}
           />
 
-          <div className="border-b border-gray-100 px-4 sm:px-5 py-4">
+          <div className={`border-b  px-4 sm:px-5 py-4 ${theme.border}`}>
             <SectionLabel>Summary</SectionLabel>
 
-            <div className="flex justify-between border-b border-gray-50 py-1.5 text-sm">
-              <span className="text-gray-500">Total samples</span>
+            <div className={`flex justify-between border-b ${theme.border} py-1.5 text-sm`}>
+              <span className={`${theme.textMuted}`}>Total samples</span>
               <span className="font-medium text-gray-900">
                 {summary.totalSamples ?? 0}
               </span>
             </div>
 
-            <div className="flex justify-between border-b border-gray-50 py-1.5 text-sm">
-              <span className="text-gray-500">Total readings</span>
+            <div className={`flex justify-between border-b ${theme.border} py-1.5 text-sm`}>
+              <span className={`${theme.textMuted}`}>Total readings</span>
               <span className="font-medium text-gray-900">
                 {summary.totalReadings ?? 0}
               </span>
             </div>
 
-            <div className="flex justify-between py-1.5 text-sm">
-              <span className="text-gray-500">Overall contamination rate</span>
+            <div className={`flex justify-between py-1.5 text-sm ${theme.textMuted}`}>
+              <span>Overall contamination rate</span>
               <span className="font-medium text-red-600">
                 {summary.overallContaminationRate ?? "0%"}
               </span>
             </div>
           </div>
 
-          <div className="border-b border-gray-100 px-4 sm:px-5 py-4">
+          <div className={`border-b ${theme.border} px-4 sm:px-5 py-4`}>
             <SectionLabel>Distribution</SectionLabel>
 
-            <div className="flex justify-between border-b border-gray-50 py-1.5 text-sm">
+            <div className={`flex justify-between border-b ${theme.border} py-1.5 text-sm`}>
               <span className="text-gray-500">Safe</span>
               <span className="font-medium text-green-700">
                 {distribution.safe ?? 0}
               </span>
             </div>
 
-            <div className="flex justify-between border-b border-gray-50 py-1.5 text-sm">
-              <span className="text-gray-500">Moderate</span>
+            <div className={`flex justify-between border-b ${theme.border} py-1.5 text-sm`}>
+              <span className={`${theme.textMuted}`}>Moderate</span>
               <span className="font-medium text-amber-600">
                 {distribution.moderate ?? 0}
               </span>
             </div>
 
-            <div className="flex justify-between border-b border-gray-50 py-1.5 text-sm">
-              <span className="text-gray-500">Contaminated</span>
+            <div className={`flex justify-between border-b ${theme.border} py-1.5 text-sm`}>
+              <span className={`${theme.textMuted}`}>Contaminated</span>
               <span className="font-medium text-red-600">
                 {distribution.contaminated ?? 0}
               </span>
             </div>
 
-            <div className="flex justify-between py-1.5 text-sm">
-              <span className="text-gray-500">Pending</span>
+            <div className={`flex justify-between py-1.5 text-sm ${theme.textMuted}`}>
+              <span>Pending</span>
               <span className="font-medium text-amber-600">
                 {distribution.pending ?? 0}
               </span>
@@ -364,7 +366,7 @@ const ContaminationAnalysisReport = () => {
             </div>
           ) : (
             <>
-              <div className="border-b border-gray-100 px-4 sm:px-5 py-4">
+              <div className={`border-b ${theme.border} px-4 sm:px-5 py-4`}>
                 <SectionLabel>Breakdown by state</SectionLabel>
 
                 <div className="overflow-x-auto w-full">
@@ -391,7 +393,7 @@ const ContaminationAnalysisReport = () => {
                         stateRows.map((item, index) => (
                           <tr
                             key={`${item.stateName}-${index}`}
-                            className="hover:bg-gray-50"
+                            className={`${theme.hover} cursor-pointer`}
                           >
                             <td className={TD}>{item.stateName}</td>
                             <td className={TD}>{item.count}</td>
@@ -416,7 +418,7 @@ const ContaminationAnalysisReport = () => {
                 </div>
               </div>
 
-              <div className="border-b border-gray-100 px-4 sm:px-5 py-4">
+              <div className={`border-b ${theme.border} px-4 sm:px-5 py-4`}>
                 <SectionLabel>Breakdown by product type</SectionLabel>
 
                 <div className="overflow-x-auto w-full">
@@ -444,7 +446,7 @@ const ContaminationAnalysisReport = () => {
                         productTypeRows.map((item, index) => (
                           <tr
                             key={`${item.productType}-${index}`}
-                            className="hover:bg-gray-50"
+                            className={`${theme.hover} cursor-pointer`}
                           >
                             <td className={TD}>{item.productType}</td>
                             <td className={TD}>{item.count}</td>
@@ -470,7 +472,7 @@ const ContaminationAnalysisReport = () => {
                 </div>
               </div>
 
-              <div className="border-b border-gray-100 px-4 sm:px-5 py-4">
+              <div className={`border-b ${theme.border} px-4 sm:px-5 py-4`}>
                 <SectionLabel>Trend analysis</SectionLabel>
 
                 <div className="overflow-x-auto w-full">
@@ -533,7 +535,7 @@ const ContaminationAnalysisReport = () => {
                     <tbody>
                       {topContaminated.length > 0 ? (
                         topContaminated.map((item, index) => (
-                          <tr key={index} className="hover:bg-gray-50">
+                          <tr key={index} className={`${theme.hover} cursor-pointer`}>
                             <td className={TD}>
                               {item.sampleId ||
                                 item.sampleCode ||

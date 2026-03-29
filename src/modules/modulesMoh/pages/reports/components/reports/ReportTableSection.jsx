@@ -1,3 +1,4 @@
+import { useTheme } from "../../../../../../context/ThemeContext";
 import { SectionLabel } from "../../../../components/SectionLabel";
 import { TH, TD } from "../../../../utils/MohUI";
 
@@ -11,13 +12,15 @@ const ReportTableSection = ({
   emptyMessage = "No data available.",
   className = "",
 }) => {
+
+  const {theme} = useTheme();
   return (
-    <div className={`overflow-hidden rounded-xl border border-gray-200 bg-white ${className}`}>
-      <div className="flex items-center justify-between border-b border-gray-100 px-4 py-2.5">
+    <div className={`overflow-hidden rounded-xl border ${theme.border} ${theme.bg} ${className}`}>
+      <div className={`flex items-center justify-between border-b ${theme.border} px-4 py-2.5`}>
         <div>
           <SectionLabel>{title}</SectionLabel>
           {subtitle ? (
-            <div className="mt-0.5 text-xs text-gray-400">{subtitle}</div>
+            <div className={`mt-0.5 text-xs ${theme.textMuted}`}>{subtitle}</div>
           ) : null}
         </div>
         {actions ? <div>{actions}</div> : null}

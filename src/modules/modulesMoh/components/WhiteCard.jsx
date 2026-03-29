@@ -5,7 +5,7 @@ export const WhiteCard = ({ children, className = "" }) => {
 
   return (
     <div
-      className={`${theme.card} ${theme.border} border rounded-2xl p-4 shadow-sm ${className}`}
+      className={`${theme.bg} ${theme.border} border rounded-2xl p-4 shadow-sm ${className}`}
     >
       {children}
     </div>

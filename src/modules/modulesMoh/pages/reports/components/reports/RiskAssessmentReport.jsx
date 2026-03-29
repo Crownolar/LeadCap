@@ -8,6 +8,7 @@ import {
   exportRiskAssessmentPdf,
 } from "../../../../utils/reportExport";
 import ReportHeader from "./ReportHeader";
+import { useTheme } from "../../../../../../context/ThemeContext";
 
 const RiskAssessmentReport = () => {
   const [generated, setGenerated] = useState(false);
@@ -15,6 +16,7 @@ const RiskAssessmentReport = () => {
   const [error, setError] = useState("");
   const [reportData, setReportData] = useState(null);
   const actionItems = reportData?.actionItems || [];
+  const { theme } = useTheme();
 
   const [filters, setFilters] = useState({
     minLeadLevel: "",
@@ -123,7 +125,7 @@ const RiskAssessmentReport = () => {
   return (
     <>
       <FilterBar>
-        <label className="text-xs text-gray-500 whitespace-nowrap">
+        <label className={`text-xs ${theme.textMuted} whitespace-nowrap`}>
           Min lead level (ppm)
         </label>
         <input
@@ -133,30 +135,30 @@ const RiskAssessmentReport = () => {
             setFilters((prev) => ({ ...prev, minLeadLevel: e.target.value }))
           }
           placeholder="0.0"
-          className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+          className={`w-full sm:w-auto text-xs px-2 py-1.5 border ${theme.border} ${theme.input}  rounded-md outline-none focus:border-green-500`}
           style={{ width: 100 }}
         />
 
         <FilterSep />
 
-        <label className="text-xs text-gray-500 whitespace-nowrap">From</label>
+        <label className={`text-xs ${theme.textMuted} whitespace-nowrap`}>From</label>
         <input
           type="date"
           value={filters.dateFrom}
           onChange={(e) =>
             setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))
           }
-          className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+          className={`w-full sm:w-auto text-xs px-2 py-1.5 border ${theme.border} ${theme.input}  rounded-md outline-none focus:border-green-500`}
         />
 
-        <label className="text-xs text-gray-500 whitespace-nowrap">To</label>
+        <label className={`text-xs ${theme.textMuted} whitespace-nowrap`}>To</label>
         <input
           type="date"
           value={filters.dateTo}
           onChange={(e) =>
             setFilters((prev) => ({ ...prev, dateTo: e.target.value }))
           }
-          className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+          className={`w-full sm:w-auto text-xs px-2 py-1.5 border ${theme.border} ${theme.input}  rounded-md outline-none focus:border-green-500`}
         />
 
         <FilterSep />
@@ -173,7 +175,7 @@ const RiskAssessmentReport = () => {
       )}
 
       {generated && reportData && (
-        <div className="mt-5 overflow-hidden rounded-xl border border-gray-200 bg-white w-full">
+        <div className={`mt-5 overflow-hidden rounded-xl border ${theme.border} ${theme.bg} w-full`}>
           <ReportHeader
             title="Risk assessment"
             subtitle={`Generated: ${generatedAt || "—"} · Lead threshold: ${
@@ -186,36 +188,36 @@ const RiskAssessmentReport = () => {
           <div className="border-b border-gray-100 px-4 sm:px-5 py-4">
             <SectionLabel>Summary</SectionLabel>
 
-            <div className="flex justify-between border-b border-gray-50 py-1.5 text-sm">
-              <span className="text-gray-500">Total high-risk samples</span>
+            <div className={`flex justify-between border-b ${theme.border} py-1.5 text-sm`}>
+              <span className={`${theme.textMuted}`}>Total high-risk samples</span>
               <span className="font-medium text-red-600">
                 {summary.totalHighRiskSamples ?? 0}
               </span>
             </div>
 
-            <div className="flex justify-between border-b border-gray-50 py-1.5 text-sm">
-              <span className="text-gray-500">Critical samples</span>
+            <div className={`flex justify-between border-b ${theme.border} py-1.5 text-sm`}>
+              <span className={`text-gray-500 ${theme.textMuted}`}>Critical samples</span>
               <span className="font-medium text-red-600">
                 {summary.criticalSamplesCount ?? 0}
               </span>
             </div>
 
-            <div className="flex justify-between border-b border-gray-50 py-1.5 text-sm">
-              <span className="text-gray-500">High-risk areas</span>
+            <div className={`flex justify-between border-b ${theme.border} py-1.5 text-sm`}>
+              <span className={`${theme.textMuted}`}>High-risk areas</span>
               <span className="font-medium text-amber-600">
                 {summary.highRiskAreasCount ?? 0}
               </span>
             </div>
 
-            <div className="flex justify-between border-b border-gray-50 py-1.5 text-sm">
-              <span className="text-gray-500">Unregistered high-risk</span>
+            <div className={`flex justify-between border-b ${theme.border} py-1.5 text-sm`}>
+              <span className={`${theme.textMuted}`}>Unregistered high-risk</span>
               <span className="font-medium text-gray-900">
                 {summary.unregisteredHighRiskCount ?? 0}
               </span>
             </div>
 
-            <div className="flex justify-between py-1.5 text-sm">
-              <span className="text-gray-500">Counterfeits high-risk</span>
+            <div className={`flex justify-between border-b ${theme.border} py-1.5 text-sm`}>
+              <span className={`${theme.textMuted}`}>Counterfeits high-risk</span>
               <span className="font-medium text-gray-900">
                 {summary.counterfeitsHighRiskCount ?? 0}
               </span>
@@ -223,12 +225,12 @@ const RiskAssessmentReport = () => {
           </div>
 
           {!hasAnyData ? (
-            <div className="px-4 sm:px-5 py-8 text-sm text-gray-500">
+            <div className={`px-4 sm:px-5 py-8 text-sm ${theme.textMuted}`}>
               No risk assessment data is available for the selected filters.
             </div>
           ) : (
             <>
-              <div className="border-b border-gray-100 px-4 sm:px-5 py-4">
+              <div className={`border-b ${theme.border} px-4 sm:px-5 py-4`}>
                 <SectionLabel>Top risk areas</SectionLabel>
                 <div className="overflow-x-auto w-full mt-3">
                   <table className="w-full min-w-[360px] border-collapse text-xs">
@@ -244,7 +246,7 @@ const RiskAssessmentReport = () => {
                     <tbody>
                       {topRiskAreas.length > 0 ? (
                         topRiskAreas.map((item, index) => (
-                          <tr key={index} className="hover:bg-gray-50">
+                          <tr key={index} className={`${theme.hover} transition-colors duration-150`}>
                             <td className={TD}>
                               {item.area ||
                                 item.location ||
@@ -275,7 +277,7 @@ const RiskAssessmentReport = () => {
                 </div>
               </div>
 
-              <div className="border-b border-gray-100 px-4 sm:px-5 py-4">
+              <div className={`border-b ${theme.border} px-4 sm:px-5 py-4`}>
                 <SectionLabel>Critical samples</SectionLabel>
                 <div className="overflow-x-auto w-full mt-3">
                   <table className="w-full min-w-[360px] border-collapse text-xs">
@@ -293,7 +295,7 @@ const RiskAssessmentReport = () => {
                     <tbody>
                       {criticalSamples.length > 0 ? (
                         criticalSamples.map((item, index) => (
-                          <tr key={index} className="hover:bg-gray-50">
+                          <tr key={index} className={`${theme.hover} transition-colors duration-150`}>
                             <td className={TD}>
                               {item.sampleId ||
                                 item.sampleCode ||
@@ -323,7 +325,7 @@ const RiskAssessmentReport = () => {
                 </div>
               </div>
 
-              <div className="border-b border-gray-100 px-4 sm:px-5 py-4">
+              <div className={`border-b ${theme.border} px-4 sm:px-5 py-4`}>
                 <SectionLabel>Unregistered high-risk products</SectionLabel>
                 <div className="overflow-x-auto w-full mt-3">
                   <table className="w-full min-w-[360px] border-collapse text-xs">
@@ -341,7 +343,7 @@ const RiskAssessmentReport = () => {
                     <tbody>
                       {unregisteredHighRisk.length > 0 ? (
                         unregisteredHighRisk.map((item, index) => (
-                          <tr key={index} className="hover:bg-gray-50">
+                          <tr key={index} className={`${theme.hover} transition-colors duration-150`}>
                             <td className={TD}>
                               {item.productName ||
                                 item.product ||
@@ -371,7 +373,7 @@ const RiskAssessmentReport = () => {
                 </div>
               </div>
 
-              <div className="border-b border-gray-100 px-4 sm:px-5 py-4">
+              <div className={`border-b ${theme.border} px-4 sm:px-5 py-4`}>
                 <SectionLabel>Counterfeit high-risk products</SectionLabel>
                 <div className="overflow-x-auto w-full mt-3">
                   <table className="w-full min-w-[360px] border-collapse text-xs">
@@ -389,7 +391,7 @@ const RiskAssessmentReport = () => {
                     <tbody>
                       {counterfeitsHighRisk.length > 0 ? (
                         counterfeitsHighRisk.map((item, index) => (
-                          <tr key={index} className="hover:bg-gray-50">
+                          <tr key={index} className={`${theme.hover} transition-colors duration-150`}>
                             <td className={TD}>
                               {item.productName ||
                                 item.product ||
@@ -419,7 +421,7 @@ const RiskAssessmentReport = () => {
                 </div>
               </div>
 
-              <div className="border-b border-gray-100 px-4 sm:px-5 py-4">
+              <div className={`border-b ${theme.border} px-4 sm:px-5 py-4`}>
                 <SectionLabel>Risk by product type</SectionLabel>
                 <div className="overflow-x-auto w-full mt-3">
                   <table className="w-full min-w-[280px] border-collapse text-xs">
@@ -435,7 +437,7 @@ const RiskAssessmentReport = () => {
                     <tbody>
                       {riskByProductType.length > 0 ? (
                         riskByProductType.map((item, index) => (
-                          <tr key={index} className="hover:bg-gray-50">
+                          <tr key={index} className={`${theme.hover} transition-colors duration-150`}>
                             <td className={TD}>
                               {item.productType ||
                                 item.type ||
@@ -464,7 +466,7 @@ const RiskAssessmentReport = () => {
 
               <div className="px-4 sm:px-5 py-4">
                 <SectionLabel>Action items</SectionLabel>
-                <div className="text-sm leading-relaxed text-gray-500">
+                <div className={`text-sm leading-relaxed ${theme.textMuted} mt-3`}>
                   {actionItems.length > 0 ? (
                     actionItems.map((item, index) => (
                       <div key={index}>
