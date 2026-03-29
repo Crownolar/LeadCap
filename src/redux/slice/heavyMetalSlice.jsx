@@ -12,17 +12,17 @@ export const batchAddXRFReadings = createAsyncThunk(
     try {
       const response = await api.post("/heavy-metals/batch/xrf", {
         sampleId,
-        readings
+        readings,
       });
       return response.data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.error ||
           error.message ||
-          "Failed to save heavy metal readings"
+          "Failed to save heavy metal readings",
       );
     }
-  }
+  },
 );
 
 // ---- Add or Update Single Reading (legacy) ---- //
@@ -46,10 +46,10 @@ export const addOrUpdateHeavyMetal = createAsyncThunk(
       return rejectWithValue(
         error.response?.data?.error ||
           error.message ||
-          "Failed to save heavy metal reading"
+          "Failed to save heavy metal reading",
       );
     }
-  }
+  },
 );
 
 // ---- Fetch readings for one sample ---- //
@@ -63,15 +63,15 @@ export const getSampleReadings = createAsyncThunk(
       return rejectWithValue(
         error.response?.data?.error ||
           error.message ||
-          "Failed to fetch readings"
+          "Failed to fetch readings",
       );
     }
-  }
+  },
 );
 
 // ---- Fetch readings for multiple samples ---- //
 export const getMultipleSampleReadings = createAsyncThunk(
-  "heavyMetal/getMultipleSampleReadings", 
+  "heavyMetal/getMultipleSampleReadings",
   async (sampleIds, { rejectWithValue }) => {
     try {
       const promises = sampleIds.map(async (sampleId) => {
@@ -79,21 +79,22 @@ export const getMultipleSampleReadings = createAsyncThunk(
           const response = await api.get(`/heavy-metals/sample/${sampleId}`);
           return { sampleId, readings: response.data.data || [] };
         } catch (error) {
-          // Return empty readings if sample has no readings yet
+          // Return empty readings if sample has no readings yet or it fails for any reason
+          console.log("error for get multiple sample readings failure", error);
           return { sampleId, readings: [] };
         }
       });
-      
+
       const results = await Promise.all(promises);
       return results;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.error ||
           error.message ||
-          "Failed to fetch multiple sample readings"
+          "Failed to fetch multiple sample readings",
       );
     }
-  }
+  },
 );
 
 // ---- SLICE ---- //
@@ -132,11 +133,11 @@ const heavyMetalSlice = createSlice({
         // Add all returned readings
         if (action.payload.data && Array.isArray(action.payload.data)) {
           // Update readings array
-          action.payload.data.forEach(reading => {
+          action.payload.data.forEach((reading) => {
             const index = state.readings.findIndex(
               (r) =>
                 r.sampleId === reading.sampleId &&
-                r.heavyMetal === reading.heavyMetal
+                r.heavyMetal === reading.heavyMetal,
             );
             if (index !== -1) {
               state.readings[index] = reading;
@@ -144,26 +145,26 @@ const heavyMetalSlice = createSlice({
               state.readings.push(reading);
             }
           });
-          
+
           // Group readings by sample and update readingsBySample
           const readingsBySampleUpdate = {};
-          action.payload.data.forEach(reading => {
+          action.payload.data.forEach((reading) => {
             if (!readingsBySampleUpdate[reading.sampleId]) {
               readingsBySampleUpdate[reading.sampleId] = [];
             }
             readingsBySampleUpdate[reading.sampleId].push(reading);
           });
-          
+
           // Merge with existing readings for each sample
-          Object.keys(readingsBySampleUpdate).forEach(sampleId => {
+          Object.keys(readingsBySampleUpdate).forEach((sampleId) => {
             const existingReadings = state.readingsBySample[sampleId] || [];
             const newReadings = readingsBySampleUpdate[sampleId];
-            
+
             // Combine and deduplicate readings by heavyMetal
             const combinedReadings = [...existingReadings];
-            newReadings.forEach(newReading => {
+            newReadings.forEach((newReading) => {
               const existingIndex = combinedReadings.findIndex(
-                r => r.heavyMetal === newReading.heavyMetal
+                (r) => r.heavyMetal === newReading.heavyMetal,
               );
               if (existingIndex !== -1) {
                 combinedReadings[existingIndex] = newReading;
@@ -171,7 +172,7 @@ const heavyMetalSlice = createSlice({
                 combinedReadings.push(newReading);
               }
             });
-            
+
             state.readingsBySample[sampleId] = combinedReadings;
           });
         }
@@ -195,7 +196,7 @@ const heavyMetalSlice = createSlice({
           const index = state.readings.findIndex(
             (r) =>
               r.sampleId === payload.data.sampleId &&
-              r.heavyMetal === payload.data.heavyMetal
+              r.heavyMetal === payload.data.heavyMetal,
           );
 
           if (index !== -1) {
