@@ -51,14 +51,16 @@ const DataCollectorDashboard = () => {
   const [supervisor, setSupervisor] = useState(null);
   const [loadingSupervisor, setLoadingSupervisor] = useState(false);
   const PAGE_SIZE = 50;
+  const [maxPageButtons, setMaxPageButtons] = useState(7);
 
   const handlePrevClickPagination = () => {
+    const step = maxPageButtons;
     if (pageNumbers.currentPage == 1) return;
     if (pageNumbers.startPage > 1) {
       return setPageNumbers((prev) => ({
         ...prev,
-        startPage: prev.startPage - 7,
-        endPage: prev.endPage - 7,
+        startPage: prev.startPage - step,
+        endPage: prev.endPage - step,
         currentPage: prev.currentPage - 1,
       }));
     }
@@ -69,12 +71,13 @@ const DataCollectorDashboard = () => {
   };
 
   const handleNextClickPagination = () => {
-    if (pageNumbers.currentPage == pagination.totalPages) return;
+    const step = maxPageButtons;
+    if (pageNumbers.currentPage == (pagination?.totalPages || 1)) return;
     if (pageNumbers.currentPage == pageNumbers.endPage) {
       return setPageNumbers((prev) => ({
         ...prev,
-        startPage: prev.startPage + 7,
-        endPage: prev.endPage + 7,
+        startPage: prev.startPage + step,
+        endPage: prev.endPage + step,
         currentPage: prev.currentPage + 1,
       }));
     }
@@ -84,6 +87,22 @@ const DataCollectorDashboard = () => {
       currentPage: prev.currentPage + 1,
     }));
   };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    function updateMax() {
+      const isMobile = window.innerWidth < 768;
+      const max = isMobile ? 2 : 7;
+      setMaxPageButtons(max);
+      setPageNumbers((prev) => ({
+        ...prev,
+        endPage: prev.startPage + max - 1,
+      }));
+    }
+    updateMax();
+    window.addEventListener("resize", updateMax);
+    return () => window.removeEventListener("resize", updateMax);
+  }, []);
 
   useEffect(() => {
     api.get("/samples/stats").then((res) => {
@@ -186,8 +205,14 @@ const DataCollectorDashboard = () => {
       return true;
     });
   }, [allSamples, filterStatus, variantFilter, searchQuery]);
+  const totalPages = pagination?.totalPages || 1;
 
-  const totalPages = Math.max(1, pagination?.totalCount || 0);
+  const displayedPages = pagination
+    ? Array.from({ length: pagination.totalPages }, (_, i) => i + 1).slice(
+        pageNumbers.startPage - 1,
+        pageNumbers.startPage - 1 + maxPageButtons,
+      )
+    : [];
 
   const handleAddResults = (sample) => {
     setSelectedSample(sample);
@@ -329,10 +354,11 @@ const DataCollectorDashboard = () => {
             </div>
           ))}
         </div>
+        
         {/* page info badges */}
-        <div className='flex gap-3 mb-6'>
+        <div className='flex flex-col sm:flex-row gap-3 mb-6'>
           <div
-            className={`inline-flex items-center gap-2 px-3 py-2 rounded-full border ${theme?.border} bg-emerald-50 dark:bg-emerald-900/10`}
+            className={`flex items-center justify-between w-full sm:inline-flex sm:w-auto gap-2 px-3 py-2 rounded-full border ${theme?.border} bg-emerald-50 dark:bg-emerald-900/10`}
           >
             <span className='text-xs text-gray-500'>Samples on page</span>
             <span className='font-semibold text-sm'>
@@ -341,7 +367,7 @@ const DataCollectorDashboard = () => {
           </div>
 
           <div
-            className={`inline-flex items-center gap-2 px-3 py-2 rounded-full border ${theme?.border} bg-emerald-50 dark:bg-emerald-900/10`}
+            className={`flex items-center justify-between w-full sm:inline-flex sm:w-auto gap-2 px-3 py-2 rounded-full border ${theme?.border} bg-emerald-50 dark:bg-emerald-900/10`}
           >
             <span className='text-xs text-gray-500'>With results</span>
             <span className='font-semibold text-sm'>
@@ -352,7 +378,7 @@ const DataCollectorDashboard = () => {
           </div>
 
           <div
-            className={`inline-flex items-center gap-2 px-3 py-2 rounded-full border ${theme?.border} bg-emerald-50 dark:bg-emerald-900/10`}
+            className={`flex items-center justify-between w-full sm:inline-flex sm:w-auto gap-2 px-3 py-2 rounded-full border ${theme?.border} bg-emerald-50 dark:bg-emerald-900/10`}
           >
             <span className='text-xs text-gray-500'>Without results</span>
             <span className='font-semibold text-sm'>
@@ -549,7 +575,7 @@ const DataCollectorDashboard = () => {
                   </tr>
                 </thead>
                 <tbody className='divide-y divide-gray-100 dark:divide-gray-700/60'>
-                  {allSamples.map((sample) => {
+                  {filteredSamples.map((sample) => {
                     const status = getReadingStatus(sample);
                     const StatusIcon = status.icon;
                     const readings =
@@ -664,7 +690,7 @@ const DataCollectorDashboard = () => {
             </div>
 
             <div className='md:hidden divide-y divide-gray-100 dark:divide-gray-700/60'>
-              {allSamples.map((sample) => {
+              {filteredSamples.map((sample) => {
                 const status = getReadingStatus(sample);
                 const readings =
                   allSamples?.find((s) => s.id === sample.id)
@@ -768,7 +794,7 @@ const DataCollectorDashboard = () => {
             <div
               className={`px-4 py-3 border-t ${theme?.border} bg-gray-50 dark:bg-gray-800/40 flex items-center justify-between`}
             >
-              <div className='flex items-center gap-4'>
+              <div className='flex flex-col sm:flex-row items-center gap-3 sm:gap-4'>
                 <p className={`text-xs ${theme?.textMuted}`}>
                   Showing
                   <span className='font-semibold mx-1'>
@@ -787,24 +813,17 @@ const DataCollectorDashboard = () => {
                   samples
                 </p>
 
-                {totalPages > 1 && (
-                  <div className='flex items-center gap-2'>
-                    <button
-                      onClick={handlePrevClickPagination}
-                      disabled={pageNumbers.currentPage === 1}
-                      className={`px-2 py-1 rounded border ${theme?.border} text-xs ${pageNumbers.currentPage === 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
-                    >
-                      Prev
-                    </button>
+                  {totalPages > 1 && (
+                    <div className='flex items-center gap-2'>
+                      <button
+                        onClick={handlePrevClickPagination}
+                        disabled={pageNumbers.currentPage === 1}
+                        className={`px-2 py-1 rounded border ${theme?.border} text-xs ${pageNumbers.currentPage === 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+                      >
+                        Prev
+                      </button>
 
-                    {Array.from(
-                      { length: pagination.totalPages },
-                      (_, i) => i + 1,
-                    )
-                      .slice(pageNumbers.startPage - 1, pageNumbers.endPage)
-                      .map((i) => {
-                        const page = i;
-                        // show up to first 7 pages to keep UI compact
+                      {displayedPages.map((page) => {
                         return (
                           <button
                             key={page}
@@ -814,28 +833,28 @@ const DataCollectorDashboard = () => {
                                 currentPage: page,
                               }));
                             }}
-                            className={`px-2 py-1 rounded text-xs border ${theme?.border} ${pagination.page === page ? "bg-emerald-600 text-white" : ""}`}
+                            className={`px-2 py-1 rounded text-xs border ${theme?.border} ${pageNumbers.currentPage === page ? "bg-emerald-600 text-white" : ""}`}
                           >
                             {page}
                           </button>
                         );
                       })}
 
-                    {totalPages > 7 && (
-                      <span className={`text-xs ${theme?.textMuted} px-2`}>
-                        …
-                      </span>
-                    )}
+                      {totalPages > maxPageButtons && (
+                        <span className={`text-xs ${theme?.textMuted} px-2`}>
+                          …
+                        </span>
+                      )}
 
-                    <button
-                      onClick={handleNextClickPagination}
-                      disabled={pageNumbers.currentPage === totalPages}
-                      className={`px-2 py-1 rounded border ${theme?.border} text-xs ${pageNumbers.currentPage === totalPages ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
-                    >
-                      Next
-                    </button>
-                  </div>
-                )}
+                      <button
+                        onClick={handleNextClickPagination}
+                        disabled={pageNumbers.currentPage === totalPages}
+                        className={`px-2 py-1 rounded border ${theme?.border} text-xs ${pageNumbers.currentPage === totalPages ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
               </div>
               {hasActiveFilters && (
                 <button
