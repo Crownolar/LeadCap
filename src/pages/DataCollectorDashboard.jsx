@@ -26,15 +26,20 @@ import api from "../utils/api";
 const DataCollectorDashboard = () => {
   const dispatch = useDispatch();
   const { currentUser } = useSelector((state) => state.auth);
+
   const { theme } = useTheme();
-  const {
-    samples: allSamples,
-    loading: samplesLoading,
-    error: samplesError,
-  } = useSelector((state) => state.samples);
-  const { readingsBySample, loading: readingsLoading } = useSelector(
-    (state) => state.heavyMetal,
-  );
+
+  // samples state
+  const [pageNumbers, setPageNumbers] = useState({
+    currentPage: 1,
+    startPage: 1,
+    endPage: 7,
+  });
+  const [allSamples, setAllSamples] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [samplesLoading, setSamplesLoading] = useState(null);
+  const [samplesError, setSamplesError] = useState(null);
+  const [pagination, setPagination] = useState(null);
 
   const [filterStatus, setFilterStatus] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -45,18 +50,97 @@ const DataCollectorDashboard = () => {
   const [editSample, setEditSample] = useState(null);
   const [supervisor, setSupervisor] = useState(null);
   const [loadingSupervisor, setLoadingSupervisor] = useState(false);
+  const PAGE_SIZE = 50;
+  const [maxPageButtons, setMaxPageButtons] = useState(7);
 
-  const mySamples = useMemo(() => {
-    if (!currentUser?.id) return [];
-    return allSamples.filter((sample) => sample.creator?.id === currentUser.id);
-  }, [allSamples, currentUser?.id]);
+  const handlePrevClickPagination = () => {
+    const step = maxPageButtons;
+    if (pageNumbers.currentPage == 1) return;
+    if (pageNumbers.startPage > 1) {
+      return setPageNumbers((prev) => ({
+        ...prev,
+        startPage: prev.startPage - step,
+        endPage: prev.endPage - step,
+        currentPage: prev.currentPage - 1,
+      }));
+    }
+    setPageNumbers((prev) => ({
+      ...prev,
+      currentPage: prev.currentPage - 1,
+    }));
+  };
+
+  const handleNextClickPagination = () => {
+    const step = maxPageButtons;
+    if (pageNumbers.currentPage == (pagination?.totalPages || 1)) return;
+    if (pageNumbers.currentPage == pageNumbers.endPage) {
+      return setPageNumbers((prev) => ({
+        ...prev,
+        startPage: prev.startPage + step,
+        endPage: prev.endPage + step,
+        currentPage: prev.currentPage + 1,
+      }));
+    }
+
+    setPageNumbers((prev) => ({
+      ...prev,
+      currentPage: prev.currentPage + 1,
+    }));
+  };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    function updateMax() {
+      const isMobile = window.innerWidth < 768;
+      const max = isMobile ? 2 : 7;
+      setMaxPageButtons(max);
+      setPageNumbers((prev) => ({
+        ...prev,
+        endPage: prev.startPage + max - 1,
+      }));
+    }
+    updateMax();
+    window.addEventListener("resize", updateMax);
+    return () => window.removeEventListener("resize", updateMax);
+  }, []);
+
+  useEffect(() => {
+    api.get("/samples/stats").then((res) => {
+      setStats(res.data.data);
+    });
+  }, []);
 
   const uniqueVariants = useMemo(() => {
-    const variants = mySamples
+    const variants = allSamples
       .map((s) => s.productVariant?.displayName || s.productVariant?.name)
       .filter(Boolean);
     return [...new Set(variants)];
-  }, [mySamples]);
+  }, [allSamples]);
+
+  const LIMIT = 50;
+  useEffect(() => {
+    async function fetchSamples() {
+      try {
+        const params = {
+          limit: LIMIT,
+          collectorId: currentUser.id,
+          page: pageNumbers.currentPage,
+        };
+        setSamplesLoading(true);
+        const res = await api.get("/samples", { params }).then((res) => {
+          setAllSamples(res.data.data);
+          setPagination(res.data.pagination);
+        });
+      } catch (e) {
+        console.log(e);
+        setSamplesError(true);
+      } finally {
+        setSamplesLoading(false);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }
+    fetchSamples();
+  }, [pageNumbers.currentPage]);
 
   useEffect(() => {
     if (!currentUser?.id) return;
@@ -74,21 +158,16 @@ const DataCollectorDashboard = () => {
     fetchSupervisorInfo();
   }, [currentUser?.id]);
 
-  const sampleIdsKey = useMemo(
-    () => mySamples.map((s) => s.id).join(","),
-    [mySamples],
-  );
-
-  useEffect(() => {
-    if (!sampleIdsKey) return;
-    dispatch(getMultipleSampleReadings(sampleIdsKey.split(",")));
-  }, [dispatch, sampleIdsKey]);
-
-  const hasAllReadings = (sample) =>
-    (readingsBySample?.[sample.id] || []).length > 0;
+  const hasAllReadings = (sample) => {
+    return (
+      (allSamples.find((s) => s.id === sample.id)?.heavyMetalReadings || [])
+        .length > 0
+    );
+  };
 
   const getReadingStatus = (sample) => {
-    const readings = readingsBySample?.[sample.id] || [];
+    const readings =
+      allSamples?.find((s) => s.id === sample.id)?.heavyMetalReadings || [];
     if (readings.length === 0)
       return {
         label: "No Results",
@@ -106,7 +185,7 @@ const DataCollectorDashboard = () => {
   };
 
   const filteredSamples = useMemo(() => {
-    return mySamples.filter((sample) => {
+    return allSamples.filter((sample) => {
       if (filterStatus === "pending" && hasAllReadings(sample)) return false;
       if (filterStatus === "completed" && !hasAllReadings(sample)) return false;
 
@@ -125,7 +204,15 @@ const DataCollectorDashboard = () => {
 
       return true;
     });
-  }, [mySamples, filterStatus, variantFilter, searchQuery, readingsBySample]);
+  }, [allSamples, filterStatus, variantFilter, searchQuery]);
+  const totalPages = pagination?.totalPages || 1;
+
+  const displayedPages = pagination
+    ? Array.from({ length: pagination.totalPages }, (_, i) => i + 1).slice(
+        pageNumbers.startPage - 1,
+        pageNumbers.startPage - 1 + maxPageButtons,
+      )
+    : [];
 
   const handleAddResults = (sample) => {
     setSelectedSample(sample);
@@ -221,29 +308,24 @@ const DataCollectorDashboard = () => {
           {[
             {
               label: "Total Samples",
-              value: !samplesLoading ? mySamples.length : "--",
+              value:
+                !samplesLoading || pagination ? pagination?.totalCount : "--",
               icon: Eye,
               iconBg: "bg-blue-100 dark:bg-blue-900/30",
               iconColor: "text-blue-600 dark:text-blue-400",
               accent: "border-l-blue-500",
             },
             {
-              label: "Pending Results",
-              value:
-                !samplesLoading && !readingsLoading
-                  ? mySamples.filter((s) => !hasAllReadings(s)).length
-                  : "--",
+              label: "Total Pending Results",
+              value: stats ? stats.pendingResults : "--",
               icon: Clock,
               iconBg: "bg-amber-100 dark:bg-amber-900/30",
               iconColor: "text-amber-600 dark:text-amber-400",
               accent: "border-l-amber-500",
             },
             {
-              label: "With Results",
-              value:
-                !samplesLoading && !readingsLoading
-                  ? mySamples.filter((s) => hasAllReadings(s)).length
-                  : "--",
+              label: "Total With Results",
+              value: stats ? stats.withResults : "--",
               icon: CheckCircle,
               iconBg: "bg-emerald-100 dark:bg-emerald-900/30",
               iconColor: "text-emerald-600 dark:text-emerald-400",
@@ -271,6 +353,40 @@ const DataCollectorDashboard = () => {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* page info badges */}
+        <div className='flex flex-col sm:flex-row gap-3 mb-6'>
+          <div
+            className={`flex items-center justify-between w-full sm:inline-flex sm:w-auto gap-2 px-3 py-2 rounded-full border ${theme?.border} bg-emerald-50 dark:bg-emerald-900/10`}
+          >
+            <span className='text-xs text-gray-500'>Samples on page</span>
+            <span className='font-semibold text-sm'>
+              {!samplesLoading ? allSamples.length : "--"}
+            </span>
+          </div>
+
+          <div
+            className={`flex items-center justify-between w-full sm:inline-flex sm:w-auto gap-2 px-3 py-2 rounded-full border ${theme?.border} bg-emerald-50 dark:bg-emerald-900/10`}
+          >
+            <span className='text-xs text-gray-500'>With results</span>
+            <span className='font-semibold text-sm'>
+              {!samplesLoading
+                ? allSamples.filter((s) => hasAllReadings(s)).length
+                : "--"}
+            </span>
+          </div>
+
+          <div
+            className={`flex items-center justify-between w-full sm:inline-flex sm:w-auto gap-2 px-3 py-2 rounded-full border ${theme?.border} bg-emerald-50 dark:bg-emerald-900/10`}
+          >
+            <span className='text-xs text-gray-500'>Without results</span>
+            <span className='font-semibold text-sm'>
+              {!samplesLoading
+                ? allSamples.filter((s) => !hasAllReadings(s)).length
+                : "--"}
+            </span>
+          </div>
         </div>
 
         <div
@@ -385,7 +501,7 @@ const DataCollectorDashboard = () => {
           </div>
         )}
 
-        {(samplesLoading || readingsLoading) && (
+        {samplesLoading && (
           <div className='text-center py-16'>
             <div className='inline-flex items-center gap-2'>
               {[0, 0.1, 0.2].map((delay, i) => (
@@ -402,39 +518,37 @@ const DataCollectorDashboard = () => {
           </div>
         )}
 
-        {!samplesLoading &&
-          !readingsLoading &&
-          filteredSamples.length === 0 && (
-            <div
-              className={`${theme?.card} rounded-xl border ${theme?.border} p-12 text-center shadow-sm`}
-            >
-              <div className='w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-4'>
-                <Beaker className='w-8 h-8 text-gray-400' />
-              </div>
-              <p className={`${theme?.text} font-semibold text-lg mb-2`}>
-                No samples found
-              </p>
-              <p className={`text-sm ${theme?.textMuted}`}>
-                {hasActiveFilters
-                  ? "No samples match your current filters. Try adjusting or clearing them."
-                  : filterStatus === "completed"
-                    ? "You haven't added results to any samples yet"
-                    : filterStatus === "pending"
-                      ? "All your samples have results!"
-                      : "Start collecting samples to see them here"}
-              </p>
-              {hasActiveFilters && (
-                <button
-                  onClick={clearFilters}
-                  className='mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition'
-                >
-                  Clear Filters
-                </button>
-              )}
+        {!samplesLoading && filteredSamples.length === 0 && (
+          <div
+            className={`${theme?.card} rounded-xl border ${theme?.border} p-12 text-center shadow-sm`}
+          >
+            <div className='w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-4'>
+              <Beaker className='w-8 h-8 text-gray-400' />
             </div>
-          )}
+            <p className={`${theme?.text} font-semibold text-lg mb-2`}>
+              No samples found
+            </p>
+            <p className={`text-sm ${theme?.textMuted}`}>
+              {hasActiveFilters
+                ? "No samples match your current filters. Try adjusting or clearing them."
+                : filterStatus === "completed"
+                  ? "You haven't added results to any samples yet"
+                  : filterStatus === "pending"
+                    ? "All your samples have results!"
+                    : "Start collecting samples to see them here"}
+            </p>
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className='mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition'
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
+        )}
 
-        {!samplesLoading && !readingsLoading && filteredSamples.length > 0 && (
+        {!samplesLoading && filteredSamples.length > 0 && (
           <div
             className={`${theme?.card} rounded-xl border ${theme?.border} shadow-sm overflow-hidden`}
           >
@@ -443,7 +557,7 @@ const DataCollectorDashboard = () => {
                 <thead>
                   <tr className={`border-b ${theme?.border} ${theme.bg}`}>
                     {[
-                      "Sample ID",
+                      // "Sample ID",
                       "Product / Variant",
                       "Location",
                       "Price",
@@ -464,20 +578,22 @@ const DataCollectorDashboard = () => {
                   {filteredSamples.map((sample) => {
                     const status = getReadingStatus(sample);
                     const StatusIcon = status.icon;
-                    const readings = readingsBySample?.[sample.id] || [];
+                    const readings =
+                      allSamples?.find((s) => s.id === sample.id)
+                        ?.heavyMetalReadings || [];
 
                     return (
                       <tr
                         key={sample.id}
                         className={`group hover:bg-emerald-50/40 dark:hover:bg-emerald-900/10 transition-colors`}
                       >
-                        <td className='px-4 py-3.5'>
+                        {/* <td className='px-4 py-3.5'>
                           <span
                             className={`font-mono text-xs font-semibold ${theme?.text}`}
                           >
                             {sample.sampleId}
                           </span>
-                        </td>
+                        </td> */}
 
                         <td className='px-4 py-3.5 max-w-[200px]'>
                           <p
@@ -503,7 +619,9 @@ const DataCollectorDashboard = () => {
 
                         <td className='px-4 py-3.5 whitespace-nowrap'>
                           <span className={`font-semibold ${theme?.text}`}>
-                            ₦{parseFloat(sample.price).toLocaleString()}
+                            {!Number.isNaN(parseFloat(sample.price))
+                              ? `₦${parseFloat(sample.price).toLocaleString()}`
+                              : "N/A"}
                           </span>
                         </td>
 
@@ -571,10 +689,13 @@ const DataCollectorDashboard = () => {
               </table>
             </div>
 
+            {/* mobile view */}
             <div className='md:hidden divide-y divide-gray-100 dark:divide-gray-700/60'>
               {filteredSamples.map((sample) => {
                 const status = getReadingStatus(sample);
-                const readings = readingsBySample?.[sample.id] || [];
+                const readings =
+                  allSamples?.find((s) => s.id === sample.id)
+                    ?.heavyMetalReadings || [];
 
                 return (
                   <div key={sample.id} className='p-4 space-y-3'>
@@ -583,11 +704,11 @@ const DataCollectorDashboard = () => {
                         <p className={`font-semibold ${theme?.text} truncate`}>
                           {sample.productName}
                         </p>
-                        <p
+                        {/* <p
                           className={`font-mono text-xs ${theme?.textMuted} mt-0.5`}
                         >
                           {sample.sampleId}
-                        </p>
+                        </p> */}
                       </div>
                       <span
                         className={`inline-flex items-center gap-1.5 ${status.color} px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0`}
@@ -619,7 +740,9 @@ const DataCollectorDashboard = () => {
                           Price
                         </p>
                         <p className={`${theme?.text} font-medium mt-0.5`}>
-                          ₦{parseFloat(sample.price).toLocaleString()}
+                          {!Number.isNaN(parseFloat(sample.price))
+                            ? `₦${parseFloat(sample.price).toLocaleString()}`
+                            : "N/A"}
                         </p>
                       </div>
                       <div className='col-span-2'>
@@ -674,12 +797,68 @@ const DataCollectorDashboard = () => {
             <div
               className={`px-4 py-3 border-t ${theme?.border} bg-gray-50 dark:bg-gray-800/40 flex items-center justify-between`}
             >
-              <p className={`text-xs ${theme?.textMuted}`}>
-                Showing{" "}
-                <span className='font-semibold'>{filteredSamples.length}</span>{" "}
-                of <span className='font-semibold'>{mySamples.length}</span>{" "}
-                samples
-              </p>
+              <div className='flex flex-col sm:flex-row items-center gap-3 sm:gap-4'>
+                <p className={`text-xs ${theme?.textMuted}`}>
+                  Showing
+                  <span className='font-semibold mx-1'>
+                    {(pageNumbers.currentPage - 1) * PAGE_SIZE + 1}
+                  </span>
+                  to
+                  <span className='font-semibold mx-1'>
+                    {pageNumbers.currentPage * PAGE_SIZE}
+                  </span>
+                  of{" "}
+                  <span className='font-semibold ml-1'>
+                    {pagination?.totalCount
+                      ? pagination.totalCount
+                      : filteredSamples.length}
+                  </span>{" "}
+                  samples
+                </p>
+
+                {totalPages > 1 && (
+                  <div className='flex items-center gap-2'>
+                    <button
+                      onClick={handlePrevClickPagination}
+                      disabled={pageNumbers.currentPage === 1}
+                      className={`px-2 py-1 rounded border ${theme?.border} text-xs ${pageNumbers.currentPage === 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+                    >
+                      Prev
+                    </button>
+
+                    {displayedPages.map((page) => {
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => {
+                            setPageNumbers((prev) => ({
+                              ...prev,
+                              currentPage: page,
+                            }));
+                          }}
+                          className={`px-2 py-1 rounded text-xs border ${theme?.border} ${pageNumbers.currentPage === page ? "bg-emerald-600 text-white" : ""}`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    })}
+
+                    {totalPages > maxPageButtons && (
+                      <span className={`text-xs ${theme?.textMuted} px-2`}>
+                        …
+                      </span>
+                    )}
+
+                    <button
+                      onClick={handleNextClickPagination}
+                      disabled={pageNumbers.currentPage === totalPages}
+                      className={`px-2 py-1 rounded border ${theme?.border} text-xs ${pageNumbers.currentPage === totalPages ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </div>
               {hasActiveFilters && (
                 <button
                   onClick={clearFilters}
@@ -714,7 +893,10 @@ const DataCollectorDashboard = () => {
           onClose={handleModalClose}
           sampleId={selectedSample.id}
           sampleData={selectedSample}
-          existingReadings={readingsBySample?.[selectedSample.id] || []}
+          existingReadings={
+            allSamples.find((s) => s.id === selectedSample.id)
+              ?.heavyMetalReadings || []
+          }
         />
       )}
     </div>

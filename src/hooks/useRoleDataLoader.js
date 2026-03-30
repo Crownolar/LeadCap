@@ -7,7 +7,7 @@ export const normalizeRole = (role = "") =>
 
 const ROLE_LOADERS = {
   datacollector: (dispatch) => {
-    dispatch(fetchSamples({ page: 1, limit: 5000 }));
+    dispatch(fetchSamples({ page: 1, limit: 50 }));
   },
 
   supervisor: (dispatch) => {

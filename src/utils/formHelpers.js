@@ -6,14 +6,18 @@ export const getInitialSampleFormState = () => ({
   lgaId: "",
   marketId: "",
   marketName: "",
-  vendorType: "",
-  vendorTypeOther: "",
-
+  marketType: "FORMAL",
   productCategoryId: "",
   productVariantId: "",
+
   productName: "",
   brandName: "",
   batchNumber: "",
+  manufacturerName: "",
+
+  vendorType: "",
+  vendorTypeOther: "",
+  notes: "",
   price: "",
   productOrigin: "LOCAL",
   brandLetter: "",
@@ -38,29 +42,36 @@ export const sampleToFormState = (sample) => {
   return {
     stateId: sample.stateId || "",
     lgaId: sample.lgaId || "",
+    marketId: marketId,
+    marketName: sample.marketName || "",
+    marketType: sample.marketType || "FORMAL",
+    sampleType: sample.sampleType || "SOLID",
     productCategoryId:
       sample.productVariant?.category?.id ||
       sample.productVariant?.categoryId ||
       "",
     productVariantId:
       sample.productVariantId || sample.productVariant?.id || "",
+
     productName: sample.productName || "",
     brandName: sample.brandName || "",
     batchNumber: sample.batchNumber || "",
-    price: sample.price != null ? String(sample.price) : "",
-    marketId: marketId,
-    marketName: sample.marketName || "",
-    sampleType: sample.sampleType || "SOLID",
-    calibrationCurveFile: null,
+    brand_letter: sample.brandLetter || "",
+
+    manufacturerName: sample.manufacturerName || "",
     vendorType: sample.vendorType || "",
     vendorTypeOther: sample.vendorTypeOther || "",
-    isRegistered: Boolean(sample.isRegistered),
+
+    notes: sample.notes || "",
+    price: sample.price != null ? String(sample.price) : "",
     gpsLatitude: sample.gpsLatitude != null ? String(sample.gpsLatitude) : "",
     gpsLongitude:
       sample.gpsLongitude != null ? String(sample.gpsLongitude) : "",
     productOrigin: sample.productOrigin || "LOCAL",
     nafdacNumber: sample.nafdacNumber || "",
     sonNumber: sample.sonNumber || "",
+    calibrationCurveFile: null,
+    isRegistered: Boolean(sample.isRegistered),
     productPhoto: sample.productPhotoUrl ? sample.productPhotoUrl : null,
   };
 };
@@ -283,25 +294,38 @@ export const buildSamplePayload = (formData) => {
   return {
     stateId: formData.stateId,
     lgaId: formData.lgaId,
-    marketId: formData.marketId === "OTHER" ? null : formData.marketId,
-    marketName: formData.marketId === "OTHER" ? formData.marketName : null,
+    marketId:
+      formData.marketId === "OTHER"
+        ? null
+        : formData.marketId
+          ? formData.marketId
+          : null,
+    marketName:
+      formData.marketId === "OTHER" ? formData.marketName || null : null,
+
     vendorType: formData.vendorType,
     vendorTypeOther: formData.vendorTypeOther || null,
+
     productVariantId: formData.productVariantId,
     productName: formData.productName,
-    // sampleType: formData.sampleType,
-    price: parseFloat(formData.price),
+
+    price: formData.price ? parseFloat(formData.price) : null,
     batchNumber: formData.batchNumber || null,
-    brandLetter: formData.brandLetter || null,
+    manufacturerName: formData.manufacturerName || "",
+
+    brand_letter: formData.brandLetter || null,
     brandName: formData.brandName || null,
+
     gpsLatitude: formData.gpsLatitude ? parseFloat(formData.gpsLatitude) : null,
     gpsLongitude: formData.gpsLongitude
       ? parseFloat(formData.gpsLongitude)
       : null,
-    isRegistered: formData.isRegistered,
-    productOrigin: formData.productOrigin,
+    notes: formData.notes || null,
+    isRegistered: formData.isRegistered || false,
+    productOrigin: formData.productOrigin || "LOCAL",
     nafdacNumber: formData.nafdacNumber || null,
     sonNumber: formData.sonNumber || null,
+
     productPhotoUrl: formData.productPhoto || null,
     calibrationCurveFile: formData.calibrationCurveFile?.data || null,
   };
@@ -326,26 +350,26 @@ export const validateSampleForm = (formData) => {
   if (!formData.stateId) errors.stateId = "State is required";
   if (!formData.lgaId) errors.lgaId = "LGA is required";
 
-  if (!formData.marketId && !formData.marketName) {
-    errors.marketId =
-      "Either select a market from the list or enter a custom market name";
-  }
-  if (formData.marketId === "OTHER" && !formData.marketName) {
-    errors.marketName = "Market name is required when selecting 'Other'";
-  }
+  // if (!formData.marketId && !formData.marketName) {
+  //   errors.marketId =
+  //     "Either select a market from the list or enter a custom market name";
+  // }
+  // if (formData.marketId === "OTHER" && !formData.marketName) {
+  //   errors.marketName = "Market name is required when selecting 'Other'";
+  // }
   if (!formData.productCategoryId)
     errors.productCategoryId = "Product category is required";
   if (!formData.productVariantId)
     errors.productVariantId = "Product variant is required";
   if (!formData.productName) errors.productName = "Product name is required";
   if (!formData.vendorType) errors.vendorType = "Vendor type is required";
-  if (!formData.brandLetter) errors.brandLetter = "Brand letter is required";
+  // if (!formData.brandLetter) errors.brandLetter = "Brand letter is required";
   if (formData.vendorType === "OTHER" && !formData.vendorTypeOther) {
     errors.vendorTypeOther = "Vendor type specification is required";
   }
-  if (!formData.price) errors.price = "Price is required";
-  if (isNaN(parseFloat(formData.price)))
-    errors.price = "Price must be a number";
+  // if (!formData.price) errors.price = "Price is required";
+  // if (isNaN(parseFloat(formData.price)))
+  //   errors.price = "Price must be a number";
 
   return {
     valid: Object.keys(errors).length === 0,

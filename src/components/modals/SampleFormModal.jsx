@@ -21,7 +21,6 @@ import toast from "react-hot-toast";
 const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
   const isEdit = mode === "edit";
   const [loading, setLoading] = useState(false);
-  const [variantError, setVariantError] = useState(null);
   const [error, setError] = useState(null);
   const [formData, setFormData] = useState(() =>
     isEdit && initialSample
@@ -40,6 +39,7 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
   const [categories, setCategories] = useState([]);
   const [loadingData, setLoadingData] = useState(false);
   const [loadingVariants, setLoadingVariants] = useState(false);
+  const [variantError, setVariantError] = useState(null);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [locationError, setLocationError] = useState(null);
 
@@ -312,10 +312,10 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                   <label
                     className={`block text-sm font-medium mb-2 ${theme.text}`}
                   >
-                    Market *
+                    Market
                   </label>
                   <select
-                    required
+                    // required
                     value={formData.marketId}
                     onChange={(e) =>
                       setFormData({ ...formData, marketId: e.target.value })
@@ -338,11 +338,11 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                     <label
                       className={`block text-sm font-medium mb-2 ${theme.text}`}
                     >
-                      Market Name *
+                      Market Name
                     </label>
                     <input
                       type='text'
-                      required={formData.marketId === "OTHER"}
+                      // required={formData.marketId === "OTHER"}
                       value={formData.marketName}
                       onChange={(e) =>
                         setFormData({
@@ -355,6 +355,23 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                     />
                   </div>
                 )}
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${theme.text}`}
+                  >
+                    Market Type
+                  </label>
+                  <select
+                    value={formData.marketType}
+                    onChange={(e) =>
+                      setFormData({ ...formData, marketType: e.target.value })
+                    }
+                    className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50`}
+                  >
+                    <option value='FORMAL'>FORMAL</option>
+                    <option value='INFORMAL'>INFORMAL</option>
+                  </select>
+                </div>
 
                 <div>
                   <label
@@ -513,10 +530,9 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                   <label
                     className={`block text-sm font-medium mb-2 ${theme.text}`}
                   >
-                    Brand letter *
+                    Brand Letter
                   </label>
                   <select
-                    required
                     value={formData.brandLetter}
                     onChange={(e) =>
                       setFormData({
@@ -527,7 +543,7 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
                   >
                     <option value=''>Select Brand Letter</option>
-                    {["A", "B", "C", "D"].map((letter) => (
+                    {["a", "b", "c", "d"].map((letter) => (
                       <option key={letter} value={letter}>
                         {letter}
                       </option>
@@ -603,6 +619,25 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                     placeholder='e.g., BeautyGlow or N/A'
                   />
                 </div>
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${theme.text}`}
+                  >
+                    Manufacturer Name
+                  </label>
+                  <input
+                    type='text'
+                    value={formData.manufacturerName}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        manufacturerName: e.target.value,
+                      })
+                    }
+                    className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
+                    placeholder='e.g., BeautyGlow or N/A'
+                  />
+                </div>
 
                 <div>
                   <label
@@ -625,11 +660,10 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                   <label
                     className={`block text-sm font-medium mb-2 ${theme.text}`}
                   >
-                    Price (₦) *
+                    Price (₦)
                   </label>
                   <input
                     type='number'
-                    required
                     value={formData.price}
                     onChange={(e) =>
                       setFormData({ ...formData, price: e.target.value })
@@ -643,10 +677,9 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                   <label
                     className={`block text-sm font-medium mb-2 ${theme.text}`}
                   >
-                    Product Origin *
+                    Product Origin
                   </label>
                   <select
-                    required
                     value={formData.productOrigin}
                     onChange={(e) =>
                       setFormData({
@@ -725,6 +758,29 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                     </div>
                   </>
                 )}
+              </div>
+            </section>
+
+            {/* note*/}
+            <section>
+              <div className='mb-3 sm:mb-4'>
+                <label
+                  className={`${theme?.text} text-xs sm:text-sm font-semibold block mb-1 sm:mb-1.5`}
+                >
+                  Notes (Optional)
+                </label>
+                <textarea
+                  rows='3'
+                  value={formData.notes}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      notes: e.target.value,
+                    })
+                  }
+                  placeholder='Add any notes'
+                  className={`w-full px-2.5 py-2 sm:px-3 text-sm sm:text-base border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
+                />
               </div>
             </section>
 
