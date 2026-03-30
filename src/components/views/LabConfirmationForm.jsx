@@ -48,12 +48,12 @@ const LabConfirmationForm = () => {
 
         setLoading(true);
         console.log(
-          "🔵 [fetchSample] Making API request to /lab/sample/" + sampleId
+          "🔵 [fetchSample] Making API request to /lab/sample/" + sampleId,
         );
         const res = await api.get(`/lab/sample/${sampleId}`);
         console.log(
           "✅ [fetchSample] Sample fetched successfully:",
-          res.data.data
+          res.data.data,
         );
         setSample(res.data.data);
 
@@ -170,11 +170,11 @@ const LabConfirmationForm = () => {
 
   if (error && !sample) {
     return (
-      <div className="w-full flex justify-center mt-6 sm:mt-10 px-3 sm:px-4">
+      <div className='w-full flex justify-center mt-6 sm:mt-10 px-3 sm:px-4'>
         <div
           className={`border-l-4 p-3 sm:p-4 rounded shadow max-w-xl w-full ${theme.danger}`}
         >
-          <h2 className="font-semibold text-base sm:text-lg">{error}</h2>
+          <h2 className='font-semibold text-base sm:text-lg'>{error}</h2>
         </div>
       </div>
     );
@@ -186,19 +186,19 @@ const LabConfirmationForm = () => {
       (r) =>
         r.heavyMetal === "LEAD" &&
         r.requiresLabConfirmation &&
-        r.aasStatus === "PENDING"
+        r.aasStatus === "PENDING",
     ) || [];
 
   return (
-    <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-6">
+    <div className='max-w-4xl mx-auto px-3 sm:px-4 lg:px-6'>
       {/* HEADER */}
-      <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+      <div className='flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6'>
         <button
-          type="button"
+          type='button'
           onClick={() => navigate("/lab-samples")}
           className={`p-1.5 sm:p-2 rounded-lg transition ${theme.hover}`}
-          title="Back to lab samples"
-          aria-label="Back to lab samples"
+          title='Back to lab samples'
+          aria-label='Back to lab samples'
         >
           <ArrowLeft size={18} className={`sm:w-5 sm:h-5 ${theme.text}`} />
         </button>
@@ -211,12 +211,12 @@ const LabConfirmationForm = () => {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 sm:p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg flex gap-2 text-sm sm:text-base">
+        <div className='mb-4 p-3 sm:p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg flex gap-2 text-sm sm:text-base'>
           <AlertTriangle
             size={18}
-            className="sm:w-5 sm:h-5 flex-shrink-0 mt-0.5"
+            className='sm:w-5 sm:h-5 flex-shrink-0 mt-0.5'
           />
-          <p className="break-words">{error}</p>
+          <p className='break-words'>{error}</p>
         </div>
       )}
 
@@ -229,8 +229,8 @@ const LabConfirmationForm = () => {
         >
           Sample Information
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-          <div className="min-w-0">
+        <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4'>
+          <div className='min-w-0'>
             <p className={`text-xs sm:text-sm ${theme?.text}`}>Sample ID</p>
             <p
               className={`text-sm sm:text-base ${theme?.textMuted} font-semibold truncate`}
@@ -238,7 +238,7 @@ const LabConfirmationForm = () => {
               {sample?.sampleId}
             </p>
           </div>
-          <div className="min-w-0">
+          <div className='min-w-0'>
             <p className={`text-xs sm:text-sm ${theme?.text}`}>Product</p>
             <p
               className={`text-sm sm:text-base ${theme?.textMuted} font-semibold truncate`}
@@ -246,7 +246,7 @@ const LabConfirmationForm = () => {
               {sample?.productName}
             </p>
           </div>
-          <div className="min-w-0">
+          <div className='min-w-0'>
             <p className={`text-xs sm:text-sm ${theme?.text}`}>Brand</p>
             <p
               className={`text-sm sm:text-base ${theme?.textMuted} font-semibold truncate`}
@@ -254,7 +254,7 @@ const LabConfirmationForm = () => {
               {sample?.brandName || "N/A"}
             </p>
           </div>
-          <div className="min-w-0">
+          <div className='min-w-0'>
             <p className={`text-xs sm:text-sm ${theme?.text}`}>Location</p>
             <p
               className={`text-sm sm:text-base ${theme?.textMuted} font-semibold truncate`}
@@ -262,11 +262,11 @@ const LabConfirmationForm = () => {
               {sample?.lga?.name && sample?.state?.name
                 ? `${sample.lga.name}, ${sample.state.name}`
                 : sample?.state?.name
-                ? sample.state.name
-                : "N/A"}
+                  ? sample.state.name
+                  : "N/A"}
             </p>
           </div>
-          <div className="min-w-0">
+          <div className='min-w-0'>
             <p className={`text-xs sm:text-sm ${theme?.text}`}>Sample Type</p>
             <p
               className={`text-sm sm:text-base ${theme?.textMuted} font-semibold`}
@@ -274,7 +274,7 @@ const LabConfirmationForm = () => {
               {sample?.sampleType}
             </p>
           </div>
-          <div className="min-w-0">
+          <div className='min-w-0'>
             <p className={`text-xs sm:text-sm ${theme?.text}`}>
               Date Collected
             </p>
@@ -290,7 +290,7 @@ const LabConfirmationForm = () => {
       </div>
 
       {/* AAS READINGS FORM */}
-      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+      <form onSubmit={handleSubmit} className='space-y-3 sm:space-y-4'>
         {readingsToConfirm.length > 0 ? (
           readingsToConfirm.map((reading) => (
             <div
@@ -303,17 +303,16 @@ const LabConfirmationForm = () => {
                 {reading.heavyMetal} Testing
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4'>
                 {/* XRF Reading (Read-only) */}
                 <div>
                   <label
                     className={`text-xs sm:text-sm font-semibold ${theme?.text} block mb-1 sm:mb-1.5`}
                   >
-                    XRF Screening Result (
-                    {sample?.sampleType === "LIQUID" ? "mg/L" : "mg/kg"})
+                    XRF Screening Result (ppm)
                   </label>
                   <input
-                    type="number"
+                    type='number'
                     disabled
                     value={reading.xrfReading || "—"}
                     className={`${theme?.input} ${theme?.textMuted} w-full px-2.5 py-2 sm:px-3 text-sm sm:text-base border rounded-lg cursor-not-allowed`}
@@ -325,42 +324,41 @@ const LabConfirmationForm = () => {
                   <label
                     className={`text-xs sm:text-sm ${theme?.text} font-semibold block mb-1 sm:mb-1.5`}
                   >
-                    AAS Lab Result (
-                    {sample?.sampleType === "LIQUID" ? "mg/L" : "mg/kg"}) *
+                    AAS Lab Result (ppm) *
                   </label>
                   <input
-                    type="number"
-                    step="0.001"
-                    min="0"
+                    type='number'
+                    step='0.001'
+                    min='0'
                     required
                     value={formData[reading.id]?.aasReading || ""}
                     onChange={(e) =>
                       handleInputChange(
                         reading.id,
                         "aasReading",
-                        e.target.value
+                        e.target.value,
                       )
                     }
-                    placeholder="Enter AAS reading"
+                    placeholder='Enter AAS reading'
                     className={`w-full px-2.5 py-2 sm:px-3 text-sm sm:text-base border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
                   />
                 </div>
               </div>
 
               {/* AAS Notes */}
-              <div className="mb-3 sm:mb-4">
+              <div className='mb-3 sm:mb-4'>
                 <label
                   className={`${theme?.text} text-xs sm:text-sm font-semibold block mb-1 sm:mb-1.5`}
                 >
                   Lab Notes (Optional)
                 </label>
                 <textarea
-                  rows="3"
+                  rows='3'
                   value={formData[reading.id]?.aasNotes || ""}
                   onChange={(e) =>
                     handleInputChange(reading.id, "aasNotes", e.target.value)
                   }
-                  placeholder="Add any observations, anomalies, or testing conditions..."
+                  placeholder='Add any observations, anomalies, or testing conditions...'
                   className={`w-full px-2.5 py-2 sm:px-3 text-sm sm:text-base border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
                 />
               </div>
@@ -371,7 +369,7 @@ const LabConfirmationForm = () => {
                   theme?.bg === "bg-gray-100" ? "bg-blue-50" : "bg-blue-900"
                 }`}
               >
-                <p className="text-xs text-blue-700 dark:text-blue-300">
+                <p className='text-xs text-blue-700 dark:text-blue-300'>
                   <strong>Status:</strong> Pending AAS confirmation
                 </p>
               </div>
@@ -389,20 +387,20 @@ const LabConfirmationForm = () => {
 
         {/* SUBMIT BUTTON */}
         {readingsToConfirm.length > 0 && (
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-4 sm:mt-6">
+          <div className='flex flex-col sm:flex-row gap-2 sm:gap-3 mt-4 sm:mt-6'>
             <button
-              type="button"
+              type='button'
               onClick={() => navigate("/lab-samples")}
               className={`px-4 py-2 border ${theme?.hover} ${theme?.text} ${theme?.bg} ${theme?.border} rounded-lg text-sm sm:text-base font-medium transition-colors`}
             >
               Cancel
             </button>
             <button
-              type="submit"
+              type='submit'
               disabled={submitting}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white rounded-lg transition text-sm sm:text-base font-medium"
+              className='flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white rounded-lg transition text-sm sm:text-base font-medium'
             >
-              <Save size={16} className="sm:w-[18px] sm:h-[18px]" />
+              <Save size={16} className='sm:w-[18px] sm:h-[18px]' />
               {submitting ? "Submitting..." : "Submit AAS Results"}
             </button>
           </div>

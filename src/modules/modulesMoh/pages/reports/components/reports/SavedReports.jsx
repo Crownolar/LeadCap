@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { TypeBadge } from "../../../../components/TypeBadge";
 import {
   getSavedReports,
@@ -6,6 +6,7 @@ import {
 } from "../../../../../../services/mohReportService";
 import SavedReportPreview from "./SavedReportPreview";
 import ReportViewerModal from "./ReportViewerModal";
+import { useTheme } from "../../../../../../context/ThemeContext";
 
 const formatReportType = (type) => {
   if (!type) return "Unknown";
@@ -41,6 +42,7 @@ const SavedReports = () => {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const {theme} = useTheme();
 
   const [openingId, setOpeningId] = useState("");
   const [selectedReport, setSelectedReport] = useState(null);
@@ -136,7 +138,7 @@ const SavedReports = () => {
     fetchReports();
   }, []);
 
-  // const handleOpenReport = async (id) => {
+  //  const handleOpenReport = async (id) => {
   //   try {
   //     setOpeningId(id);
   //     setPreviewError("");
@@ -242,22 +244,23 @@ const SavedReports = () => {
       setOpeningId("");
     }
   };
+
   return (
     <>
       <div className="mt-5">
-        <div className="mb-3 text-sm font-medium text-gray-900">
+        <div className={`mb-3 text-sm font-medium ${theme.text}`}>
           Saved reports
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className={`overflow-hidden rounded-xl border ${theme.border} ${theme.bg}`}>
           {loading ? (
-            <div className="px-4 py-6 text-sm text-gray-500">
+            <div className={`px-4 py-6 text-sm ${theme.textMuted}`}>
               Loading saved reports...
             </div>
           ) : error ? (
             <div className="px-4 py-6 text-sm text-red-600">{error}</div>
           ) : reports.length === 0 ? (
-            <div className="px-4 py-6 text-sm text-gray-500">
+            <div className={`px-4 py-6 text-sm ${theme.textMuted}`}>
               No saved reports available.
             </div>
           ) : (
@@ -272,18 +275,18 @@ const SavedReports = () => {
                 return (
                   <div
                     key={reportId}
-                    className="flex items-center justify-between px-4 py-3"
+                    className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                   >
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
+                    <div className="min-w-0">
+                      <div className={`text-sm font-medium ${theme.text}`}>
                         {buildReportTitle(report)}
                       </div>
-                      <div className="mt-0.5 text-xs text-gray-400">
+                      <div className={`mt-0.5 text-xs ${theme.textMuted}`}>
                         {buildReportSub(report)}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       <TypeBadge type={formatReportType(report?.reportType)} />
                       <button
                         type="button"
@@ -291,8 +294,8 @@ const SavedReports = () => {
                         disabled={openingId === reportId}
                         className={`rounded-md border px-3 py-1.5 text-xs ${
                           openingId === reportId
-                            ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                            : "cursor-pointer border-gray-200 bg-white text-gray-500 hover:border-green-400 hover:text-green-700"
+                            ? `cursor-not-allowed ${theme.border} bg-gray-100 text-gray-400`
+                            : `cursor-pointer ${theme.border} bg-white text-gray-500 hover:${theme.hoverBorder} hover:text-green-700`
                         }`}
                       >
                         {openingId === reportId ? "Opening..." : "Open"}

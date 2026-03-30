@@ -1,345 +1,10 @@
-// import { useEffect, useState } from "react";
-// import { FilterSep, BtnPrimary, BtnGhost, TH, TD } from "../utils/MohUI";
-// import { Pagination } from "../components/Pagination";
-// import { FilterBar } from "../components/FilterBar";
-// import { StatusBadge } from "../components/StatusBadge";
-// import { getMOHSamples } from "../../../services/mohService";
-// // import getUTCDayRange from "../utils/dateFormat";
-
-// const COLUMNS = [
-//   "Sample ID",
-//   "State",
-//   "LGA",
-//   "Market",
-//   "Product name",
-//   "Category",
-//   "NAFDAC No.",
-//   "SON No.",
-//   "Status",
-//   "Price",
-//   "Origin",
-//   "Created at",
-// ];
-
-// const STATES = [
-//   { id: "cmmnjg7o300l1v2ed900oyiyj", name: "Kano" },
-//   { id: "cmmnabc300l1v2ed900xyz", name: "Lagos" },
-//   { id: "cmmndef300l1v2ed900abc", name: "Oyo" },
-//   { id: "cmmnghi300l1v2ed900def", name: "Abuja" },
-// ];
-
-// const Samples = () => {
-//   const [samples, setSamples] = useState([]);
-//   const [loading, setLoading] = useState(false);
-
-//   const [page, setPage] = useState(1);
-//   const [pageSize, setPageSize] = useState(10);
-//   const [totalPages, setTotalPages] = useState(1);
-
-//   const [stateFilter, setStateFilter] = useState("");
-//   const [lgaFilter, setLgaFilter] = useState("");
-//   const [fromDate, setFromDate] = useState("");
-//   const [toDate, setToDate] = useState("");
-
-//   useEffect(() => {
-//     fetchSamples();
-//   }, [page, pageSize, stateFilter, lgaFilter, fromDate, toDate]);
-
-//   const fetchSamples = async () => {
-//   try {
-//     setLoading(true);
-
-//     const data = await getMOHSamples({
-//       stateId: stateFilter || undefined,
-//       lgaId: lgaFilter || undefined,
-//       page,
-//       limit: pageSize,
-//     });
-
-//     console.log("Raw API response:", data);
-
-//     const filteredSamples = (data.data || []).filter((s) => {
-//       const sampleDate = new Date(s.createdAt).getTime(); 
-//       const from = fromDate ? new Date(fromDate).setHours(0, 0, 0, 0) : null;
-//       const to = toDate ? new Date(toDate).setHours(23, 59, 59, 999) : null;
-
-//       if (from && sampleDate < from) return false;
-//       if (to && sampleDate > to) return false;
-//       return true;
-//     });
-
-//     console.log("Filtered samples:", filteredSamples);
-
-//     setSamples(filteredSamples);
-//     setTotalPages(data.pagination?.totalPages || 1);
-//   } catch (err) {
-//     console.error("Failed to load samples", err);
-//   } finally {
-//     setLoading(false);
-//   }
-// };
-
-//   const clearFilters = () => {
-//     setStateFilter("");
-//     setLgaFilter("");
-//     setFromDate("");
-//     setToDate("");
-//     setPage(1);
-//   };
-
-//   useEffect(() => {
-//     console.log("Pagination state changed:", { page, totalPages });
-//   }, [page, totalPages]);
-
-//   return (
-//     <div className="w-full min-w-0">
-//       <FilterBar>
-//         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-//           <label className="text-xs text-gray-500 whitespace-nowrap">
-//             State
-//           </label>
-//           <select
-//             value={stateFilter}
-//             onChange={(e) => setStateFilter(e.target.value)}
-//             className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500 flex-1 sm:flex-none min-w-0"
-//           >
-//             <option value="">All States</option>
-//             {STATES.map((s) => (
-//               <option key={s.id} value={s.id}>
-//                 {s.name}
-//               </option>
-//             ))}
-//           </select>
-
-//           <label className="text-xs text-gray-500">LGA</label>
-//           <select
-//             value={lgaFilter}
-//             onChange={(e) => setLgaFilter(e.target.value)}
-//             className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500 flex-1 sm:flex-none min-w-0"
-//           >
-//             <option value="">All LGAs</option>
-//           </select>
-//         </div>
-
-//         <FilterSep />
-
-//         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-//           <label className="text-xs text-gray-500 whitespace-nowrap">
-//             From
-//           </label>
-//           <input
-//             type="date"
-//             value={fromDate}
-//             onChange={(e) => setFromDate(e.target.value)}
-//             className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500 flex-1 sm:flex-none min-w-0"
-//           />
-//           <label className="text-xs text-gray-500 whitespace-nowrap">To</label>
-//           <input
-//             type="date"
-//             value={toDate}
-//             onChange={(e) => setToDate(e.target.value)}
-//             className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500 flex-1 sm:flex-none min-w-0"
-//           />
-//         </div>
-
-//         <FilterSep />
-
-//         <div className="flex items-center gap-2 w-full sm:w-auto">
-//           <BtnPrimary
-//             onClick={() => {
-//               setPage(1);
-//               fetchSamples();
-//             }}
-//           >
-//             Apply filters
-//           </BtnPrimary>
-//           <BtnGhost onClick={clearFilters}>Clear</BtnGhost>
-//         </div>
-//       </FilterBar>
-
-//       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-//         <div className="px-4 py-3 border-b border-gray-100 flex flex-wrap items-center justify-between gap-2">
-//           <div className="min-w-0">
-//             <div className="text-sm font-medium text-gray-900">All samples</div>
-//             <div className="text-xs text-gray-400 mt-0.5 truncate">
-//               Read-only view
-//             </div>
-//           </div>
-//           <select
-//             value={pageSize}
-//             onChange={(e) => {
-//               setPageSize(Number(e.target.value));
-//               setPage(1);
-//             }}
-//             className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500 flex-shrink-0"
-//           >
-//             <option value={10}>10 per page</option>
-//             <option value={20}>20 per page</option>
-//             <option value={50}>50 per page</option>
-//           </select>
-//         </div>
-
-//         {loading ? (
-//           <div className="p-8 text-sm text-gray-500 text-center">
-//             Loading samples...
-//           </div>
-//         ) : samples.length === 0 ? (
-//           <div className="p-8 text-sm text-gray-400 text-center">
-//             No samples found.
-//           </div>
-//         ) : (
-//           <>
-//             <div className="hidden md:block overflow-x-auto">
-//               <table
-//                 className="w-full border-collapse text-xs"
-//                 style={{ minWidth: 900 }}
-//               >
-//                 <thead>
-//                   <tr>
-//                     {COLUMNS.map((h) => (
-//                       <th key={h} className={TH}>
-//                         {h}
-//                       </th>
-//                     ))}
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {samples.map((row) => (
-//                     <tr key={row.id} className="hover:bg-gray-50">
-//                       <td className={`${TD} font-mono text-xs text-green-700`}>
-//                         {row.sampleId}
-//                       </td>
-//                       <td className={TD}>{row.state?.name}</td>
-//                       <td className={TD}>{row.lga?.name}</td>
-//                       <td className={TD}>{row.market?.name}</td>
-//                       <td className={`${TD} font-medium`}>{row.productName}</td>
-//                       <td className={TD}>
-//                         {row.productVariant?.category?.displayName}
-//                       </td>
-//                       <td className={`${TD} font-mono text-xs`}>
-//                         {row.nafdacNumber}
-//                       </td>
-//                       <td className={`${TD} font-mono text-xs`}>
-//                         {row.sonNumber}
-//                       </td>
-//                       <td className={TD}>
-//                         <StatusBadge status={row.status} />
-//                       </td>
-//                       <td className={TD}>{row.price}</td>
-//                       <td className={TD}>{row.productOrigin}</td>
-//                       <td className={`${TD} text-gray-400`}>
-//                         {new Date(row.createdAt).toLocaleDateString()}
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             </div>
-
-//             <div className="md:hidden divide-y divide-gray-100">
-//               {samples.map((row) => (
-//                 <div key={row.id} className="px-4 py-3 space-y-2">
-//                   <div className="flex items-center justify-between gap-2">
-//                     <span className="font-mono text-xs font-medium text-green-700 truncate">
-//                       {row.sampleId}
-//                     </span>
-//                     <StatusBadge status={row.status} />
-//                   </div>
-//                   <div className="text-sm font-medium text-gray-900 truncate">
-//                     {row.productName}
-//                   </div>
-//                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-//                     <div className="flex flex-col">
-//                       <span className="text-gray-400 uppercase tracking-wide text-xs">
-//                         State / LGA
-//                       </span>
-//                       <span className="text-gray-700 truncate">
-//                         {row.state?.name}
-//                         {row.lga?.name ? ` · ${row.lga.name}` : ""}
-//                       </span>
-//                     </div>
-//                     <div className="flex flex-col">
-//                       <span className="text-gray-400 uppercase tracking-wide text-xs">
-//                         Market
-//                       </span>
-//                       <span className="text-gray-700 truncate">
-//                         {row.market?.name || "—"}
-//                       </span>
-//                     </div>
-//                     <div className="flex flex-col">
-//                       <span className="text-gray-400 uppercase tracking-wide text-xs">
-//                         Category
-//                       </span>
-//                       <span className="text-gray-700 truncate">
-//                         {row.productCategory?.name || "—"}
-//                       </span>
-//                     </div>
-//                     <div className="flex flex-col">
-//                       <span className="text-gray-400 uppercase tracking-wide text-xs">
-//                         Origin
-//                       </span>
-//                       <span className="text-gray-700 truncate">
-//                         {row.productOrigin || "—"}
-//                       </span>
-//                     </div>
-//                     <div className="flex flex-col">
-//                       <span className="text-gray-400 uppercase tracking-wide text-xs">
-//                         NAFDAC No.
-//                       </span>
-//                       <span className="font-mono text-gray-700 truncate">
-//                         {row.nafdacNumber || "—"}
-//                       </span>
-//                     </div>
-//                     <div className="flex flex-col">
-//                       <span className="text-gray-400 uppercase tracking-wide text-xs">
-//                         SON No.
-//                       </span>
-//                       <span className="font-mono text-gray-700 truncate">
-//                         {row.sonNumber || "—"}
-//                       </span>
-//                     </div>
-//                     <div className="flex flex-col">
-//                       <span className="text-gray-400 uppercase tracking-wide text-xs">
-//                         Price
-//                       </span>
-//                       <span className="text-gray-700">{row.price || "—"}</span>
-//                     </div>
-//                     <div className="flex flex-col">
-//                       <span className="text-gray-400 uppercase tracking-wide text-xs">
-//                         Created
-//                       </span>
-//                       <span className="text-gray-400">
-//                         {new Date(row.createdAt).toLocaleDateString()}
-//                       </span>
-//                     </div>
-//                   </div>
-//                 </div>
-//               ))}
-//             </div>
-//           </>
-//         )}
-
-//         <Pagination
-//           console
-//           page={page}
-//           setPage={setPage}
-//           totalPages={totalPages}
-//         />
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default Samples;
-
-
-import { useEffect, useState } from "react";
-import { FilterSep, BtnPrimary, BtnGhost, TH, TD } from "../utils/MohUI";
-import { Pagination } from "../components/Pagination";
+import { useEffect, useMemo, useState } from "react";
+import { FilterSep, BtnPrimary, BtnGhost } from "../utils/MohUI";
 import { FilterBar } from "../components/FilterBar";
 import { StatusBadge } from "../components/StatusBadge";
 import { getMOHSamples } from "../../../services/mohService";
 import { useTheme } from "../../../context/ThemeContext";
+import api from "../../../utils/api";
 
 const COLUMNS = [
   "Sample ID",
@@ -356,73 +21,39 @@ const COLUMNS = [
   "Created at",
 ];
 
-const STATES = [
-  { id: "cmmnjg7o300l1v2ed900oyiyj", name: "Kano" },
-  { id: "cmmnabc300l1v2ed900xyz", name: "Lagos" },
-  { id: "cmmndef300l1v2ed900abc", name: "Oyo" },
-  { id: "cmmnghi300l1v2ed900def", name: "Abuja" },
-];
+const STATES_CACHE_KEY = "moh_states_cache_v1";
+const LGAS_CACHE_PREFIX = "moh_lgas_cache_v1_";
 
 const Samples = () => {
   const { theme, darkMode } = useTheme();
 
   const [samples, setSamples] = useState([]);
+  const [states, setStates] = useState([]);
+  const [lgaOptions, setLgaOptions] = useState([]);
+
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [statesLoading, setStatesLoading] = useState(false);
+  const [lgaLoading, setLgaLoading] = useState(false);
 
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
 
+  // UI filter state
   const [stateFilter, setStateFilter] = useState("");
   const [lgaFilter, setLgaFilter] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
-  useEffect(() => {
-    fetchSamples();
-  }, [page, pageSize, stateFilter, lgaFilter, fromDate, toDate]);
-
-  const fetchSamples = async () => {
-    try {
-      setLoading(true);
-
-      const data = await getMOHSamples({
-        stateId: stateFilter || undefined,
-        lgaId: lgaFilter || undefined,
-        page,
-        limit: pageSize,
-      });
-
-      const filteredSamples = (data.data || []).filter((s) => {
-        const sampleDate = new Date(s.createdAt).getTime();
-        const from = fromDate
-          ? new Date(fromDate).setHours(0, 0, 0, 0)
-          : null;
-        const to = toDate
-          ? new Date(toDate).setHours(23, 59, 59, 999)
-          : null;
-
-        if (from && sampleDate < from) return false;
-        if (to && sampleDate > to) return false;
-        return true;
-      });
-
-      setSamples(filteredSamples);
-      setTotalPages(data.pagination?.totalPages || 1);
-    } catch (err) {
-      console.error("Failed to load samples", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const clearFilters = () => {
-    setStateFilter("");
-    setLgaFilter("");
-    setFromDate("");
-    setToDate("");
-    setPage(1);
-  };
+  // Applied filter state
+  const [appliedFilters, setAppliedFilters] = useState({
+    stateId: "",
+    lgaId: "",
+    fromDate: "",
+    toDate: "",
+  });
 
   const inputClass = `
     text-xs px-2 py-1.5 rounded-md outline-none border min-w-0
@@ -434,6 +65,256 @@ const Samples = () => {
     ? "border-gray-700 text-gray-200"
     : "border-gray-100 text-gray-700";
 
+  const normalizeRows = (data) => {
+    if (Array.isArray(data?.data)) return data.data;
+    if (Array.isArray(data?.samples)) return data.samples;
+    if (Array.isArray(data?.items)) return data.items;
+    if (Array.isArray(data?.results)) return data.results;
+    if (Array.isArray(data?.rows)) return data.rows;
+    if (Array.isArray(data)) return data;
+    return [];
+  };
+
+  const normalizeStates = (payload) => {
+    const rows =
+      Array.isArray(payload?.data) ? payload.data :
+      Array.isArray(payload?.states) ? payload.states :
+      Array.isArray(payload?.data?.states) ? payload.data.states :
+      Array.isArray(payload?.items) ? payload.items :
+      Array.isArray(payload) ? payload :
+      [];
+
+    return rows
+      .map((state) => ({
+        id: state?.id || state?.stateId || state?.value || "",
+        name: state?.name || state?.stateName || state?.label || "",
+        code: state?.code || "",
+        isActive: state?.isActive,
+      }))
+      .filter((state) => state.id && state.name)
+      .filter((state) => state.isActive !== false)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  };
+
+  const normalizeLgas = (payload, selectedStateId) => {
+    const rows =
+      Array.isArray(payload?.data) ? payload.data :
+      Array.isArray(payload?.lgas) ? payload.lgas :
+      Array.isArray(payload?.data?.lgas) ? payload.data.lgas :
+      Array.isArray(payload?.items) ? payload.items :
+      Array.isArray(payload) ? payload :
+      [];
+
+    return rows
+      .map((lga) => ({
+        id: lga?.id || lga?.lgaId || lga?.value || "",
+        name: lga?.name || lga?.lgaName || lga?.label || "",
+        stateId: lga?.stateId || lga?.state?.id || lga?.state_id || "",
+        isActive: lga?.isActive,
+      }))
+      .filter((lga) => lga.id && lga.name)
+      .filter((lga) => lga.isActive !== false)
+      .filter((lga) => lga.stateId === selectedStateId)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  };
+
+  const resolveTotalPages = (data, size) => {
+    if (data?.count && Number.isFinite(data.count)) {
+      return Math.max(1, Math.ceil(data.count / size));
+    }
+
+    return (
+      data?.pagination?.totalPages ||
+      data?.meta?.totalPages ||
+      data?.totalPages ||
+      data?.pages ||
+      1
+    );
+  };
+
+  const applyDateFilter = (rows, filters) => {
+    return (rows || []).filter((item) => {
+      if (!item?.createdAt) return true;
+
+      const created = new Date(item.createdAt).getTime();
+      const from = filters?.fromDate
+        ? new Date(filters.fromDate).setHours(0, 0, 0, 0)
+        : null;
+      const to = filters?.toDate
+        ? new Date(filters.toDate).setHours(23, 59, 59, 999)
+        : null;
+
+      if (from && created < from) return false;
+      if (to && created > to) return false;
+
+      return true;
+    });
+  };
+
+  const fetchStates = async () => {
+    try {
+      const cached = sessionStorage.getItem(STATES_CACHE_KEY);
+      if (cached) {
+        setStates(JSON.parse(cached));
+        return;
+      }
+
+      setStatesLoading(true);
+
+      const res = await api.get("/management/states", {
+        params: {
+          page: 1,
+          pageSize: 100,
+        },
+      });
+
+      const normalized = normalizeStates(res.data);
+      setStates(normalized);
+      sessionStorage.setItem(STATES_CACHE_KEY, JSON.stringify(normalized));
+    } catch (error) {
+      console.error("Failed to fetch states:", error);
+      setStates([]);
+    } finally {
+      setStatesLoading(false);
+    }
+  };
+
+  const fetchLgasByState = async (selectedStateId) => {
+    if (!selectedStateId) {
+      setLgaOptions([]);
+      return;
+    }
+
+    const cacheKey = `${LGAS_CACHE_PREFIX}${selectedStateId}`;
+
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        setLgaOptions(JSON.parse(cached));
+        return;
+      }
+
+      setLgaLoading(true);
+
+      const res = await api.get("/management/lgas", {
+        params: {
+          page: 1,
+          pageSize: 1000,
+        },
+      });
+
+      const normalized = normalizeLgas(res.data, selectedStateId);
+      setLgaOptions(normalized);
+      sessionStorage.setItem(cacheKey, JSON.stringify(normalized));
+    } catch (error) {
+      console.error("Failed to fetch LGAs:", error);
+      setLgaOptions([]);
+    } finally {
+      setLgaLoading(false);
+    }
+  };
+
+  const fetchSamples = async ({ nextPage = 1, append = false } = {}) => {
+    try {
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+
+      const data = await getMOHSamples({
+        page: nextPage,
+        pageSize,
+        stateId: appliedFilters.stateId || undefined,
+        lgaId: appliedFilters.lgaId || undefined,
+        fromDate: appliedFilters.fromDate || undefined,
+        toDate: appliedFilters.toDate || undefined,
+      });
+
+      const rows = applyDateFilter(normalizeRows(data), appliedFilters);
+      const computedTotalPages = resolveTotalPages(data, pageSize);
+
+      setTotalPages(computedTotalPages);
+      setHasMore(nextPage < computedTotalPages);
+
+      if (append) {
+        setSamples((prev) => {
+          const existingIds = new Set(prev.map((item) => item.id));
+          const dedupedNewRows = rows.filter((item) => !existingIds.has(item.id));
+          return [...prev, ...dedupedNewRows];
+        });
+      } else {
+        setSamples(rows);
+      }
+
+      setPage(nextPage);
+    } catch (error) {
+      console.error("Failed to fetch MOH samples:", error);
+
+      if (!append) {
+        setSamples([]);
+        setTotalPages(1);
+        setHasMore(false);
+        setPage(1);
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const applyFilters = () => {
+    setSamples([]);
+    setPage(1);
+    setHasMore(false);
+
+    setAppliedFilters({
+      stateId: stateFilter,
+      lgaId: lgaFilter,
+      fromDate,
+      toDate,
+    });
+  };
+
+  const clearFilters = () => {
+    setStateFilter("");
+    setLgaFilter("");
+    setFromDate("");
+    setToDate("");
+    setLgaOptions([]);
+    setSamples([]);
+    setPage(1);
+    setHasMore(false);
+
+    setAppliedFilters({
+      stateId: "",
+      lgaId: "",
+      fromDate: "",
+      toDate: "",
+    });
+  };
+
+  useEffect(() => {
+    fetchStates();
+  }, []);
+
+  useEffect(() => {
+    setLgaFilter("");
+    setPage(1);
+
+    if (stateFilter) {
+      fetchLgasByState(stateFilter);
+    } else {
+      setLgaOptions([]);
+    }
+  }, [stateFilter]);
+
+  useEffect(() => {
+    fetchSamples({ nextPage: 1, append: false });
+  }, [pageSize, appliedFilters]);
+
+  const tableRows = useMemo(() => samples || [], [samples]);
+
   return (
     <div className={`w-full min-w-0 ${theme.text}`}>
       <FilterBar>
@@ -441,26 +322,51 @@ const Samples = () => {
           <label className={`text-xs whitespace-nowrap ${theme.textMuted}`}>
             State
           </label>
+
           <select
             value={stateFilter}
-            onChange={(e) => setStateFilter(e.target.value)}
-            className={`${inputClass} flex-1 sm:flex-none`}
+            onChange={(e) => {
+              setStateFilter(e.target.value);
+            }}
+            className={`${inputClass} flex-1 sm:flex-none min-w-[220px]`}
+            disabled={statesLoading}
           >
-            <option value="">All States</option>
-            {STATES.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
+            <option value="">
+              {statesLoading ? "Loading states..." : "All States"}
+            </option>
+
+            {states.map((state) => (
+              <option key={state.id} value={state.id}>
+                {state.name}
               </option>
             ))}
           </select>
 
-          <label className={`text-xs ${theme.textMuted}`}>LGA</label>
+          <label className={`text-xs whitespace-nowrap ${theme.textMuted}`}>
+            LGA
+          </label>
+
           <select
             value={lgaFilter}
-            onChange={(e) => setLgaFilter(e.target.value)}
-            className={`${inputClass} flex-1 sm:flex-none`}
+            onChange={(e) => {
+              setLgaFilter(e.target.value);
+            }}
+            disabled={!stateFilter || lgaLoading}
+            className={`${inputClass} flex-1 sm:flex-none min-w-[220px] disabled:opacity-60 disabled:cursor-not-allowed`}
           >
-            <option value="">All LGAs</option>
+            <option value="">
+              {!stateFilter
+                ? "Select state first"
+                : lgaLoading
+                ? "Loading LGAs..."
+                : "All LGAs"}
+            </option>
+
+            {lgaOptions.map((lga) => (
+              <option key={lga.id} value={lga.id}>
+                {lga.name}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -473,17 +379,21 @@ const Samples = () => {
           <input
             type="date"
             value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
+            onChange={(e) => {
+              setFromDate(e.target.value);
+            }}
             className={`${inputClass} flex-1 sm:flex-none`}
           />
 
-          <label className={`text-xs whitespace-nowrap ${theme.text}`}>
+          <label className={`text-xs whitespace-nowrap ${theme.textMuted}`}>
             To
           </label>
           <input
             type="date"
             value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
+            onChange={(e) => {
+              setToDate(e.target.value);
+            }}
             className={`${inputClass} flex-1 sm:flex-none`}
           />
         </div>
@@ -491,48 +401,51 @@ const Samples = () => {
         <FilterSep />
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <BtnPrimary
-            onClick={() => {
-              setPage(1);
-              fetchSamples();
-            }}
-          >
-            Apply filters
-          </BtnPrimary>
+          <BtnPrimary onClick={applyFilters}>Apply filters</BtnPrimary>
           <BtnGhost onClick={clearFilters}>Clear</BtnGhost>
         </div>
       </FilterBar>
 
-      <div className={`${theme.card} rounded-xl border ${theme.border} overflow-hidden`}>
+      <div
+        className={`${theme.card} rounded-xl border ${theme.border} overflow-hidden`}
+      >
         <div
           className={`px-4 py-3 border-b ${theme.border} flex flex-wrap items-center justify-between gap-2`}
         >
           <div className="min-w-0">
-            <div className={`text-sm font-medium ${theme.text}`}>All samples</div>
+            <div className={`text-sm font-medium ${theme.text}`}>
+              All samples
+            </div>
             <div className={`text-xs mt-0.5 truncate ${theme.textMuted}`}>
               Read-only view
             </div>
           </div>
 
-          <select
-            value={pageSize}
-            onChange={(e) => {
-              setPageSize(Number(e.target.value));
-              setPage(1);
-            }}
-            className={`${inputClass} flex-shrink-0`}
-          >
-            <option value={10}>10 per page</option>
-            <option value={20}>20 per page</option>
-            <option value={50}>50 per page</option>
-          </select>
+          <div className="flex items-center gap-2">
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+              }}
+              className={`${inputClass} flex-shrink-0`}
+            >
+              <option value={10}>10 per load</option>
+              <option value={20}>20 per load</option>
+              <option value={50}>50 per load</option>
+              <option value={100}>100 per load</option>
+            </select>
+
+            <div className={`text-xs ${theme.textMuted}`}>
+              Loaded page {page} of {totalPages}
+            </div>
+          </div>
         </div>
 
         {loading ? (
           <div className={`p-8 text-sm text-center ${theme.textMuted}`}>
             Loading samples...
           </div>
-        ) : samples.length === 0 ? (
+        ) : tableRows.length === 0 ? (
           <div className={`p-8 text-sm text-center ${theme.textMuted}`}>
             No samples found.
           </div>
@@ -545,45 +458,56 @@ const Samples = () => {
               >
                 <thead className={`${theme.text} ${theme.bg}`}>
                   <tr>
-                    {COLUMNS.map((h) => (
+                    {COLUMNS.map((header) => (
                       <th
-                        key={h}
+                        key={header}
                         className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-b ${theme.border}`}
                       >
-                        {h}
+                        {header}
                       </th>
                     ))}
                   </tr>
                 </thead>
 
                 <tbody>
-                  {samples.map((row) => (
-                    <tr 
+                  {tableRows.map((row) => (
+                    <tr
                       key={row.id}
                       className={`${theme.card} ${theme.textMuted} transition-colors`}
                     >
-                      <td className={`px-4 py-3 border-b ${tableCellClass} font-mono text-xs ${theme.text}`}>
-                        {row.sampleId}
+                      <td
+                        className={`px-4 py-3 border-b ${tableCellClass} font-mono text-xs ${theme.text}`}
+                      >
+                        {row.sampleId || "—"}
                       </td>
                       <td className={`px-4 py-3 border-b ${tableCellClass}`}>
-                        {row.state?.name || "—"}
+                        {row.state?.name || row.stateName || "—"}
                       </td>
                       <td className={`px-4 py-3 border-b ${tableCellClass}`}>
-                        {row.lga?.name || "—"}
+                        {row.lga?.name || row.lgaName || "—"}
                       </td>
                       <td className={`px-4 py-3 border-b ${tableCellClass}`}>
-                        {row.market?.name || "—"}
+                        {row.market?.name || row.marketName || "—"}
                       </td>
-                      <td className={`px-4 py-3 border-b ${tableCellClass} font-medium`}>
+                      <td
+                        className={`px-4 py-3 border-b ${tableCellClass} font-medium`}
+                      >
                         {row.productName || "—"}
                       </td>
                       <td className={`px-4 py-3 border-b ${tableCellClass}`}>
-                        {row.productVariant?.category?.displayName || "—"}
+                        {row.productVariant?.category?.displayName ||
+                          row.category?.displayName ||
+                          row.category ||
+                          "—"}
                       </td>
-                      <td className={`px-4 py-3 border-b ${tableCellClass} font-mono text-xs`}>
+                      <td
+                        className={`px-4 py-3 border-b ${tableCellClass} font-mono text-xs`}
+                      >
                         {row.nafdacNumber || "—"}
                       </td>
-                      <td className={`px-4 py-3 border-b ${tableCellClass} font-mono text-xs`}>
+                      <td
+                        className={`px-4 py-3 border-b ${tableCellClass} font-mono text-xs`}
+                      >
                         {row.sonNumber || "—"}
                       </td>
                       <td className={`px-4 py-3 border-b ${tableCellClass}`}>
@@ -595,7 +519,9 @@ const Samples = () => {
                       <td className={`px-4 py-3 border-b ${tableCellClass}`}>
                         {row.productOrigin || "—"}
                       </td>
-                      <td className={`px-4 py-3 border-b ${theme.border} ${theme.textMuted}`}>
+                      <td
+                        className={`px-4 py-3 border-b ${theme.border} ${theme.textMuted}`}
+                      >
                         {row.createdAt
                           ? new Date(row.createdAt).toLocaleDateString()
                           : "—"}
@@ -607,7 +533,7 @@ const Samples = () => {
             </div>
 
             <div className={`md:hidden divide-y ${theme.border}`}>
-              {samples.map((row) => (
+              {tableRows.map((row) => (
                 <div key={row.id} className="px-4 py-3 space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <span
@@ -615,7 +541,7 @@ const Samples = () => {
                         darkMode ? "text-green-300" : "text-green-700"
                       }`}
                     >
-                      {row.sampleId}
+                      {row.sampleId || "—"}
                     </span>
                     <StatusBadge status={row.status} />
                   </div>
@@ -630,8 +556,10 @@ const Samples = () => {
                         State / LGA
                       </span>
                       <span className={`${theme.text} truncate`}>
-                        {row.state?.name || "—"}
-                        {row.lga?.name ? ` · ${row.lga.name}` : ""}
+                        {row.state?.name || row.stateName || "—"}
+                        {row.lga?.name || row.lgaName
+                          ? ` · ${row.lga?.name || row.lgaName}`
+                          : ""}
                       </span>
                     </div>
 
@@ -640,7 +568,7 @@ const Samples = () => {
                         Market
                       </span>
                       <span className={`${theme.text} truncate`}>
-                        {row.market?.name || "—"}
+                        {row.market?.name || row.marketName || "—"}
                       </span>
                     </div>
 
@@ -649,7 +577,10 @@ const Samples = () => {
                         Category
                       </span>
                       <span className={`${theme.text} truncate`}>
-                        {row.productVariant?.category?.displayName || "—"}
+                        {row.productVariant?.category?.displayName ||
+                          row.category?.displayName ||
+                          row.category ||
+                          "—"}
                       </span>
                     </div>
 
@@ -701,14 +632,27 @@ const Samples = () => {
                 </div>
               ))}
             </div>
+
+            <div className={`px-4 py-4 border-t ${theme.border} flex flex-col items-center gap-3`}>
+              <div className={`text-xs ${theme.textMuted}`}>
+                Showing {tableRows.length} loaded record{tableRows.length === 1 ? "" : "s"}
+                {totalPages > 1 ? ` · page ${page} of ${totalPages}` : ""}
+              </div>
+
+              {hasMore ? (
+                <BtnPrimary
+                  onClick={() => fetchSamples({ nextPage: page + 1, append: true })}
+                >
+                  {loadingMore ? "Loading..." : "Load more"}
+                </BtnPrimary>
+              ) : (
+                <div className={`text-xs ${theme.textMuted}`}>
+                  No more samples to load.
+                </div>
+              )}
+            </div>
           </>
         )}
-
-        <Pagination
-          page={page}
-          setPage={setPage}
-          totalPages={totalPages}
-        />
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FilterBar } from "../../../../components/FilterBar";
 import { SectionLabel } from "../../../../components/SectionLabel";
 import { FilterSep, BtnPrimary, TH, TD } from "../../../../utils/MohUI";
@@ -8,18 +8,82 @@ import {
   exportProductTypePdf,
 } from "../../../../utils/reportExport";
 import ReportHeader from "./ReportHeader";
+import api from "../../../../../../utils/api";
+import { useTheme } from "../../../../../../context/ThemeContext";
+
+const STATES_CACHE_KEY = "moh_report_states_cache_v1";
 
 const ProductTypeReport = () => {
   const [generated, setGenerated] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [statesLoading, setStatesLoading] = useState(false);
   const [error, setError] = useState("");
   const [reportData, setReportData] = useState(null);
+  const [states, setStates] = useState([]);
+  const { theme } = useTheme();
 
   const [filters, setFilters] = useState({
     state: "",
     dateFrom: "2026-03-13",
     dateTo: "2026-03-14",
   });
+
+  const normalizeStates = (payload) => {
+    const rows = Array.isArray(payload?.data)
+      ? payload.data
+      : Array.isArray(payload?.states)
+        ? payload.states
+        : Array.isArray(payload?.data?.states)
+          ? payload.data.states
+          : Array.isArray(payload?.items)
+            ? payload.items
+            : Array.isArray(payload)
+              ? payload
+              : [];
+
+    return rows
+      .map((state) => ({
+        id: state?.id || state?.stateId || state?.value || "",
+        name: state?.name || state?.stateName || state?.label || "",
+        code: state?.code || "",
+        isActive: state?.isActive,
+      }))
+      .filter((state) => state.id && state.name)
+      .filter((state) => state.isActive !== false)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  };
+
+  const fetchStates = async () => {
+    try {
+      const cached = sessionStorage.getItem(STATES_CACHE_KEY);
+      if (cached) {
+        setStates(JSON.parse(cached));
+        return;
+      }
+
+      setStatesLoading(true);
+
+      const res = await api.get("/management/states", {
+        params: {
+          page: 1,
+          pageSize: 100,
+        },
+      });
+
+      const normalized = normalizeStates(res.data);
+      setStates(normalized);
+      sessionStorage.setItem(STATES_CACHE_KEY, JSON.stringify(normalized));
+    } catch (err) {
+      console.error("Failed to fetch product type report states:", err);
+      setStates([]);
+    } finally {
+      setStatesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStates();
+  }, []);
 
   const handleGenerateReport = async () => {
     if (!filters.dateFrom || !filters.dateTo) {
@@ -53,8 +117,8 @@ const ProductTypeReport = () => {
       console.error("Failed to fetch product type report:", err);
 
       const message =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
         "Failed to generate product type report.";
 
       setError(message);
@@ -73,20 +137,22 @@ const ProductTypeReport = () => {
   const recommendations = reportData?.recommendations || [];
   const byProductType = reportData?.byProductType || {};
 
-  const rows = Object.entries(byProductType)
-    .map(([productType, stats]) => ({
-      productType,
-      totalSamples: stats?.totalSamples || 0,
-      registered: stats?.registered || 0,
-      unregistered: stats?.unregistered || 0,
-      verifiedOriginal: stats?.verifications?.VERIFIED_ORIGINAL || 0,
-      verifiedFake: stats?.verifications?.VERIFIED_FAKE || 0,
-      unverified: stats?.verifications?.UNVERIFIED || 0,
-      verificationPending: stats?.verifications?.VERIFICATION_PENDING || 0,
-      local: stats?.origins?.LOCAL || 0,
-      imported: stats?.origins?.IMPORTED || 0,
-    }))
-    .sort((a, b) => b.totalSamples - a.totalSamples);
+  const rows = useMemo(() => {
+    return Object.entries(byProductType)
+      .map(([productType, stats]) => ({
+        productType,
+        totalSamples: stats?.totalSamples || 0,
+        registered: stats?.registered || 0,
+        unregistered: stats?.unregistered || 0,
+        verifiedOriginal: stats?.verifications?.VERIFIED_ORIGINAL || 0,
+        verifiedFake: stats?.verifications?.VERIFIED_FAKE || 0,
+        unverified: stats?.verifications?.UNVERIFIED || 0,
+        verificationPending: stats?.verifications?.VERIFICATION_PENDING || 0,
+        local: stats?.origins?.LOCAL || 0,
+        imported: stats?.origins?.IMPORTED || 0,
+      }))
+      .sort((a, b) => b.totalSamples - a.totalSamples);
+  }, [byProductType]);
 
   const handleExportExcel = () => {
     exportProductTypeExcel({
@@ -114,44 +180,51 @@ const ProductTypeReport = () => {
     });
   };
 
+  console.log("product type recommendations:", recommendations);
+
   return (
     <>
       <FilterBar>
-        <label className="text-xs text-gray-500">State (optional)</label>
+        <label className={`text-xs ${theme.textMuted}`}>State (optional)</label>
         <select
           value={filters.state}
           onChange={(e) =>
             setFilters((prev) => ({ ...prev, state: e.target.value }))
           }
-          className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+          disabled={statesLoading}
+          className={`w-full sm:w-auto min-w-[220px] text-xs px-2 py-1.5 border ${theme.border} ${theme.input}  rounded-md outline-none focus:border-green-500 disabled:opacity-60 disabled:cursor-not-allowed`}
         >
-          <option value="">All States</option>
-          <option value="Lagos">Lagos</option>
-          <option value="Kano">Kano</option>
-          <option value="Oyo">Oyo</option>
-          <option value="Abuja">Abuja</option>
+          <option value="">
+            {statesLoading ? "Loading states..." : "All States"}
+          </option>
+
+          {states.map((state) => (
+            <option key={state.id} value={state.name}>
+              {state.name}
+            </option>
+          ))}
         </select>
 
         <FilterSep />
 
-        <label className="text-xs text-gray-500 whitespace-nowrap">From</label>
+        <label className={`text-xs ${theme.textMuted} whitespace-nowrap`}>From</label>
         <input
           type="date"
           value={filters.dateFrom}
           onChange={(e) =>
             setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))
           }
-          className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+          className={`w-full sm:w-auto text-xs px-2 py-1.5 border ${theme.border} ${theme.input} rounded-md outline-none focus:border-green-500`}
         />
 
-        <label className="text-xs text-gray-500 whitespace-nowrap">To</label>
+        <label className={`text-xs ${theme.textMuted} whitespace-nowrap`}>To</label>
         <input
           type="date"
           value={filters.dateTo}
           onChange={(e) =>
             setFilters((prev) => ({ ...prev, dateTo: e.target.value }))
           }
-          className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+          className={`w-full sm:w-auto text-xs px-2 py-1.5 border ${theme.border} ${theme.input}  rounded-md outline-none focus:border-green-500`}
         />
 
         <FilterSep />
@@ -168,7 +241,7 @@ const ProductTypeReport = () => {
       )}
 
       {generated && reportData && (
-        <div className="mt-5 overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className={`mt-5 overflow-hidden rounded-xl border ${theme.border} ${theme.bg} w-full`}>
           <ReportHeader
             title="Product type report"
             subtitle={`Generated: ${generatedAt || "—"} · ${
@@ -178,83 +251,124 @@ const ProductTypeReport = () => {
             onExportExcel={handleExportExcel}
           />
 
-          <div className="border-b border-gray-100 px-5 py-4">
+          <div className={`border-b ${theme.border} px-4 sm:px-5 py-4`}>
             <SectionLabel>Summary</SectionLabel>
 
             <div className="flex justify-between border-b border-gray-50 py-1.5 text-sm">
-              <span className="text-gray-500">Total product types</span>
-              <span className="font-medium text-gray-900">
+              <span className={`text-${theme.textMuted}`}>Total product types</span>
+              <span className={`font-medium ${theme.text}`}>
                 {summary.totalProductTypes ?? 0}
               </span>
             </div>
 
             <div className="flex justify-between py-1.5 text-sm">
-              <span className="text-gray-500">Total samples</span>
-              <span className="font-medium text-gray-900">
+              <span className={`text-${theme.textMuted}`}>Total samples</span>
+              <span className={`font-medium ${theme.text}`}>
                 {summary.totalSamples ?? 0}
               </span>
             </div>
           </div>
 
-          <div className="px-5 py-4">
+          <div className="px-4 sm:px-5 py-4">
             <SectionLabel>Breakdown by product type</SectionLabel>
 
-            <table className="w-full border-collapse text-xs mt-3">
-              <thead>
-                <tr>
-                  {[
-                    "Product Type",
-                    "Samples",
-                    "Registered",
-                    "Unregistered",
-                    "Verified Original",
-                    "Verified Fake",
-                    "Unverified",
-                    "Local",
-                    "Imported",
-                  ].map((h) => (
-                    <th key={h} className={TH}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.length > 0 ? (
-                  rows.map((item, index) => (
-                    <tr
-                      key={`${item.productType}-${index}`}
-                      className="hover:bg-gray-50"
-                    >
-                      <td className={TD}>{item.productType}</td>
-                      <td className={TD}>{item.totalSamples}</td>
-                      <td className={TD}>{item.registered}</td>
-                      <td className={TD}>{item.unregistered}</td>
-                      <td className={TD}>{item.verifiedOriginal}</td>
-                      <td className={TD}>{item.verifiedFake}</td>
-                      <td className={TD}>{item.unverified}</td>
-                      <td className={TD}>{item.local}</td>
-                      <td className={TD}>{item.imported}</td>
-                    </tr>
-                  ))
-                ) : (
+            <div className="overflow-x-auto w-full mt-3">
+              <table className="w-full min-w-[720px] border-collapse text-xs">
+                <thead>
                   <tr>
-                    <td className={TD} colSpan={9}>
-                      No product type data available.
-                    </td>
+                    {[
+                      "Product Type",
+                      "Samples",
+                      "Registered",
+                      "Unregistered",
+                      "Verified Original",
+                      "Verified Fake",
+                      "Unverified",
+                      "Local",
+                      "Imported",
+                    ].map((h) => (
+                      <th key={h} className={TH}>
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {rows.length > 0 ? (
+                    rows.map((item, index) => (
+                      <tr
+                        key={`${item.productType}-${index}`}
+                        className={`hover:bg-${theme.hover}`}
+                      >
+                        <td className={TD}>{item.productType}</td>
+                        <td className={TD}>{item.totalSamples}</td>
+                        <td className={TD}>{item.registered}</td>
+                        <td className={TD}>{item.unregistered}</td>
+                        <td className={TD}>{item.verifiedOriginal}</td>
+                        <td className={TD}>{item.verifiedFake}</td>
+                        <td className={TD}>{item.unverified}</td>
+                        <td className={TD}>{item.local}</td>
+                        <td className={TD}>{item.imported}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td className={TD} colSpan={9}>
+                        No product type data available.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          <div className="border-t border-gray-100 px-5 py-4">
+          <div className="border-t border-gray-100 px-4 sm:px-5 py-4">
             <SectionLabel>Recommendations</SectionLabel>
-            <div className="text-sm leading-relaxed text-gray-500">
+
+            <div className={`text-sm leading-relaxed ${theme.textMuted} space-y-3`}>
               {recommendations.length > 0 ? (
                 recommendations.map((item, index) => (
-                  <div key={index}>
-                    {index + 1}. {item}
+                  <div
+                    key={index}
+                    className={`rounded-lg border ${theme.border} ${theme.bg} px-3 py-3`}
+                  >
+                    <div className="font-medium text-gray-900">
+                      {index + 1}. {item.productType || "Recommendation"}
+                    </div>
+
+                    {item.priority && (
+                      <div className="mt-1 text-xs font-medium text-red-600">
+                        Priority: {item.priority}
+                      </div>
+                    )}
+
+                    {item.findings && (
+                      <div className="mt-2">
+                        <span className={`font-medium ${theme.text}`}>
+                          Findings:
+                        </span>{" "}
+                        <span>{item.findings}</span>
+                      </div>
+                    )}
+
+                    {item.recommendation && (
+                      <div className="mt-1">
+                        <span className={`font-medium ${theme.text}`}>
+                          Recommendation:
+                        </span>{" "}
+                        <span>{item.recommendation}</span>
+                      </div>
+                    )}
+
+                    {item.action && (
+                      <div className="mt-1">
+                        <span className={`font-medium ${theme.text}`}>
+                          Action:
+                        </span>{" "}
+                        <span>{item.action}</span>
+                      </div>
+                    )}
                   </div>
                 ))
               ) : (

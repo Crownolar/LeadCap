@@ -26,9 +26,14 @@ const SampleReview = () => {
     requestedChanges: "",
   });
   const [imageFailed, setImageFailed] = useState(false);
+
   useEffect(() => {
     setImageFailed(false);
   }, [selectedSample]);
+
+  useEffect(() => {
+    setSelectedSample(filteredSamples[0] || null);
+  }, [filterStatus]);
 
   const getReviewStatus = (s) => s.review?.status ?? "PENDING";
 
@@ -50,7 +55,7 @@ const SampleReview = () => {
     try {
       setLoading(true);
       setError(null);
-      const params = { status: "ALL",limit:5000 };
+      const params = { status: "ALL", limit: 5000 };
       if (collectorId) params.collectorId = collectorId;
       const res = await api.get("/supervisor/samples", { params });
       if (res.data.success) setAllSamples(res.data.data || []);
@@ -189,6 +194,7 @@ const SampleReview = () => {
     selectedSample && filteredSamples.length
       ? filteredSamples.findIndex((s) => s.id === selectedSample.id) + 1
       : 0;
+
   const totalInFilter = filteredSamples.length;
   const goToNextSample = () => {
     if (!selectedSample || totalInFilter === 0) return;
@@ -611,11 +617,11 @@ const SampleReview = () => {
 
                   {/* Photo Body */}
                   {productPhotoSrc && !imageFailed ? (
-                    <div className="flex justify-center p-3">
+                    <div className='flex justify-center p-3'>
                       <img
                         src={productPhotoSrc}
-                        alt="Product Photo"
-                        className="max-h-56 w-auto rounded object-contain"
+                        alt='Product Photo'
+                        className='max-h-56 w-auto rounded object-contain'
                         onError={() => {
                           console.error(
                             "Failed to load image:",
@@ -626,8 +632,8 @@ const SampleReview = () => {
                       />
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center h-36 gap-2 text-gray-500">
-                      <p className="text-xs text-gray-500">
+                    <div className='flex flex-col items-center justify-center h-36 gap-2 text-gray-500'>
+                      <p className='text-xs text-gray-500'>
                         {selectedSample?.productPhotoUrl
                           ? "Product photo could not be loaded"
                           : "No product photo captured"}
@@ -686,12 +692,7 @@ const SampleReview = () => {
                     Decision
                   </label>
                   <div className='grid grid-cols-2 gap-2'>
-                    {[
-                      "APPROVED",
-                      "REJECTED",
-                      "FLAGGED",
-                      "CORRECTION_REQUESTED",
-                    ].map((status) => (
+                    {["APPROVED", "REJECTED", "FLAGGED"].map((status) => (
                       <button
                         key={status}
                         onClick={() =>

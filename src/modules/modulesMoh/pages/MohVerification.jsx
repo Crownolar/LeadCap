@@ -7,6 +7,7 @@ import { SectionLabel } from "../components/SectionLabel";
 import { WhiteCard } from "../components/WhiteCard";
 import { StatusBadge } from "../components/StatusBadge";
 import api from "../../../utils/api";
+import { useTheme } from "../../../context/ThemeContext";
 
 const STATUS_TABS = ["All", "Verified", "Failed", "Pending"];
 
@@ -25,6 +26,7 @@ const Verification = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const {theme} = useTheme();
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -92,6 +94,7 @@ const Verification = () => {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     fetchVerificationLogs();
   }, [activeTab, page, pageSize]);
@@ -151,9 +154,6 @@ const Verification = () => {
     return () => chartInst.current?.destroy();
   }, []);
 
-  // const startItem = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
-  // const endItem = Math.min(page * pageSize, totalCount);
-
   const verifiedCount = logs.filter(
     (row) =>
       (row.status || row.verificationStatus || row.result) === "VERIFIED",
@@ -204,7 +204,8 @@ const Verification = () => {
 
   return (
     <div>
-      <div className="grid grid-cols-4 gap-3 mb-5">
+      {/* Metrics grid — 2 cols on mobile, 4 on sm+ */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
         {metrics.map((m) => (
           <MetricCard key={m.label} {...m} />
         ))}
@@ -223,7 +224,7 @@ const Verification = () => {
           type="date"
           value={fromDate}
           onChange={(e) => setFromDate(e.target.value)}
-          className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+          className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
         />
 
         <label className="text-xs text-gray-500 whitespace-nowrap">To</label>
@@ -231,13 +232,13 @@ const Verification = () => {
           type="date"
           value={toDate}
           onChange={(e) => setToDate(e.target.value)}
-          className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+          className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
         />
 
         <FilterSep />
 
         <label className="text-xs text-gray-500">State</label>
-        <select className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500">
+        <select className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500">
           <option>All States</option>
           <option>Lagos</option>
           <option>Kano</option>
@@ -255,7 +256,8 @@ const Verification = () => {
         </BtnPrimary>
       </FilterBar>
 
-      <div className="flex gap-1 mb-4">
+      {/* Status tabs — wrap on mobile */}
+      <div className="flex flex-wrap gap-1 mb-4">
         {STATUS_TABS.map((t) => (
           <button
             key={t}
@@ -274,13 +276,14 @@ const Verification = () => {
         ))}
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+      <div className={`${theme.card} rounded-xl border ${theme.border} overflow-hidden`}>  
+        {/* Table header — stack on mobile, row on sm+ */}
+        <div className="px-4 py-3 border-b border-gray-100 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="text-sm font-medium text-gray-900">
+            <div className={`text-sm font-medium ${theme.text}`}>
               Verification log
             </div>
-            <div className="text-xs text-gray-400 mt-0.5">
+            <div className={`text-xs ${theme.textMuted} mt-0.5`}>
               Read-only · No verify/re-verify actions
             </div>
           </div>
@@ -291,7 +294,7 @@ const Verification = () => {
               setPageSize(Number(e.target.value));
               setPage(1);
             }}
-            className="text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+            className={` w-full sm:w-auto text-xs px-2 py-1.5 border ${theme.border} rounded-md outline-none focus:border-green-500`}
           >
             <option value={10}>10 per page</option>
             <option value={20}>20 per page</option>
@@ -300,7 +303,7 @@ const Verification = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-xs">
+          <table className="w-full min-w-[720px] border-collapse text-xs">
             <thead>
               <tr>
                 {[
@@ -326,7 +329,7 @@ const Verification = () => {
                 <tr>
                   <td
                     colSpan={9}
-                    className="px-4 py-6 text-center text-gray-500"
+                    className={`${theme.textMuted} px-4 py-6 text-center`}
                   >
                     Loading verification logs...
                   </td>
@@ -335,7 +338,7 @@ const Verification = () => {
                 <tr>
                   <td
                     colSpan={9}
-                    className="px-4 py-6 text-center text-red-600"
+                    className={`${theme.textMuted} px-4 py-6 text-center text-red-600`}
                   >
                     {error}
                   </td>
@@ -344,7 +347,7 @@ const Verification = () => {
                 <tr>
                   <td
                     colSpan={9}
-                    className="px-4 py-6 text-center text-gray-500"
+                    className={`${theme.textMuted} px-4 py-6 text-center`}
                   >
                     No verification logs found
                   </td>
@@ -356,7 +359,7 @@ const Verification = () => {
                   return (
                     <tr
                       key={row.id || row.sampleId || row._id || index}
-                      className="hover:bg-gray-50"
+                      className={`${theme.hover}`}
                     >
                       <td className={`${TD} font-mono text-xs text-green-700`}>
                         {row.id ||

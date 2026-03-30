@@ -2,11 +2,12 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchSamples } from "../redux/slice/samplesSlice";
 
-const normalizeRole = (role = "") => role.toLowerCase().replace(/[\s_]/g, "");
+export const normalizeRole = (role = "") =>
+  role.toLowerCase().replace(/[\s_]/g, "");
 
 const ROLE_LOADERS = {
   datacollector: (dispatch) => {
-    dispatch(fetchSamples({ page: 1, limit: 5000 }));
+    dispatch(fetchSamples({ page: 1, limit: 50 }));
   },
 
   supervisor: (dispatch) => {
