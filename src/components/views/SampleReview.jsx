@@ -3,73 +3,48 @@ import { useParams } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import api from "../../utils/api";
 import toast from "react-hot-toast";
-import { CheckCircle } from "lucide-react";
+import {
+  CheckCircle,
+  FlaskConical,
+  MapPin,
+  Package,
+  User,
+  ShieldCheck,
+} from "lucide-react";
 
 const STATUS_TABS = ["PENDING", "APPROVED", "REJECTED", "FLAGGED"];
 
 const SampleReview = () => {
   const { theme } = useTheme();
   const { collectorId } = useParams();
-  const [allSamples, setAllSamples] = useState([]);
+
+  const [samples, setSamples] = useState([]);
+  const [stats, setStats] = useState(null);
   const [selectedSample, setSelectedSample] = useState(null);
-  useEffect(() => {}, [selectedSample]);
+
   const [loading, setLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(false);
   const [error, setError] = useState(null);
+
   const [filterStatus, setFilterStatus] = useState("PENDING");
+
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(25);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
   const [reviewing, setReviewing] = useState(false);
   const [bulkSelection, setBulkSelection] = useState(new Set());
   const [bulkProcessing, setBulkProcessing] = useState(false);
+
   const [reviewForm, setReviewForm] = useState({
     status: "APPROVED",
     comments: "",
     issues: [],
     requestedChanges: "",
   });
+
   const [imageFailed, setImageFailed] = useState(false);
-
-  useEffect(() => {
-    setImageFailed(false);
-  }, [selectedSample]);
-
-  useEffect(() => {
-    setSelectedSample(filteredSamples[0] || null);
-  }, [filterStatus]);
-
-  const getReviewStatus = (s) => s.review?.status ?? "PENDING";
-
-  const filteredSamples = useMemo(
-    () => allSamples.filter((s) => getReviewStatus(s) === filterStatus),
-    [allSamples, filterStatus],
-  );
-
-  const statusCounts = useMemo(() => {
-    const counts = { PENDING: 0, APPROVED: 0, REJECTED: 0, FLAGGED: 0 };
-    allSamples.forEach((s) => {
-      const status = getReviewStatus(s);
-      if (counts[status] !== undefined) counts[status]++;
-    });
-    return counts;
-  }, [allSamples]);
-
-  const fetchSamples = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const params = { status: "ALL", limit: 5000 };
-      if (collectorId) params.collectorId = collectorId;
-      const res = await api.get("/supervisor/samples", { params });
-      if (res.data.success) setAllSamples(res.data.data || []);
-    } catch (err) {
-      console.error("Error fetching samples:", err);
-      setError(err.response?.data?.message || err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [collectorId]);
-
-  useEffect(() => {
-    fetchSamples();
-  }, [fetchSamples]);
 
   const ISSUE_OPTIONS = [
     "Incomplete GPS location",
@@ -82,13 +57,130 @@ const SampleReview = () => {
     "Other",
   ];
 
-  const handleSelectSample = (sample) => {
-    console.log("clicked sample:", sample);
-    console.log("photo url from sample:", sample?.productPhotoUrl);
+  const getReviewStatus = (sample) =>
+    sample.review?.status ?? sample.reviewStatus ?? "PENDING";
 
+  const statusCounts = useMemo(() => {
+    return {
+      PENDING: stats?.pendingReviews ?? 0,
+      APPROVED: stats?.approvedSamples ?? 0,
+      REJECTED: stats?.reviewBreakdown?.rejected ?? 0,
+      FLAGGED: stats?.flaggedSamples ?? 0,
+    };
+  }, [stats]);
+
+  const fetchReviewMeta = useCallback(async () => {
+    try {
+      setStatsLoading(true);
+      console.log("fetchReviewMeta called");
+
+      const res = await api.get("/supervisor/stats");
+      console.log("Supervisor stats response:", res.data);
+
+      if (res.data?.success) {
+        setStats(res.data.data);
+      }
+    } catch (err) {
+      console.error("Error fetching supervisor stats:", err);
+    } finally {
+      setStatsLoading(false);
+    }
+  }, []);
+
+  const fetchSamples = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      console.log("fetchSamples called", {
+        filterStatus,
+        page,
+        pageSize,
+        collectorId,
+      });
+
+      const params = {
+        status: filterStatus,
+        page,
+        pageSize,
+      };
+
+      if (collectorId) {
+        params.collectorId = collectorId;
+      }
+
+      const res = await api.get("/supervisor/samples", { params });
+      console.log("Supervisor samples raw response:", res.data);
+
+      const payload = res.data?.data ?? res.data;
+
+      const extractedSamples =
+        payload?.samples ||
+        payload?.items ||
+        payload?.rows ||
+        payload?.results ||
+        payload?.data ||
+        (Array.isArray(payload) ? payload : []);
+
+      console.log("Extracted samples:", extractedSamples);
+
+      setSamples(extractedSamples);
+    } catch (err) {
+      console.error("Error fetching samples:", err);
+      setError(err.response?.data?.message || err.message);
+      setSamples([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [collectorId, filterStatus, page, pageSize]);
+
+  useEffect(() => {
+    console.log("SampleReview mounted");
+  }, []);
+
+  useEffect(() => {
+    fetchReviewMeta();
+  }, [fetchReviewMeta]);
+
+  useEffect(() => {
+    fetchSamples();
+  }, [fetchSamples]);
+
+  useEffect(() => {
+    setPage(1);
+    setBulkSelection(new Set());
+    setSelectedSample(null);
+  }, [filterStatus]);
+
+  useEffect(() => {
+    setSelectedSample(samples[0] || null);
+  }, [samples]);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [selectedSample]);
+
+  useEffect(() => {
+    const derivedTotalCount = statusCounts[filterStatus] ?? 0;
+    const derivedTotalPages = Math.max(
+      1,
+      Math.ceil(derivedTotalCount / pageSize),
+    );
+
+    console.log("Derived totalCount from stats:", derivedTotalCount);
+    console.log("Derived totalPages from stats:", derivedTotalPages);
+
+    setTotalCount(derivedTotalCount);
+    setTotalPages(derivedTotalPages);
+  }, [filterStatus, statusCounts, pageSize]);
+
+  const handleSelectSample = (sample) => {
     setSelectedSample(sample);
     setReviewForm({
-      status: sample.review?.status || "APPROVED",
+      status:
+        getReviewStatus(sample) === "PENDING"
+          ? "APPROVED"
+          : getReviewStatus(sample),
       comments: sample.review?.comments || "",
       issues: sample.review?.issues || [],
       requestedChanges: sample.review?.requestedChanges || "",
@@ -101,7 +193,6 @@ const SampleReview = () => {
     const baseUrl =
       import.meta.env.VITE_BACKEND_URL || "https://api.leadcap.ng";
 
-    // Fix malformed full URL like "https//example.com/..."
     if (photoUrl.startsWith("https//")) {
       return photoUrl.replace("https//", "https://");
     }
@@ -115,6 +206,35 @@ const SampleReview = () => {
 
   const productPhotoSrc = getProductPhotoSrc(selectedSample?.productPhotoUrl);
 
+  const normalizedReadings = useMemo(() => {
+    const rawReadings = Array.isArray(selectedSample?.heavyMetalReadings)
+      ? selectedSample.heavyMetalReadings
+      : [];
+
+    if (rawReadings.length > 0) {
+      return rawReadings.map((reading, index) => ({
+        id:
+          reading.id ||
+          `${reading.heavyMetal || reading.metal || "METAL"}-${index}`,
+        heavyMetal:
+          reading.heavyMetal || reading.metal || `Metal ${index + 1}`,
+        xrfReading: reading.xrfReading ?? reading.xrf?.reading ?? 0,
+        aasReading: reading.aasReading ?? reading.aas?.reading ?? 0,
+        status: reading.finalStatus ?? reading.status ?? "PENDING",
+      }));
+    }
+
+    return [
+      {
+        id: "LEAD",
+        heavyMetal: "LEAD",
+        xrfReading: selectedSample?.leadLevel ?? 0,
+        aasReading: 0,
+        status: selectedSample?.contaminationStatus || "PENDING",
+      },
+    ];
+  }, [selectedSample]);
+
   const handleIssueToggle = (issue) => {
     setReviewForm((prev) => ({
       ...prev,
@@ -124,15 +244,19 @@ const SampleReview = () => {
     }));
   };
 
+  const refreshAll = async () => {
+    await Promise.all([fetchReviewMeta(), fetchSamples()]);
+  };
+
   const handleSubmitReview = async () => {
     if (!selectedSample) return;
 
-    // Decision friction: reject requires a reason (comments or at least one issue)
     if (reviewForm.status === "REJECTED") {
       const hasReason =
         (reviewForm.comments && reviewForm.comments.trim()) ||
         (reviewForm.requestedChanges && reviewForm.requestedChanges.trim()) ||
         (reviewForm.issues && reviewForm.issues.length > 0);
+
       if (!hasReason) {
         toast.error(
           "Rejection reason is required. Add comments or select at least one issue.",
@@ -143,6 +267,7 @@ const SampleReview = () => {
 
     try {
       setReviewing(true);
+
       const response = await api.post(
         `/supervisor/samples/${selectedSample.id}/review`,
         {
@@ -152,32 +277,10 @@ const SampleReview = () => {
         },
       );
 
-      if (response.data.success) {
-        toast.success(`Sample ${reviewForm.status.toLowerCase()}!`);
-        await fetchSamples();
-        const currentIndex = filteredSamples.findIndex(
-          (s) => s.id === selectedSample.id,
-        );
-        const nextSample =
-          currentIndex >= 0 && currentIndex < filteredSamples.length - 1
-            ? filteredSamples[currentIndex + 1]
-            : null;
-        setSelectedSample(null);
-        setReviewForm({
-          status: "APPROVED",
-          comments: "",
-          issues: [],
-          requestedChanges: "",
-        });
-        if (nextSample) {
-          setSelectedSample(nextSample);
-          setReviewForm({
-            status: nextSample.review?.status || "APPROVED",
-            comments: nextSample.review?.comments || "",
-            issues: nextSample.review?.issues || [],
-            requestedChanges: nextSample.review?.requestedChanges || "",
-          });
-        }
+      if (response.data?.success) {
+        toast.success(`Sample ${reviewForm.status.toLowerCase()} successfully.`);
+        await refreshAll();
+        setBulkSelection(new Set());
       }
     } catch (err) {
       console.error("Error submitting review:", err);
@@ -190,38 +293,23 @@ const SampleReview = () => {
     }
   };
 
-  const currentSampleIndex =
-    selectedSample && filteredSamples.length
-      ? filteredSamples.findIndex((s) => s.id === selectedSample.id) + 1
-      : 0;
-
-  const totalInFilter = filteredSamples.length;
-  const goToNextSample = () => {
-    if (!selectedSample || totalInFilter === 0) return;
-    const idx = filteredSamples.findIndex((s) => s.id === selectedSample.id);
-    if (idx >= 0 && idx < totalInFilter - 1) {
-      const next = filteredSamples[idx + 1];
-      handleSelectSample(next);
-    } else {
-      setSelectedSample(null);
-    }
-  };
-
   const handleToggleBulkSelection = (sampleId) => {
-    const newSelection = new Set(bulkSelection);
-    if (newSelection.has(sampleId)) {
-      newSelection.delete(sampleId);
-    } else {
-      newSelection.add(sampleId);
-    }
-    setBulkSelection(newSelection);
+    setBulkSelection((prev) => {
+      const next = new Set(prev);
+      if (next.has(sampleId)) {
+        next.delete(sampleId);
+      } else {
+        next.add(sampleId);
+      }
+      return next;
+    });
   };
 
   const handleSelectAll = () => {
-    if (bulkSelection.size === filteredSamples.length) {
+    if (bulkSelection.size === samples.length) {
       setBulkSelection(new Set());
     } else {
-      setBulkSelection(new Set(filteredSamples.map((s) => s.id)));
+      setBulkSelection(new Set(samples.map((sample) => sample.id)));
     }
   };
 
@@ -248,6 +336,7 @@ const SampleReview = () => {
 
     try {
       setBulkProcessing(true);
+
       let successCount = 0;
       let errorCount = 0;
 
@@ -265,22 +354,24 @@ const SampleReview = () => {
       }
 
       const total = bulkSelection.size;
+
       if (errorCount === 0) {
         toast.success(
           total === 1
-            ? "1 sample marked successfully."
-            : `${total} samples marked successfully.`,
+            ? "1 sample updated successfully."
+            : `${total} samples updated successfully.`,
         );
       } else if (successCount > 0) {
         toast(
-          `Updated ${successCount} of ${total} samples. ${errorCount} could not be updated.`,
+          `Updated ${successCount} of ${total} samples. ${errorCount} failed.`,
           { icon: "⚠️" },
         );
       } else {
-        toast.error("Could not update the selected samples. Please try again.");
+        toast.error("Could not update selected samples. Please try again.");
       }
+
       setBulkSelection(new Set());
-      fetchSamples();
+      await refreshAll();
     } catch (err) {
       console.error("Error in bulk action:", err);
       toast.error("Error processing bulk action");
@@ -289,7 +380,49 @@ const SampleReview = () => {
     }
   };
 
-  if (loading) {
+  const currentSampleIndex =
+    selectedSample && samples.length
+      ? samples.findIndex((sample) => sample.id === selectedSample.id) + 1
+      : 0;
+
+  const totalInCurrentPage = samples.length;
+
+  const goToNextSample = () => {
+    if (!selectedSample || totalInCurrentPage === 0) return;
+
+    const idx = samples.findIndex((sample) => sample.id === selectedSample.id);
+
+    if (idx >= 0 && idx < totalInCurrentPage - 1) {
+      handleSelectSample(samples[idx + 1]);
+    } else {
+      setSelectedSample(null);
+    }
+  };
+
+  const getVerificationBadgeClass = (status) => {
+    if (status === "VERIFIED_ORIGINAL") {
+      return "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300";
+    }
+    if (status === "VERIFIED_FAKE") {
+      return "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300";
+    }
+    return "bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300";
+  };
+
+  const getReadingStatusClass = (status) => {
+    if (status === "SAFE") {
+      return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300";
+    }
+    if (status === "CONTAMINATED" || status === "FAILED") {
+      return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300";
+    }
+    if (status === "MODERATE") {
+      return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300";
+    }
+    return "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300";
+  };
+
+  if (loading && !samples.length) {
     return (
       <div className={`${theme?.card} rounded-lg p-6 sm:p-8 text-center`}>
         <p className={`text-sm sm:text-base ${theme?.textMuted}`}>
@@ -301,53 +434,56 @@ const SampleReview = () => {
 
   return (
     <div className={`${theme?.text} space-y-4 sm:space-y-6`}>
-      <div className='mb-2'>
+      <div className='space-y-1'>
         <h1 className='text-xl sm:text-2xl font-bold'>Review samples</h1>
-        <p className={`text-sm ${theme?.textMuted} mt-1`}>
+        <p className={`text-sm ${theme?.textMuted}`}>
           Review and approve samples from your collectors
         </p>
       </div>
+
       {error && (
         <div className='bg-red-50 border border-red-200 text-red-700 px-3 py-2 sm:px-4 sm:py-3 rounded-lg text-sm'>
           Error: {error}
         </div>
       )}
 
-      {/* Filter Tabs with badge counts & Bulk Actions */}
-      <div className='space-y-3 sm:space-y-4'>
-        <div className='flex gap-2 flex-wrap'>
-          {STATUS_TABS.map((status) => {
-            const count = statusCounts[status] ?? 0;
-            const isActive = filterStatus === status;
-            return (
-              <button
-                key={status}
-                onClick={() => setFilterStatus(status)}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm rounded-lg font-semibold transition-colors ${
-                  isActive
-                    ? "bg-emerald-600 text-white shadow-sm"
-                    : `${theme?.card} border ${theme?.border} hover:bg-opacity-50`
-                }`}
-              >
-                <span>{status}</span>
-                <span
-                  className={`inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-xs font-bold ${
-                    isActive
-                      ? "bg-white/25 text-white"
-                      : "bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200"
-                  }`}
-                >
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+      <div className='grid grid-cols-2 lg:grid-cols-4 gap-3'>
+        {STATUS_TABS.map((status) => {
+          const count = statusCounts[status] ?? 0;
+          const isActive = filterStatus === status;
 
-        {/* Bulk Actions Bar */}
+          return (
+            <button
+              key={status}
+              onClick={() => setFilterStatus(status)}
+              className={`rounded-xl border p-4 text-left transition-all ${
+                isActive
+                  ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                  : `${theme?.card} ${theme?.border} hover:shadow-sm`
+              }`}
+            >
+              <p className='text-xs sm:text-sm font-medium opacity-90'>
+                {status}
+              </p>
+              <p className='text-xl sm:text-2xl font-bold mt-1'>{count}</p>
+              <p className='text-[11px] sm:text-xs mt-1 opacity-80'>
+                {status === "PENDING"
+                  ? "Awaiting supervisor action"
+                  : status === "APPROVED"
+                    ? "Already approved"
+                    : status === "REJECTED"
+                      ? "Returned or rejected"
+                      : "Needs attention"}
+              </p>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className='space-y-3 sm:space-y-4'>
         {bulkSelection.size > 0 && (
           <div
-            className={`${theme?.card} border ${theme?.border} rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3`}
+            className={`${theme?.card} border ${theme?.border} rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3`}
           >
             <div className='flex items-center gap-2 sm:gap-3'>
               <CheckCircle
@@ -358,32 +494,26 @@ const SampleReview = () => {
                 {bulkSelection.size} sample(s) selected
               </span>
             </div>
+
             <div className='flex gap-2 flex-wrap w-full sm:w-auto'>
               <button
                 onClick={() => handleBulkAction("APPROVED")}
                 disabled={bulkProcessing}
-                className='flex-1 sm:flex-none px-3 py-1.5 sm:px-4 sm:py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-xs sm:text-sm'
+                className='flex-1 sm:flex-none px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-xs sm:text-sm'
               >
-                ✓ Approve
-              </button>
-              <button
-                onClick={() => handleBulkAction("REJECTED")}
-                disabled={bulkProcessing}
-                className='flex-1 sm:flex-none px-3 py-1.5 sm:px-4 sm:py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-xs sm:text-sm'
-              >
-                ✗ Reject
+                Approve
               </button>
               <button
                 onClick={() => handleBulkAction("FLAGGED")}
                 disabled={bulkProcessing}
-                className='flex-1 sm:flex-none px-3 py-1.5 sm:px-4 sm:py-2 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-xs sm:text-sm'
+                className='flex-1 sm:flex-none px-3 py-2 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-xs sm:text-sm'
               >
-                ⚠ Flag
+                Flag
               </button>
               <button
                 onClick={() => setBulkSelection(new Set())}
                 disabled={bulkProcessing}
-                className='flex-1 sm:flex-none px-3 py-1.5 sm:px-4 sm:py-2 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-xs sm:text-sm'
+                className='flex-1 sm:flex-none px-3 py-2 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors text-xs sm:text-sm'
               >
                 Clear
               </button>
@@ -393,312 +523,321 @@ const SampleReview = () => {
       </div>
 
       <div className='grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6'>
-        {/* Samples List */}
         <div
-          className={`${theme?.card} rounded-lg p-4 sm:p-6 border ${theme?.border}`}
+          className={`${theme?.card} rounded-xl p-4 sm:p-5 border ${theme?.border}`}
         >
-          <div className='flex items-center justify-between mb-3 sm:mb-4'>
-            <h3 className='text-base sm:text-lg font-semibold inline-flex items-center gap-2'>
-              {filterStatus}
-              <span className='inline-flex items-center justify-center min-w-[1.5rem] h-6 px-2 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'>
-                {filteredSamples.length}
-              </span>
-            </h3>
-            {filteredSamples.length > 0 && (
-              <label className='flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm cursor-pointer'>
+          <div className='flex items-center justify-between mb-4'>
+            <div>
+              <h3 className='text-base sm:text-lg font-semibold inline-flex items-center gap-2'>
+                {filterStatus}
+                <span className='inline-flex items-center justify-center min-w-[1.5rem] h-6 px-2 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'>
+                  {totalCount}
+                </span>
+              </h3>
+              <p className={`text-xs mt-1 ${theme?.textMuted}`}>
+                Page {page} of {totalPages}
+              </p>
+            </div>
+
+            {samples.length > 0 && (
+              <label className='flex items-center gap-2 text-xs sm:text-sm cursor-pointer'>
                 <input
                   type='checkbox'
-                  checked={bulkSelection.size === filteredSamples.length}
+                  checked={
+                    samples.length > 0 && bulkSelection.size === samples.length
+                  }
                   onChange={handleSelectAll}
-                  className='w-3.5 h-3.5 sm:w-4 sm:h-4 rounded text-emerald-600'
+                  className='w-4 h-4 rounded text-emerald-600'
                 />
-                <span className='whitespace-nowrap'>Select All</span>
+                <span>Select all</span>
               </label>
             )}
           </div>
-          <div className='space-y-2 max-h-[400px] sm:max-h-96 overflow-y-auto'>
-            {filteredSamples.length === 0 ? (
-              <div className='flex flex-col items-center justify-center py-10 sm:py-12 text-center'>
+
+          <div className='space-y-2 max-h-[480px] overflow-y-auto pr-1'>
+            {loading ? (
+              <div className='flex flex-col items-center justify-center py-10 text-center'>
+                <p className={`text-sm ${theme?.textMuted}`}>Refreshing...</p>
+              </div>
+            ) : samples.length === 0 ? (
+              <div className='flex flex-col items-center justify-center py-10 text-center'>
                 <p className={`text-sm font-medium ${theme?.text} mb-1`}>
                   No {filterStatus.toLowerCase()} samples
                 </p>
                 <p className={`text-xs ${theme?.textMuted}`}>
-                  Switch to another tab or wait for new submissions
+                  There are no records in this category right now
                 </p>
               </div>
             ) : (
-              filteredSamples.map((sample) => (
+              samples.map((sample) => (
                 <div
                   key={sample.id}
-                  className={`flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg border transition-colors ${
+                  className={`rounded-xl border transition-all ${
                     selectedSample?.id === sample.id
-                      ? `${theme?.card} border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20`
-                      : `border ${theme?.border} hover:bg-opacity-50`
+                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
+                      : `${theme?.border} hover:shadow-sm`
                   }`}
                 >
-                  <input
-                    type='checkbox'
-                    checked={bulkSelection.has(sample.id)}
-                    onChange={() => handleToggleBulkSelection(sample.id)}
-                    onClick={(e) => e.stopPropagation()}
-                    className='w-3.5 h-3.5 sm:w-4 sm:h-4 rounded text-emerald-600 mt-0.5 sm:mt-1 flex-shrink-0'
-                  />
-                  <button
-                    onClick={() => {
-                      console.log("button clicked");
-                      handleSelectSample(sample);
-                    }}
-                    className='flex-1 text-left min-w-0'
-                  >
-                    <p className='font-semibold text-xs sm:text-sm truncate'>
-                      {sample.productName}
-                    </p>
-                    <p className={`text-xs ${theme?.textMuted} truncate`}>
-                      {sample.sampleId}
-                    </p>
-                    <div className='flex gap-1 mt-1.5 sm:mt-2 flex-wrap'>
-                      <span className='bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs px-2 py-0.5 rounded'>
-                        {sample.state?.name}
-                      </span>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded ${
-                          sample.verificationStatus === "VERIFIED_ORIGINAL"
-                            ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
-                            : sample.verificationStatus === "VERIFIED_FAKE"
-                              ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
-                              : "bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300"
-                        }`}
-                      >
-                        {sample.verificationStatus}
-                      </span>
-                    </div>
-                    <p
-                      className={`text-xs ${theme?.textMuted} mt-1.5 sm:mt-2 truncate`}
+                  <div className='flex items-start gap-3 p-3'>
+                    <input
+                      type='checkbox'
+                      checked={bulkSelection.has(sample.id)}
+                      onChange={() => handleToggleBulkSelection(sample.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className='w-4 h-4 rounded text-emerald-600 mt-1 flex-shrink-0'
+                    />
+
+                    <button
+                      onClick={() => handleSelectSample(sample)}
+                      className='flex-1 text-left min-w-0'
                     >
-                      by {sample.creator?.fullName}
-                    </p>
-                  </button>
+                      <div className='flex items-start justify-between gap-2'>
+                        <p className='font-semibold text-sm truncate'>
+                          {sample.productName || "Unnamed product"}
+                        </p>
+                        <span
+                          className={`text-[10px] px-2 py-1 rounded-full font-semibold whitespace-nowrap ${getVerificationBadgeClass(
+                            sample.verificationStatus,
+                          )}`}
+                        >
+                          {sample.verificationStatus || "UNVERIFIED"}
+                        </span>
+                      </div>
+
+                      <p className={`text-xs mt-1 ${theme?.textMuted} truncate`}>
+                        {sample.sampleId || "No Sample ID"}
+                      </p>
+
+                      <div className='flex flex-wrap gap-1.5 mt-2'>
+                        <span className='text-[11px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'>
+                          {sample.state?.name || "No state"}
+                        </span>
+                        {sample.lga?.name && (
+                          <span className='text-[11px] px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'>
+                            {sample.lga.name}
+                          </span>
+                        )}
+                      </div>
+
+                      <p className={`text-xs mt-2 ${theme?.textMuted} truncate`}>
+                        by {sample.creator?.fullName || "Unknown collector"}
+                      </p>
+                    </button>
+                  </div>
                 </div>
               ))
             )}
           </div>
+
+          <div className={`pt-4 mt-4 border-t ${theme?.border}`}>
+            <div className='flex items-center justify-between gap-2'>
+              <button
+                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                disabled={page <= 1 || loading}
+                className='px-3 py-2 rounded-lg border disabled:opacity-50 text-sm'
+              >
+                Prev
+              </button>
+
+              <p className={`text-xs sm:text-sm ${theme?.textMuted}`}>
+                {totalCount} total • {statsLoading ? "updating..." : "live count"}
+              </p>
+
+              <button
+                onClick={() => {
+                  if (page < totalPages) {
+                    setPage((prev) => prev + 1);
+                  }
+                }}
+                disabled={page >= totalPages || loading || totalPages <= 1}
+                className='px-3 py-2 rounded-lg border disabled:opacity-50 text-sm'
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Sample Details & Review Form */}
         <div className='lg:col-span-2'>
           {selectedSample ? (
             <div
-              className={`${theme?.card} rounded-lg p-4 sm:p-6 border ${theme?.border} space-y-4 sm:space-y-6`}
+              className={`${theme?.card} rounded-xl p-4 sm:p-6 border ${theme?.border} space-y-5`}
             >
-              {/* Progress: "Sample 3 of 12" */}
-              {totalInFilter > 0 && (
+              {totalInCurrentPage > 0 && (
                 <p className={`text-sm ${theme?.textMuted}`}>
-                  Sample {currentSampleIndex} of {totalInFilter}
+                  Sample {currentSampleIndex} of {totalInCurrentPage} on this page
                 </p>
               )}
-              {/* Sample Details */}
-              <div className='space-y-4'>
-                {/* Section Header */}
-                <div className='flex items-center gap-2 pb-2 border-b border-emerald-800/40'>
-                  <div className='w-1 h-5 rounded-full bg-emerald-500' />
-                  <h3 className='text-sm font-semibold uppercase tracking-widest text-emerald-400'>
-                    Sample Details
-                  </h3>
+
+              <div className='flex items-center gap-2 pb-2 border-b border-emerald-800/30'>
+                <div className='w-1 h-5 rounded-full bg-emerald-500' />
+                <h3 className='text-sm font-semibold uppercase tracking-widest text-emerald-500'>
+                  Sample Details
+                </h3>
+              </div>
+
+              <div className='grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4'>
+                <div className='rounded-xl border p-4'>
+                  <div className='flex items-center gap-2 mb-2'>
+                    <Package size={16} className='text-emerald-600' />
+                    <p className='text-xs font-semibold uppercase tracking-wider'>
+                      Product
+                    </p>
+                  </div>
+                  <p className='text-sm font-semibold'>
+                    {selectedSample.productName || "—"}
+                  </p>
+                  <p className={`text-xs mt-1 ${theme?.textMuted}`}>
+                    Brand: {selectedSample.brandName || "—"}
+                  </p>
+                  <p className={`text-xs mt-1 ${theme?.textMuted}`}>
+                    Batch: {selectedSample.batchNumber || "—"}
+                  </p>
                 </div>
 
-                {/* Details Grid */}
-                <div className='grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 text-xs sm:text-sm'>
-                  <div className='min-w-0'>
-                    <p
-                      className={`text-[10px] uppercase tracking-wider font-medium mb-0.5 ${theme?.textMuted}`}
-                    >
-                      Sample ID
-                    </p>
-                    <p className='font-semibold truncate'>
-                      {selectedSample.sampleId}
+                <div className='rounded-xl border p-4'>
+                  <div className='flex items-center gap-2 mb-2'>
+                    <User size={16} className='text-emerald-600' />
+                    <p className='text-xs font-semibold uppercase tracking-wider'>
+                      Collector
                     </p>
                   </div>
-
-                  <div className='min-w-0'>
-                    <p
-                      className={`text-[10px] uppercase tracking-wider font-medium mb-0.5 ${theme?.textMuted}`}
-                    >
-                      Product Name
-                    </p>
-                    <p className='font-semibold truncate'>
-                      {selectedSample.productName}
-                    </p>
-                  </div>
-
-                  <div className='min-w-0'>
-                    <p
-                      className={`text-[10px] uppercase tracking-wider font-medium mb-0.5 ${theme?.textMuted}`}
-                    >
-                      Brand
-                    </p>
-                    <p className='font-semibold truncate'>
-                      {selectedSample.brandName || "—"}
-                    </p>
-                  </div>
-
-                  <div className='min-w-0'>
-                    <p
-                      className={`text-[10px] uppercase tracking-wider font-medium mb-0.5 ${theme?.textMuted}`}
-                    >
-                      Batch Number
-                    </p>
-                    <p className='font-semibold truncate'>
-                      {selectedSample.batchNumber || "—"}
-                    </p>
-                  </div>
-
-                  <div className='min-w-0'>
-                    <p
-                      className={`text-[10px] uppercase tracking-wider font-medium mb-0.5 ${theme?.textMuted}`}
-                    >
-                      Collected By
-                    </p>
-                    <p className='font-semibold truncate'>
-                      {selectedSample.creator?.fullName}
-                    </p>
-                  </div>
-
-                  <div className='min-w-0 col-span-2 sm:col-span-3'>
-                    <p
-                      className={`text-[10px] uppercase tracking-wider font-medium mb-0.5 ${theme?.textMuted}`}
-                    >
-                      Collection Location
-                    </p>
-                    <p className='font-semibold truncate'>
-                      {selectedSample.state?.name}
-                      {selectedSample.lga?.name
-                        ? ` › ${selectedSample.lga.name}`
-                        : ""}
-                      {selectedSample.market?.name
-                        ? ` › ${selectedSample.market.name}`
-                        : ""}
-                    </p>
-                  </div>
+                  <p className='text-sm font-semibold'>
+                    {selectedSample.creator?.fullName || "—"}
+                  </p>
+                  <p className={`text-xs mt-1 ${theme?.textMuted}`}>
+                    Sample ID: {selectedSample.sampleId || "—"}
+                  </p>
+                  <p className={`text-xs mt-1 ${theme?.textMuted}`}>
+                    Review status: {getReviewStatus(selectedSample)}
+                  </p>
                 </div>
 
-                {/* Product Photo */}
-                <div className='mt-2 rounded-lg border border-emerald-800/40 overflow-hidden bg-black/20'>
-                  {/* Photo Header */}
-                  <div className='flex items-center justify-between px-3 py-2 border-b border-emerald-800/30 bg-emerald-950/30'>
-                    <div className='flex items-center gap-1.5'>
-                      {/* Camera icon — swap with your icon library */}
-                      <svg
-                        className='w-3.5 h-3.5 text-emerald-400'
-                        fill='none'
-                        stroke='currentColor'
-                        viewBox='0 0 24 24'
-                      >
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z'
-                        />
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M15 13a3 3 0 11-6 0 3 3 0 016 0z'
-                        />
-                      </svg>
-                      <span className='text-[10px] uppercase tracking-wider font-semibold text-emerald-400'>
-                        Product Photo
-                      </span>
-                    </div>
-                    <span className='text-[10px] text-gray-500 uppercase tracking-wider'>
-                      Field Capture
-                    </span>
+                <div className='rounded-xl border p-4 sm:col-span-2 xl:col-span-1'>
+                  <div className='flex items-center gap-2 mb-2'>
+                    <MapPin size={16} className='text-emerald-600' />
+                    <p className='text-xs font-semibold uppercase tracking-wider'>
+                      Location
+                    </p>
                   </div>
-
-                  {/* Photo Body */}
-                  {productPhotoSrc && !imageFailed ? (
-                    <div className='flex justify-center p-3'>
-                      <img
-                        src={productPhotoSrc}
-                        alt='Product Photo'
-                        className='max-h-56 w-auto rounded object-contain'
-                        onError={() => {
-                          console.error(
-                            "Failed to load image:",
-                            productPhotoSrc,
-                          );
-                          setImageFailed(true);
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <div className='flex flex-col items-center justify-center h-36 gap-2 text-gray-500'>
-                      <p className='text-xs text-gray-500'>
-                        {selectedSample?.productPhotoUrl
-                          ? "Product photo could not be loaded"
-                          : "No product photo captured"}
-                      </p>
-                    </div>
-                  )}
+                  <p className='text-sm font-semibold'>
+                    {selectedSample.state?.name || "—"}
+                    {selectedSample.lga?.name
+                      ? ` › ${selectedSample.lga.name}`
+                      : ""}
+                    {selectedSample.market?.name
+                      ? ` › ${selectedSample.market.name}`
+                      : selectedSample.marketName
+                        ? ` › ${selectedSample.marketName}`
+                        : ""}
+                  </p>
                 </div>
               </div>
-              {/* Heavy Metals Readings */}
-              {selectedSample.heavyMetalReadings &&
-                selectedSample.heavyMetalReadings.length > 0 && (
-                  <div>
-                    <h4 className='text-sm sm:text-base font-semibold mb-2'>
-                      Heavy Metal Readings
-                    </h4>
-                    <div className='space-y-2'>
-                      {selectedSample.heavyMetalReadings.map((reading, idx) => {
-                        const status = reading.finalStatus ?? reading.status;
-                        return (
-                          <div
-                            key={reading.id ?? idx}
-                            className={`border ${theme?.border} rounded p-2 sm:p-3 text-xs sm:text-sm`}
-                          >
-                            <p className='font-semibold'>
-                              {reading.heavyMetal}
-                            </p>
-                            <p className={theme?.textMuted}>
-                              XRF: {reading.xrfReading ?? "-"} | AAS:{" "}
-                              {reading.aasReading ?? "-"}
-                            </p>
-                            <p
-                              className={`text-xs ${
-                                status === "SAFE"
-                                  ? "text-green-600 dark:text-green-400"
-                                  : "text-red-600 dark:text-red-400"
-                              }`}
-                            >
-                              Status: {status ?? "PENDING"}
-                            </p>
-                          </div>
-                        );
-                      })}
-                    </div>
+
+              <div className='rounded-xl border overflow-hidden bg-black/5'>
+                <div className='flex items-center justify-between px-3 py-2 border-b bg-emerald-950/10'>
+                  <div className='flex items-center gap-2'>
+                    <ShieldCheck size={15} className='text-emerald-500' />
+                    <span className='text-[11px] uppercase tracking-wider font-semibold text-emerald-500'>
+                      Product Photo
+                    </span>
+                  </div>
+                  <span className='text-[10px] text-gray-500 uppercase tracking-wider'>
+                    Field Capture
+                  </span>
+                </div>
+
+                {productPhotoSrc && !imageFailed ? (
+                  <div className='flex justify-center p-4'>
+                    <img
+                      src={productPhotoSrc}
+                      alt='Product Photo'
+                      className='max-h-64 w-auto rounded-lg object-contain'
+                      onError={() => setImageFailed(true)}
+                    />
+                  </div>
+                ) : (
+                  <div className='flex flex-col items-center justify-center h-40 gap-2 text-gray-500'>
+                    <p className='text-sm'>
+                      {selectedSample?.productPhotoUrl
+                        ? "Product photo could not be loaded"
+                        : "No product photo captured"}
+                    </p>
                   </div>
                 )}
+              </div>
 
-              {/* Review Form */}
+              <div>
+                <div className='flex items-center gap-2 mb-3'>
+                  <FlaskConical size={16} className='text-emerald-600' />
+                  <h4 className='text-sm sm:text-base font-semibold'>
+                    Heavy Metal Readings
+                  </h4>
+                </div>
+
+                <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+                  {normalizedReadings.map((reading) => (
+                    <div
+                      key={reading.id}
+                      className={`rounded-xl border ${theme?.border} p-4`}
+                    >
+                      <div className='flex items-center justify-between gap-2 mb-3'>
+                        <p className='font-semibold text-sm'>
+                          {reading.heavyMetal}
+                        </p>
+                        <span
+                          className={`text-[11px] px-2 py-1 rounded-full font-semibold ${getReadingStatusClass(
+                            reading.status,
+                          )}`}
+                        >
+                          {reading.status}
+                        </span>
+                      </div>
+
+                      <div className='space-y-2'>
+                        <div className='flex items-center justify-between text-sm'>
+                          <span className={theme?.textMuted}>XRF</span>
+                          <span className='font-semibold'>
+                            {reading.xrfReading}
+                          </span>
+                        </div>
+                        <div className='flex items-center justify-between text-sm'>
+                          <span className={theme?.textMuted}>AAS</span>
+                          <span className='font-semibold'>
+                            {reading.aasReading}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {(!selectedSample.heavyMetalReadings ||
+                  selectedSample.heavyMetalReadings.length === 0) && (
+                  <p className={`text-xs mt-3 ${theme?.textMuted}`}>
+                    No heavy metal readings were returned for this sample, so
+                    fallback values are displayed for better visibility.
+                  </p>
+                )}
+              </div>
+
               <div className={`border-t ${theme?.border} pt-4`}>
                 <h4 className='text-sm sm:text-base font-semibold mb-3'>
                   Review Sample
                 </h4>
 
-                {/* Status */}
                 <div className='mb-4'>
                   <label className='block text-xs sm:text-sm font-semibold mb-2'>
                     Decision
                   </label>
-                  <div className='grid grid-cols-2 gap-2'>
+                  <div className='grid grid-cols-3 gap-2'>
                     {["APPROVED", "REJECTED", "FLAGGED"].map((status) => (
                       <button
                         key={status}
                         onClick={() =>
                           setReviewForm((prev) => ({ ...prev, status }))
                         }
-                        className={`py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg font-semibold text-xs sm:text-sm transition-colors ${
+                        className={`py-2 px-3 rounded-lg font-semibold text-xs sm:text-sm transition-colors ${
                           reviewForm.status === status
                             ? "bg-emerald-600 text-white"
                             : `border ${theme?.border} hover:bg-opacity-50`
@@ -710,38 +849,33 @@ const SampleReview = () => {
                   </div>
                 </div>
 
-                {/* Issues */}
                 <div className='mb-4'>
                   <label className='block text-xs sm:text-sm font-semibold mb-2'>
-                    Flag Issues (if any)
+                    Flag Issues
                   </label>
                   <div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
                     {ISSUE_OPTIONS.map((issue) => (
                       <label
                         key={issue}
-                        className='flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm cursor-pointer'
+                        className='flex items-center gap-2 text-xs sm:text-sm cursor-pointer'
                       >
                         <input
                           type='checkbox'
                           checked={reviewForm.issues.includes(issue)}
                           onChange={() => handleIssueToggle(issue)}
-                          className='w-3.5 h-3.5 sm:w-4 sm:h-4 rounded text-emerald-600 flex-shrink-0'
+                          className='w-4 h-4 rounded text-emerald-600 flex-shrink-0'
                         />
-                        <span className='break-words'>{issue}</span>
+                        <span>{issue}</span>
                       </label>
                     ))}
                   </div>
                 </div>
 
-                {/* Comments - required when rejecting */}
                 <div className='mb-4'>
                   <label className='block text-xs sm:text-sm font-semibold mb-2'>
                     Comments
                     {reviewForm.status === "REJECTED" && (
-                      <span
-                        className='text-red-600 dark:text-red-400 ml-1'
-                        title='Required for rejection'
-                      >
+                      <span className='text-red-600 dark:text-red-400 ml-1'>
                         (required for reject)
                       </span>
                     )}
@@ -754,7 +888,7 @@ const SampleReview = () => {
                         comments: e.target.value,
                       }))
                     }
-                    rows='3'
+                    rows='4'
                     placeholder={
                       reviewForm.status === "REJECTED"
                         ? "Provide a reason for rejection..."
@@ -764,41 +898,20 @@ const SampleReview = () => {
                   />
                 </div>
 
-                {/* Requested Changes */}
-                {reviewForm.status === "CORRECTION_REQUESTED" && (
-                  <div className='mb-4'>
-                    <label className='block text-xs sm:text-sm font-semibold mb-2'>
-                      What needs to be corrected?
-                    </label>
-                    <textarea
-                      value={reviewForm.requestedChanges}
-                      onChange={(e) =>
-                        setReviewForm((prev) => ({
-                          ...prev,
-                          requestedChanges: e.target.value,
-                        }))
-                      }
-                      rows='3'
-                      placeholder='Describe what the collector needs to fix...'
-                      className={`w-full px-3 py-2 text-sm sm:text-base border ${theme?.border} rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 ${theme?.card}`}
-                    />
-                  </div>
-                )}
-
-                {/* Submit and Next */}
                 <div className='flex flex-col sm:flex-row gap-2'>
                   <button
                     onClick={handleSubmitReview}
                     disabled={reviewing}
-                    className='flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white font-semibold py-2 sm:py-2.5 px-4 rounded-lg transition-colors text-sm sm:text-base'
+                    className='flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors text-sm sm:text-base'
                   >
                     {reviewing ? "Submitting..." : "Submit Review"}
                   </button>
-                  {totalInFilter > 1 && (
+
+                  {totalInCurrentPage > 1 && (
                     <button
                       type='button'
                       onClick={goToNextSample}
-                      className='px-4 py-2 sm:py-2.5 border border-emerald-600 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg font-semibold text-sm sm:text-base transition-colors'
+                      className='px-4 py-2.5 border border-emerald-600 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg font-semibold text-sm sm:text-base transition-colors'
                     >
                       Next sample
                     </button>
@@ -808,15 +921,15 @@ const SampleReview = () => {
             </div>
           ) : (
             <div
-              className={`rounded-lg p-6 sm:p-8 border ${theme?.border} text-center min-h-[200px] flex flex-col items-center justify-center ${
-                filteredSamples.length === 0
+              className={`rounded-xl p-6 sm:p-8 border ${theme?.border} text-center min-h-[220px] flex flex-col items-center justify-center ${
+                samples.length === 0
                   ? "bg-transparent border-dashed"
                   : theme?.card
               }`}
             >
               <p className={`text-sm sm:text-base ${theme?.textMuted}`}>
-                {filteredSamples.length === 0
-                  ? "Select a status tab to see samples"
+                {samples.length === 0
+                  ? "No sample selected because this page has no records"
                   : "Select a sample to review"}
               </p>
             </div>
