@@ -358,19 +358,19 @@ const DataCollectorDashboard = () => {
         {/* page info badges */}
         <div className='flex flex-col sm:flex-row gap-3 mb-6'>
           <div
-            className={`flex items-center justify-between w-full sm:inline-flex sm:w-auto gap-2 px-3 py-2 rounded-full border ${theme?.border} bg-emerald-50 dark:bg-emerald-900/10`}
+            className={`flex items-center justify-between w-full sm:inline-flex sm:w-auto gap-2 px-3 py-2 ${theme?.card} rounded-full border ${theme?.border} bg-emerald-50 dark:bg-emerald-900/10`}
           >
-            <span className='text-xs text-gray-500'>Samples on page</span>
-            <span className='font-semibold text-sm'>
+            <span className={`text-xs  ${theme?.text}`}>Samples on page</span>
+            <span className={` font-semibold text-sm ${theme?.text}`}>
               {!samplesLoading ? allSamples.length : "--"}
             </span>
           </div>
 
           <div
-            className={`flex items-center justify-between w-full sm:inline-flex sm:w-auto gap-2 px-3 py-2 rounded-full border ${theme?.border} bg-emerald-50 dark:bg-emerald-900/10`}
+            className={`flex items-center justify-between w-full sm:inline-flex sm:w-auto gap-2 px-3 py-2 ${theme?.card} rounded-full border ${theme?.border} bg-emerald-50 dark:bg-emerald-900/10`}
           >
-            <span className='text-xs text-gray-500'>With results</span>
-            <span className='font-semibold text-sm'>
+            <span className={`text-xs  ${theme?.text}`}>With results</span>
+            <span className={` font-semibold text-sm ${theme?.text}`}>
               {!samplesLoading
                 ? allSamples.filter((s) => hasAllReadings(s)).length
                 : "--"}
@@ -378,10 +378,10 @@ const DataCollectorDashboard = () => {
           </div>
 
           <div
-            className={`flex items-center justify-between w-full sm:inline-flex sm:w-auto gap-2 px-3 py-2 rounded-full border ${theme?.border} bg-emerald-50 dark:bg-emerald-900/10`}
+            className={`flex items-center justify-between w-full sm:inline-flex sm:w-auto gap-2 px-3 py-2 ${theme?.card}   rounded-full border ${theme?.border} bg-emerald-50 dark:bg-emerald-900/10`}
           >
-            <span className='text-xs text-gray-500'>Without results</span>
-            <span className='font-semibold text-sm'>
+            <span className={`text-xs ${theme?.text}`}>Without results</span>
+            <span className={` font-semibold text-sm ${theme?.text}`}>
               {!samplesLoading
                 ? allSamples.filter((s) => !hasAllReadings(s)).length
                 : "--"}
@@ -795,10 +795,12 @@ const DataCollectorDashboard = () => {
             </div>
 
             <div
-              className={`px-4 py-3 border-t ${theme?.border} bg-gray-50 dark:bg-gray-800/40 flex items-center justify-between`}
+              className={`px-4 py-3 border-t ${theme?.card}  ${theme.text} ${theme?.border} bg-gray-50 dark:bg-gray-800/40 flex items-center justify-between`}
             >
-              <div className='flex flex-col sm:flex-row items-center gap-3 sm:gap-4'>
-                <p className={`text-xs ${theme?.textMuted}`}>
+              <div
+                className={`flex flex-col ${theme.text} sm:flex-row items-center gap-3 sm:gap-4 `}
+              >
+                <p className={`text-xs ${theme?.text}`}>
                   Showing
                   <span className='font-semibold mx-1'>
                     {(pageNumbers.currentPage - 1) * PAGE_SIZE + 1}
@@ -815,13 +817,15 @@ const DataCollectorDashboard = () => {
                   </span>{" "}
                   samples
                 </p>
-
+                {/* pagination */}
                 {totalPages > 1 && (
-                  <div className='flex items-center gap-2'>
+                  <div
+                    className={`flex items-center gap-2 ${theme.card} rounded-lg border ${theme.border} px-3 py-1`}
+                  >
                     <button
                       onClick={handlePrevClickPagination}
                       disabled={pageNumbers.currentPage === 1}
-                      className={`px-2 py-1 rounded border ${theme?.border} text-xs ${pageNumbers.currentPage === 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+                      className={`px-2 py-1 rounded border ${theme?.border}  ${theme.text} text-xs ${pageNumbers.currentPage === 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
                     >
                       Prev
                     </button>
@@ -836,7 +840,7 @@ const DataCollectorDashboard = () => {
                               currentPage: page,
                             }));
                           }}
-                          className={`px-2 py-1 rounded text-xs border ${theme?.border} ${pageNumbers.currentPage === page ? "bg-emerald-600 text-white" : ""}`}
+                          className={`px-2 py-1 rounded text-xs border ${theme?.border}   ${theme.text} ${pageNumbers.currentPage === page ? "bg-emerald-600 text-white" : ""}`}
                         >
                           {page}
                         </button>
@@ -852,7 +856,7 @@ const DataCollectorDashboard = () => {
                     <button
                       onClick={handleNextClickPagination}
                       disabled={pageNumbers.currentPage === totalPages}
-                      className={`px-2 py-1 rounded border ${theme?.border} text-xs ${pageNumbers.currentPage === totalPages ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+                      className={`px-2 py-1 rounded border ${theme?.border}  ${theme.text} text-xs ${pageNumbers.currentPage === totalPages ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
                     >
                       Next
                     </button>
