@@ -6,12 +6,15 @@ import api from "../utils/api";
 import { useTheme } from "../context/ThemeContext";
 
 const Database = () => {
-  const dispatch = useDispatch();
-  const { samples, loading } = useSelector((state) => state.samples);
   const { currentUser } = useSelector((state) => state.auth);
   const { theme } = useTheme();
 
+  const [samples, setSamples] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [fetchSampleError, setFetchSampleError] = useState(false);
+
   const [searchTerm, setSearchTerm] = useState("");
+  const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
   const [filterState, setFilterState] = useState("all");
   const [filterProductVariant, setFilterProductVariant] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
@@ -21,8 +24,29 @@ const Database = () => {
   const [selectedSample, setSelectedSample] = useState(null);
 
   useEffect(() => {
-    dispatch(fetchSamples({ page: 1, limit: 100 }));
-  }, [dispatch]);
+    let params = { page: pagination.page, limit: 100 };
+    const fetchSamplesData = async () => {
+      setLoading(true);
+      setFetchSampleError(false);
+      try {
+        const response = await api.get("/samples", { params });
+        if (response.data.success) {
+          setSamples((prev) => [...prev, ...response.data.data]);
+          if (pagination.page === 1) {
+            setPagination(
+              response.data.pagination || { page: 1, totalPages: 1 },
+            );
+          }
+        }
+      } catch (err) {
+        setFetchSampleError(err.message || "Failed to fetch samples");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSamplesData();
+  }, [pagination.page]);
 
   useEffect(() => {
     const fetchStates = async () => {
@@ -89,6 +113,9 @@ const Database = () => {
         selectedSample={selectedSample}
         setSelectedSample={setSelectedSample}
         fetchStateError={fetchStateError}
+        pagination={pagination}
+        setPagination={setPagination}
+        fetchSampleError={fetchSampleError}
       />
     </div>
   );

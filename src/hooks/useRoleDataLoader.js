@@ -22,9 +22,9 @@ const ROLE_LOADERS = {
     dispatch(fetchSamples({ page: 1, limit: 5000 }));
   },
 
-  headresearcher: (dispatch) => {
-    dispatch(fetchSamples({ page: 1, limit: 5000 }));
-  },
+  // headresearcher: (dispatch) => {
+  //   dispatch(fetchSamples({ page: 1, limit: 5000 }));
+  // },
 };
 
 export default function useRoleDataLoader(currentUser) {

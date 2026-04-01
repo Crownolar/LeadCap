@@ -39,6 +39,9 @@ const DatabaseView = ({
   selectedSample,
   setSelectedSample,
   fetchStateError,
+  pagination,
+  setPagination,
+  fetchSampleError,
 }) => {
   const isDataCollector =
     currentUser?.role?.toLowerCase().replace(/[\s_]/g, "") === "datacollector";
@@ -113,6 +116,16 @@ const DatabaseView = ({
       });
   };
 
+  const handleLoadMore = () => {
+    if (!pagination) return;
+    // if pagination.totalPages >= pagination.page do nothing
+    if (pagination.totalPages <= pagination.page) return;
+    setPagination((prev) => ({
+      ...prev,
+      page: (prev?.page || 1) + 1,
+    }));
+  };
+
   const DeleteConfirmModalComp = ({
     show,
     action,
@@ -148,6 +161,7 @@ const DatabaseView = ({
       </div>
     );
   };
+
   return (
     <div className={`space-y-4 ${theme?.text} text-base`}>
       <div
@@ -283,12 +297,7 @@ const DatabaseView = ({
         />
       )}
 
-      {loading && (
-        <div className='flex items-center justify-center h-48'>
-          <Loader className='animate-spin mr-2  size-10' />
-        </div>
-      )}
-      {!loading && (
+      {!fetchSampleError && (
         <>
           <div
             className={`${theme?.card} rounded-lg shadow-md border ${theme?.border}`}
@@ -298,7 +307,6 @@ const DatabaseView = ({
                 <thead className={theme?.card}>
                   <tr>
                     {[
-                      "Sample ID",
                       "Product",
                       "Location",
                       ...(canSeeCollector ? ["Collector"] : []),
@@ -316,19 +324,20 @@ const DatabaseView = ({
                     ))}
                   </tr>
                 </thead>
-
+                {/* desktop view */}
                 <tbody className='divide-y divide-gray-200 dark:divide-gray-700'>
-                  {filteredSamples?.map((sample) => {
+                  {filteredSamples?.map((sample, i) => {
                     const maxReading = getMaxReading(
                       sample?.heavyMetalReadings,
                     );
                     const sampleStatus =
                       getContaminationStatus(sample).toLowerCase();
+
                     return (
-                      <tr key={sample?.id} className={theme?.hover}>
-                        <td className='px-4 py-3 whitespace-nowrap font-medium'>
-                          {sample?.sampleId}
-                        </td>
+                      <tr
+                        key={sample?.sampleId || sample?.id}
+                        className={theme?.hover}
+                      >
                         <td className='px-4 py-3 whitespace-nowrap'>
                           <div>
                             <div className='font-medium'>
@@ -431,7 +440,26 @@ const DatabaseView = ({
                   })}
                 </tbody>
               </table>
+              {filteredSamples?.length !== 0 && (
+                <div className='py-3 flex justify-center'>
+                  {fetchSampleError && (
+                    <p className='text-sm mt-1 text-red-600'>
+                      Error occurred while fetching more samples. Check
+                      connection and refresh
+                    </p>
+                  )}
+                  <button
+                    onClick={handleLoadMore}
+                    disabled={pagination?.pages <= pagination?.page || loading}
+                    className={`px-4 py-2 rounded-lg text-sm text-white ${pagination?.pages >= pagination?.page ? "bg-gray-400 opacity-60 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700"}`}
+                  >
+                    {loading ? "Loading ..." : "Load More"}
+                  </button>
+                </div>
+              )}
             </div>
+
+            {/* mobile view */}
             <div className='block sm:hidden space-y-4 p-2 '>
               {filteredSamples.length > 0 &&
                 filteredSamples?.map((sample) => {
@@ -440,7 +468,7 @@ const DatabaseView = ({
                     getContaminationStatus(sample).toLowerCase();
                   return (
                     <div
-                      key={sample.id}
+                      key={sample?.sampleId || sample?.id}
                       className={`${theme?.card} border ${theme?.border} rounded-lg p-4 shadow`}
                     >
                       <div className='flex justify-between items-center mb-1'>
@@ -547,14 +575,42 @@ const DatabaseView = ({
                     </div>
                   );
                 })}
+              {filteredSamples?.length !== 0 && (
+                <div className='py-3 flex justify-center'>
+                  <button
+                    onClick={handleLoadMore}
+                    disabled={pagination?.totalPages <= pagination?.page}
+                    className={`px-4 py-2 rounded-lg text-sm text-white ${pagination?.totalPages <= pagination?.page ? "bg-gray-400 opacity-60 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700"}`}
+                  >
+                    Load more
+                  </button>
+                </div>
+              )}
             </div>
           </div>
-          {filteredSamples?.length === 0 && (
+          {filteredSamples?.length === 0 && !loading && (
             <h2 className='text-center text-gray-500'>
               No samples found matching the criteria.
             </h2>
           )}
         </>
+      )}
+      {loading && (
+        <div className='flex items-center justify-center h-48'>
+          <Loader className='animate-spin mr-2  size-10' />
+        </div>
+      )}
+      {fetchSampleError && (
+        <div
+          className={`${theme?.bg} min-h-screen flex items-center justify-center p-4`}
+        >
+          <div
+            className={`${theme?.card} rounded-lg border ${theme?.border} shadow-md p-8 text-center max-w-md`}
+          >
+            <h2 className={`${theme?.text} text-2xl font-bold mb-2`}>Error</h2>
+            <p className={theme?.textMuted}>{fetchSampleError}</p>
+          </div>
+        </div>
       )}
 
       {selectedSample && (
