@@ -18,9 +18,9 @@ import DataCollectorDashboard from "./pages/DataCollectorDashboard";
 import DataCollectorWelcome from "./pages/DataCollectorWelcome";
 import ThresholdManagement from "./components/views/ThresholdManagement";
 import InviteCodeManagement from "./components/views/InviteCodeManagement";
-import SupervisorDashboard from "./components/views/SupervisorDashboard";
-import CollectorManagement from "./components/views/CollectorManagement";
-import SampleReview from "./components/views/SampleReview";
+import SupervisorDashboard from "./components/views/supervisor/pages/SupervisorDashboard";
+import CollectorManagement from "./components/views/supervisor/pages/CollectorManagement";
+import SampleReview from "./components/views/supervisor/pages/SampleReview";
 import LabAnalystDashboard from "./components/views/LabAnalystDashboard";
 import LabConfirmationForm from "./components/views/LabConfirmationForm";
 import { EnumsProvider } from "./context/EnumsContext";
@@ -44,7 +44,8 @@ const App = () => {
   const dispatch = useDispatch();
 
   const { currentUser, isAuthenticated } = useSelector((state) => state.auth);
-  const { theme, darkMode, toggleDarkMode } = useTheme();
+  // const { theme, darkMode, toggleDarkMode } = useTheme();
+  const {theme, darkMode, toggleDarkMode }= useTheme().theme;
 
   const logout = () => dispatch(handleLogout());
 
