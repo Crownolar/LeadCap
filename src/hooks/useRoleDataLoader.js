@@ -14,9 +14,9 @@ const ROLE_LOADERS = {
     dispatch(fetchSamples({ page: 1, limit: 5000 }));
   },
 
-  labanalyst: (dispatch) => {
-    dispatch(fetchSamples({ page: 1, limit: 5000 }));
-  },
+  // labanalyst: (dispatch) => {
+  //   dispatch(fetchSamples({ page: 1, limit: 5000 }));
+  // },
 
   superadmin: (dispatch) => {
     dispatch(fetchSamples({ page: 1, limit: 5000 }));
