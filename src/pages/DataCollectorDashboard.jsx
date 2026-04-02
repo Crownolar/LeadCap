@@ -308,8 +308,7 @@ const DataCollectorDashboard = () => {
           {[
             {
               label: "Total Samples",
-              value:
-                !samplesLoading || pagination ? pagination?.totalCount : "--",
+              value: stats ? stats?.total : "--",
               icon: Eye,
               iconBg: "bg-blue-100 dark:bg-blue-900/30",
               iconColor: "text-blue-600 dark:text-blue-400",
