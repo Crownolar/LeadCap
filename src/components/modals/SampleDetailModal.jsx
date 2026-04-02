@@ -37,7 +37,7 @@ const getContaminationInfo = (heavyMetalReadings) => {
 
 const SampleDetailModal = ({ sample, onClose, onEditRequest }) => {
   const contaminationInfo = getContaminationInfo(sample?.heavyMetalReadings);
-  const fieldSampleId = buildFieldSampleId(sample);
+
   const { theme } = useTheme();
 
   const handleEdit = () => {
@@ -46,6 +46,7 @@ const SampleDetailModal = ({ sample, onClose, onEditRequest }) => {
       onClose();
     }
   };
+
   return (
     <div
       className={`fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-[5000] ${theme.text}`}
@@ -117,6 +118,8 @@ const SampleDetailModal = ({ sample, onClose, onEditRequest }) => {
                     ],
                     ["Brand:", sample?.brandName || "-"],
                     ["Batch Number:", sample?.batchNumber || "-"],
+                    ["Manufacturer Name:", sample?.manufacturerName || "-"],
+                    ["Batch Number:", sample?.batchNumber || "-"],
                     [
                       "Product Origin:",
                       sample?.productOrigin?.replace(/_/g, " ") || "-",
@@ -137,6 +140,7 @@ const SampleDetailModal = ({ sample, onClose, onEditRequest }) => {
                         ? `₦${sample?.price?.toLocaleString()}`
                         : "-",
                     ],
+                    ["Notes:", sample?.notes || "-"],
                   ].map(([label, value]) => (
                     <div
                       key={label}
