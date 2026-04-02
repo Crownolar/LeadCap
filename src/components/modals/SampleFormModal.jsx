@@ -635,7 +635,7 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                       })
                     }
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
-                    placeholder='e.g., BeautyGlow or N/A'
+                    placeholder='e.g., Manufacturer Inc. or N/A'
                   />
                 </div>
 
