@@ -6,7 +6,7 @@ const formatVendorType = (vendorType, vendorTypeOther) => {
   if (vendorType === "OTHER" && vendorTypeOther) {
     return vendorTypeOther;
   }
-  return vendorType?.replace(/_/g, " ") || "N/A";
+  return vendorType?.replace(/_/g, " ") || "-";
 };
 
 const getContaminationInfo = (heavyMetalReadings) => {
@@ -37,7 +37,7 @@ const getContaminationInfo = (heavyMetalReadings) => {
 
 const SampleDetailModal = ({ sample, onClose, onEditRequest }) => {
   const contaminationInfo = getContaminationInfo(sample?.heavyMetalReadings);
-  const fieldSampleId = buildFieldSampleId(sample);
+
   const { theme } = useTheme();
 
   const handleEdit = () => {
@@ -46,6 +46,7 @@ const SampleDetailModal = ({ sample, onClose, onEditRequest }) => {
       onClose();
     }
   };
+
   return (
     <div
       className={`fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-[5000] ${theme.text}`}
@@ -64,7 +65,7 @@ const SampleDetailModal = ({ sample, onClose, onEditRequest }) => {
             <p
               className={`text-xs sm:text-sm ${theme.textMuted} mt-1 truncate`}
             >
-              {fieldSampleId}
+              {sample?.code}
             </p>
           </div>
           <div className='flex items-center gap-2 flex-shrink-0'>
@@ -101,7 +102,7 @@ const SampleDetailModal = ({ sample, onClose, onEditRequest }) => {
                 </h3>
                 <div className='space-y-2 text-sm sm:text-base'>
                   {[
-                    ["Serial Sample ID:", sample?.sampleId || "N/A"],
+                    ["Serial Sample ID:", sample?.code || "-"],
                     [
                       "Product Category:",
                       sample?.productVariant?.category?.name || "Unknown",
@@ -113,13 +114,15 @@ const SampleDetailModal = ({ sample, onClose, onEditRequest }) => {
                           /_/g,
                           " ",
                         ) ||
-                        "N/A",
+                        "-",
                     ],
-                    ["Brand:", sample?.brandName || "N/A"],
-                    ["Batch Number:", sample?.batchNumber || "N/A"],
+                    ["Brand:", sample?.brandName || "-"],
+                    ["Batch Number:", sample?.batchNumber || "-"],
+                    ["Manufacturer Name:", sample?.manufacturerName || "-"],
+                    ["Batch Number:", sample?.batchNumber || "-"],
                     [
                       "Product Origin:",
-                      sample?.productOrigin?.replace(/_/g, " ") || "N/A",
+                      sample?.productOrigin?.replace(/_/g, " ") || "-",
                     ],
                     [
                       "Registered:",
@@ -127,16 +130,17 @@ const SampleDetailModal = ({ sample, onClose, onEditRequest }) => {
                     ],
                     ...(sample?.isRegistered
                       ? [
-                          ["NAFDAC Number:", sample?.nafdacNumber || "N/A"],
-                          ["SON Number:", sample?.sonNumber || "N/A"],
+                          ["NAFDAC Number:", sample?.nafdacNumber || "-"],
+                          ["SON Number:", sample?.sonNumber || "-"],
                         ]
                       : []),
                     [
                       "Price:",
                       sample?.price
                         ? `₦${sample?.price?.toLocaleString()}`
-                        : "N/A",
+                        : "-",
                     ],
+                    ["Notes:", sample?.notes || "-"],
                   ].map(([label, value]) => (
                     <div
                       key={label}
@@ -177,13 +181,13 @@ const SampleDetailModal = ({ sample, onClose, onEditRequest }) => {
                 </h3>
                 <div className='space-y-2 text-sm sm:text-base'>
                   {[
-                    ["State:", sample?.state?.name || "N/A"],
-                    ["LGA:", sample?.lga?.name || "N/A"],
+                    ["State:", sample?.state?.name || "-"],
+                    ["LGA:", sample?.lga?.name || "-"],
                     [
                       "Market:",
                       sample?.marketId
                         ? sample?.market?.name
-                        : sample?.marketName || "N/A",
+                        : sample?.marketName || "-",
                     ],
                     [
                       "Vendor Type:",
@@ -196,9 +200,9 @@ const SampleDetailModal = ({ sample, onClose, onEditRequest }) => {
                       "Collection Date:",
                       sample?.createdAt
                         ? new Date(sample?.createdAt).toLocaleDateString()
-                        : "N/A",
+                        : "-",
                     ],
-                    ["Collected By:", sample?.creator?.fullName || "N/A"],
+                    ["Collected By:", sample?.creator?.fullName || "-"],
                   ].map(([label, value]) => (
                     <div
                       key={label}

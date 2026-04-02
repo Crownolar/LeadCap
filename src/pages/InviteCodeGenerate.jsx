@@ -110,7 +110,7 @@ const InviteCodeGenerate = () => {
   const [stateSearch, setStateSearch] = useState("");
 
   useEffect(() => {
-    dispatch(getAllUsers({ page: 1, limit: 20 })).then((res) =>
+    dispatch(getAllUsers({ page: 1, limit: 50 })).then((res) =>
       console.log("Fetched Users (dispatch result):", res.payload),
     );
   }, [activeTab, dispatch]);

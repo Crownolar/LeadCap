@@ -10,21 +10,13 @@ const ROLE_LOADERS = {
     dispatch(fetchSamples({ page: 1, limit: 50 }));
   },
 
-  supervisor: (dispatch) => {
-    dispatch(fetchSamples({ page: 1, limit: 5000 }));
-  },
-
-  labanalyst: (dispatch) => {
-    dispatch(fetchSamples({ page: 1, limit: 5000 }));
-  },
-
-  superadmin: (dispatch) => {
-    dispatch(fetchSamples({ page: 1, limit: 5000 }));
-  },
-
-  // headresearcher: (dispatch) => {
+  // supervisor: (dispatch) => {
   //   dispatch(fetchSamples({ page: 1, limit: 5000 }));
   // },
+
+  superadmin: (dispatch) => {
+    dispatch(fetchSamples({ page: 1, limit: 100 }));
+  },
 };
 
 export default function useRoleDataLoader(currentUser) {

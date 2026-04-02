@@ -26,7 +26,7 @@ const ProductSearch = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
+  function handleSearch() {
     setLoading(true);
     setError(null);
     searchRegistryProducts({
@@ -38,6 +38,11 @@ const ProductSearch = () => {
       .then(setData)
       .catch((err) => setError(err.response?.data?.error || err.message))
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    if (!query && (filter === "ALL") & (page === 1)) return;
+    handleSearch();
   }, [query, filter, page]);
 
   const totalPages = Math.max(1, Math.ceil((data.total || 0) / PAGE_SIZE));
@@ -129,6 +134,7 @@ const ProductSearch = () => {
               ? "Loading..."
               : `${(data.total ?? 0).toLocaleString()} results found`}
           </p>
+
           {totalPages > 1 && (
             <div className='flex items-center gap-2'>
               <button

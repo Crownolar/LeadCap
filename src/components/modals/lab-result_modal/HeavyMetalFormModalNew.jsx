@@ -149,7 +149,7 @@ const HeavyMetalFormModalNew = ({
     };
   }, [dispatch]);
 
-  const getUnit = () => (sample?.sampleType === "LIQUID" ? "mg/L" : "ppm");
+  const getUnit = () => "ppm";
 
   const getThreshold = (metal) => {
     if (!sample) return null;
@@ -364,8 +364,8 @@ const HeavyMetalFormModalNew = ({
                 </div>
                 <div className='grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-gray-100 dark:divide-gray-700/60'>
                   {[
-                    { label: "Sample ID", value: sample.sampleId, mono: true },
-                    { label: "Product", value: sample.productName },
+                    { label: "Sample ID", value: sample?.code, mono: true },
+                    { label: "Product", value: sample?.productName },
                     {
                       label: "Type",
                       value: sample?.productVariant?.category?.displayName,

@@ -25,6 +25,30 @@ const LabWorkloadAnalytics = () => {
   const [aasValue, setAasValue] = useState("");
   const [aasNotes, setAasNotes] = useState("");
   const [updating, setUpdating] = useState(false);
+  const [skip, setSkip] = useState(0);
+  const [take, setTake] = useState(20);
+  const [totalItems, setTotalItems] = useState(0);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  const handleLoadMore = async () => {
+    if (isLoadingMore) return;
+    const newSkip = skip + 20;
+    if (skip + take >= (totalItems || 1)) return;
+    try {
+      setIsLoadingMore(true);
+
+      setSkip(newSkip);
+      const res = await api.get("/lab/my-recordings", {
+        params: { take, skip: newSkip },
+      });
+      const more = (res.data.data || []).map(normalizeRecording);
+      if (more.length > 0) setMyRecordings((prev) => [...prev, ...more]);
+    } catch (err) {
+      console.error("Failed to load more recordings:", err);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
 
   const handleEdit = (recording) => {
     setEditingRecording(recording);
@@ -76,19 +100,14 @@ const LabWorkloadAnalytics = () => {
 
         setLoading(true);
         const recordingsRes = await api.get("/lab/my-recordings", {
-          params: { take: 50, skip: 0 },
+          params: { take: 20, skip: 0 },
         });
 
         const normalized = (recordingsRes.data.data || []).map(
           normalizeRecording,
         );
         setMyRecordings(normalized);
-
-        // const metricsRes = await api.get("/lab/workload-metrics");
-        // setWorkloadMetrics(metricsRes.data.data);
-
-        // const compRes = await api.get("/lab/comparison-report");
-        // setComparisonReport(compRes.data.data);
+        setTotalItems(recordingsRes.data.pagination?.total || 0);
 
         setError(null);
       } catch (err) {
@@ -224,6 +243,17 @@ const LabWorkloadAnalytics = () => {
               )}
             </tbody>
           </table>
+          <div className='py-3 flex justify-center'>
+            {myRecordings.length > 0 && (
+              <button
+                onClick={handleLoadMore}
+                disabled={isLoadingMore || skip + take >= (totalItems || 1)}
+                className={`px-4 py-2 rounded-lg text-sm text-white ${isLoadingMore || skip + take >= (totalItems || 0) ? "bg-gray-400 opacity-60 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700"}`}
+              >
+                {isLoadingMore ? "Loading..." : "Load more"}
+              </button>
+            )}
+          </div>
         </div>
         <p className='text-xs mt-3 text-gray-500'>
           Total: {myRecordings.length} recordings

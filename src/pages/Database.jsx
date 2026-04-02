@@ -24,7 +24,7 @@ const Database = () => {
   const [selectedSample, setSelectedSample] = useState(null);
 
   useEffect(() => {
-    let params = { page: pagination.page, limit: 100 };
+    let params = { page: pagination.page, limit: 50 };
     const fetchSamplesData = async () => {
       setLoading(true);
       setFetchSampleError(false);

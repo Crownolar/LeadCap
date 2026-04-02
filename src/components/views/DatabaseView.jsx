@@ -334,17 +334,14 @@ const DatabaseView = ({
                       getContaminationStatus(sample).toLowerCase();
 
                     return (
-                      <tr
-                        key={sample?.sampleId || sample?.id}
-                        className={theme?.hover}
-                      >
+                      <tr key={sample?.id} className={theme?.hover}>
                         <td className='px-4 py-3 whitespace-nowrap'>
                           <div>
                             <div className='font-medium'>
                               {sample?.productName}
                             </div>
                             <div className={`text-xs ${theme?.textMuted}`}>
-                              {sample?.brandName || "N/A"}
+                              {sample?.brandName}
                             </div>
                           </div>
                         </td>
@@ -354,9 +351,7 @@ const DatabaseView = ({
                               {sample?.lga?.name}, {sample?.state?.name}
                             </div>
                             <div className={`text-xs ${theme.textMuted}`}>
-                              {sample?.marketName ||
-                                sample?.market?.name ||
-                                "N/A"}
+                              {sample?.marketName || sample?.market?.name}
                             </div>
                           </div>
                         </td>
@@ -468,7 +463,7 @@ const DatabaseView = ({
                     getContaminationStatus(sample).toLowerCase();
                   return (
                     <div
-                      key={sample?.sampleId || sample?.id}
+                      key={sample?.id}
                       className={`${theme?.card} border ${theme?.border} rounded-lg p-4 shadow`}
                     >
                       <div className='flex justify-between items-center mb-1'>
