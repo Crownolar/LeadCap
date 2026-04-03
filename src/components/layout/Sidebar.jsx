@@ -10,7 +10,6 @@ import {
   Settings,
   FlaskConical,
   Microscope,
-  TestTubeDiagonal,
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useTheme } from "../../context/ThemeContext";
@@ -37,7 +36,7 @@ const roleConfig = {
   policymakerson: {
     sampleButton: false,
     excelImport: false,
-    navItems: ["dashboard", "map"], // DASHBOARD AND MAP
+    navItems: ["dashboard", "map"],
   },
   policymakernafdac: {
     sampleButton: false,
@@ -66,17 +65,17 @@ const roleConfig = {
   supervisor: {
     sampleButton: false,
     excelImport: false,
-    navItems: ["dashboard", "collectors", "sample-review"], // Supervisor features
+    navItems: ["dashboard", "collectors", "sample-review"],
   },
   datacollector: {
     sampleButton: true,
     excelImport: false,
-    navItems: ["my-samples"], // My Samples for lab results only
+    navItems: ["my-samples"],
   },
   labanalyst: {
     sampleButton: false,
     excelImport: false,
-    navItems: ["lab-samples", "lab-recording"], // Lab analyst - view and confirm AAS; record-reading/:id from dashboard
+    navItems: ["lab-samples", "lab-recording"],
   },
 };
 
@@ -84,11 +83,9 @@ const Sidebar = ({
   mobileMenuOpen,
   setMobileMenuOpen,
   setShowForm,
-  // setShowHeavyMetalModal,
   excelImportRef,
 }) => {
   const { currentUser } = useSelector((state) => state.auth);
-
   const normalizedRole = currentUser?.role?.toLowerCase().replace(/[\s_]/g, "");
   const config = roleConfig[normalizedRole] || roleConfig.superadmin;
   const { theme, darkMode } = useTheme();
@@ -124,8 +121,18 @@ const Sidebar = ({
       route: "/database",
       key: "database",
     },
-    { icon: Map, label: "Geographic View", route: "/map", key: "map" },
-    { icon: FileText, label: "Reports", route: "/reports", key: "reports" },
+    {
+      icon: Map,
+      label: "Geographic View",
+      route: "/map",
+      key: "map",
+    },
+    {
+      icon: FileText,
+      label: "Reports",
+      route: "/reports",
+      key: "reports",
+    },
     {
       icon: Users,
       label: "Data Collectors",
@@ -150,7 +157,6 @@ const Sidebar = ({
       route: "/invitecodes",
       key: "invites",
     },
-
     {
       icon: FlaskConical,
       label: "Registry Upload",
@@ -220,7 +226,7 @@ const Sidebar = ({
   ];
 
   const navItemsToRender = allNavItems.filter((item) =>
-    config.navItems.includes(item.key),
+    config.navItems.includes(item.key)
   );
 
   const handleSampleButtonClick = () => {
@@ -229,30 +235,72 @@ const Sidebar = ({
   };
 
   return (
-    <div className='pt-5 pl-6 z-[2000] lg:flex lg:gap-6 '>
+    <>
       {mobileMenuOpen && (
         <div
-          className='fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden '
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
+      <div className="hidden lg:block lg:w-72 lg:shrink-0">
+        <aside
+          className={`
+            sticky top-24 h-[calc(100vh-7rem)] w-full
+            rounded-2xl border shadow-sm
+            px-4 py-5
+            ${theme?.card} ${theme?.border}
+          `}
+        >
+          <nav className="space-y-2 h-[calc(100%-96px)] overflow-y-auto pr-1">
+            {navItemsToRender.map((item) => (
+              <NavItem
+                key={item.key}
+                icon={item.icon}
+                label={item.label}
+                route={item.route}
+                setMobileMenuOpen={setMobileMenuOpen}
+                darkMode={darkMode}
+                theme={theme}
+              />
+            ))}
+          </nav>
+
+          <div className={`mt-5 pt-5 border-t ${theme.border} space-y-2`}>
+            {config.sampleButton && (
+              <button
+                onClick={handleSampleButtonClick}
+                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+                New Sample
+              </button>
+            )}
+
+            {config.excelImport && (
+              <button
+                onClick={() => excelImportRef?.current?.click()}
+                className={`w-full border ${theme?.border} font-medium py-3 px-4 rounded-xl flex items-center justify-center gap-2 ${theme?.text} transition-colors ${theme?.hover}`}
+              >
+                <Upload className="w-5 h-5" />
+                Import Excel
+              </button>
+            )}
+          </div>
+        </aside>
+      </div>
+
       <aside
-        className={`fixed lg:sticky top-16 lg:top-24 left-0 z-50 pt-16 md:pt-7
-          h-full lg:h-fit w-64 lg:w-64 border-4 
-          ${theme?.card} shadow-xl lg:shadow-md border-r lg:border ${
-            theme?.border
-          }
-          p-4 lg:rounded-lg
+        className={`
+          fixed top-16 left-0 z-50 h-[calc(100vh-4rem)] w-[280px]
+          border-r shadow-2xl px-4 py-5
           transform transition-transform duration-300 ease-in-out
-          ${
-            mobileMenuOpen
-              ? "translate-x-0"
-              : "-translate-x-full lg:translate-x-0"
-          }
+          lg:hidden
+          ${theme?.card} ${theme?.border}
+          ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
-        <nav className='space-y-2  max-h-[500px]  overflow-y-auto  md:mt-4 lg:mt-0'>
+        <nav className="space-y-2 h-[calc(100%-96px)] overflow-y-auto pr-1">
           {navItemsToRender.map((item) => (
             <NavItem
               key={item.key}
@@ -266,31 +314,29 @@ const Sidebar = ({
           ))}
         </nav>
 
-        <div className={`mt-6 pt-6 border-t ${theme.border} space-y-2`}>
-          {/* SAMPLE BUTTON ONLY FOR roles WITH sampleButton = true */}
+        <div className={`mt-5 pt-5 border-t ${theme.border} space-y-2`}>
           {config.sampleButton && (
             <button
               onClick={handleSampleButtonClick}
-              className='w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors'
+              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors"
             >
-              <Plus className='w-5 h-5' />
+              <Plus className="w-5 h-5" />
               New Sample
             </button>
           )}
 
-          {/* EXCEL IMPORT ONLY FOR SUPER ADMIN */}
           {config.excelImport && (
             <button
               onClick={() => excelImportRef?.current?.click()}
-              className={`w-full border ${theme?.border} font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 ${theme?.text} transition-colors ${theme?.hover}`}
+              className={`w-full border ${theme?.border} font-medium py-3 px-4 rounded-xl flex items-center justify-center gap-2 ${theme?.text} transition-colors ${theme?.hover}`}
             >
-              <Upload className='w-5 h-5' />
+              <Upload className="w-5 h-5" />
               Import Excel
             </button>
           )}
         </div>
       </aside>
-    </div>
+    </>
   );
 };
 
