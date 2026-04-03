@@ -70,7 +70,7 @@ const Layout = () => {
               <div
                 className={`
                   min-h-[calc(100vh-110px)] rounded-2xl
-                  border shadow-sm backdrop-blur-sm
+                  border shadow-sm
                   p-4 sm:p-5 lg:p-6
                   ${theme.card}
                   ${theme.border}
