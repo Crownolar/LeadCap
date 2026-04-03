@@ -49,24 +49,24 @@ const Layout = () => {
         />
 
         <div className="flex flex-1 min-h-0 relative">
-          <Sidebar
-            mobileMenuOpen={mobileMenuOpen}
-            setMobileMenuOpen={setMobileMenuOpen}
-            currentView={currentView}
-            setCurrentView={setCurrentView}
-            setShowForm={setShowForm}
-            setShowHeavyMetalModal={setShowHeavyMetalModal}
-          />
+          <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-1 min-h-0 gap-6">
+            <Sidebar
+              mobileMenuOpen={mobileMenuOpen}
+              setMobileMenuOpen={setMobileMenuOpen}
+              currentView={currentView}
+              setCurrentView={setCurrentView}
+              setShowForm={setShowForm}
+              setShowHeavyMetalModal={setShowHeavyMetalModal}
+            />
 
-          <main
-            className={`
-              flex-1 min-w-0 min-h-0 overflow-y-auto
-              px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-7
-              transition-all duration-300
-              ${theme.bg}
-            `}
-          >
-            <div className="w-full max-w-[1600px] mx-auto">
+            <main
+              className={`
+                flex-1 min-w-0 min-h-0 overflow-y-auto
+                py-4 sm:py-6 lg:py-7
+                transition-all duration-300
+                ${theme.bg}
+              `}
+            >
               <div
                 className={`
                   min-h-[calc(100vh-110px)] rounded-2xl
@@ -78,8 +78,8 @@ const Layout = () => {
               >
                 <Outlet />
               </div>
-            </div>
-          </main>
+            </main>
+          </div>
 
           {mobileMenuOpen && (
             <div
