@@ -33,7 +33,7 @@ const Reports = () => {
   };
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8">
+    <div className={`w-full px-4 sm:px-6 lg:px-8 ${theme.card} ${theme.textMuted} py-6`}>
       {/* Tab bar */}
       <div className={`flex flex-wrap border-b-2 ${theme.border} mb-5 gap-y-1`}>
         {TABS.map((tab) => (

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { FilterSep, BtnPrimary, BtnGhost } from "../utils/MohUI";
-import { Pagination } from "../components/Pagination";
 import { FilterBar } from "../components/FilterBar";
 import { StatusBadge } from "../components/StatusBadge";
 import { getMOHSamples } from "../../../services/mohService";
 import { useTheme } from "../../../context/ThemeContext";
+import api from "../../../utils/api";
 
 const COLUMNS = [
   "Sample ID",
@@ -21,30 +21,39 @@ const COLUMNS = [
   "Created at",
 ];
 
-const STATES = [
-  { id: "cmmnjg7o300l1v2ed900oyiyj", name: "Kano" },
-  { id: "cmmnabc300l1v2ed900xyz", name: "Lagos" },
-  { id: "cmmndef300l1v2ed900abc", name: "Oyo" },
-  { id: "cmmnghi300l1v2ed900def", name: "Abuja" },
-];
+const STATES_CACHE_KEY = "moh_states_cache_v1";
+const LGAS_CACHE_PREFIX = "moh_lgas_cache_v1_";
 
 const Samples = () => {
   const { theme, darkMode } = useTheme();
 
   const [samples, setSamples] = useState([]);
+  const [states, setStates] = useState([]);
+  const [lgaOptions, setLgaOptions] = useState([]);
+
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [statesLoading, setStatesLoading] = useState(false);
   const [lgaLoading, setLgaLoading] = useState(false);
 
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
 
+  // UI filter state
   const [stateFilter, setStateFilter] = useState("");
   const [lgaFilter, setLgaFilter] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
-  const [lgaOptions, setLgaOptions] = useState([]);
+  // Applied filter state
+  const [appliedFilters, setAppliedFilters] = useState({
+    stateId: "",
+    lgaId: "",
+    fromDate: "",
+    toDate: "",
+  });
 
   const inputClass = `
     text-xs px-2 py-1.5 rounded-md outline-none border min-w-0
@@ -60,29 +69,79 @@ const Samples = () => {
     if (Array.isArray(data?.data)) return data.data;
     if (Array.isArray(data?.samples)) return data.samples;
     if (Array.isArray(data?.items)) return data.items;
+    if (Array.isArray(data?.results)) return data.results;
+    if (Array.isArray(data?.rows)) return data.rows;
     if (Array.isArray(data)) return data;
     return [];
   };
 
-  const resolveTotalPages = (data) => {
+  const normalizeStates = (payload) => {
+    const rows =
+      Array.isArray(payload?.data) ? payload.data :
+      Array.isArray(payload?.states) ? payload.states :
+      Array.isArray(payload?.data?.states) ? payload.data.states :
+      Array.isArray(payload?.items) ? payload.items :
+      Array.isArray(payload) ? payload :
+      [];
+
+    return rows
+      .map((state) => ({
+        id: state?.id || state?.stateId || state?.value || "",
+        name: state?.name || state?.stateName || state?.label || "",
+        code: state?.code || "",
+        isActive: state?.isActive,
+      }))
+      .filter((state) => state.id && state.name)
+      .filter((state) => state.isActive !== false)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  };
+
+  const normalizeLgas = (payload, selectedStateId) => {
+    const rows =
+      Array.isArray(payload?.data) ? payload.data :
+      Array.isArray(payload?.lgas) ? payload.lgas :
+      Array.isArray(payload?.data?.lgas) ? payload.data.lgas :
+      Array.isArray(payload?.items) ? payload.items :
+      Array.isArray(payload) ? payload :
+      [];
+
+    return rows
+      .map((lga) => ({
+        id: lga?.id || lga?.lgaId || lga?.value || "",
+        name: lga?.name || lga?.lgaName || lga?.label || "",
+        stateId: lga?.stateId || lga?.state?.id || lga?.state_id || "",
+        isActive: lga?.isActive,
+      }))
+      .filter((lga) => lga.id && lga.name)
+      .filter((lga) => lga.isActive !== false)
+      .filter((lga) => lga.stateId === selectedStateId)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  };
+
+  const resolveTotalPages = (data, size) => {
+    if (data?.count && Number.isFinite(data.count)) {
+      return Math.max(1, Math.ceil(data.count / size));
+    }
+
     return (
       data?.pagination?.totalPages ||
       data?.meta?.totalPages ||
       data?.totalPages ||
+      data?.pages ||
       1
     );
   };
 
-  const applyDateFilter = (rows) => {
+  const applyDateFilter = (rows, filters) => {
     return (rows || []).filter((item) => {
       if (!item?.createdAt) return true;
 
       const created = new Date(item.createdAt).getTime();
-      const from = fromDate
-        ? new Date(fromDate).setHours(0, 0, 0, 0)
+      const from = filters?.fromDate
+        ? new Date(filters.fromDate).setHours(0, 0, 0, 0)
         : null;
-      const to = toDate
-        ? new Date(toDate).setHours(23, 59, 59, 999)
+      const to = filters?.toDate
+        ? new Date(filters.toDate).setHours(23, 59, 59, 999)
         : null;
 
       if (from && created < from) return false;
@@ -92,28 +151,31 @@ const Samples = () => {
     });
   };
 
-  const fetchSamples = async () => {
+  const fetchStates = async () => {
     try {
-      setLoading(true);
+      const cached = sessionStorage.getItem(STATES_CACHE_KEY);
+      if (cached) {
+        setStates(JSON.parse(cached));
+        return;
+      }
 
-      const data = await getMOHSamples({
-        page,
-        pageSize,
-        stateId: stateFilter || undefined,
-        lgaId: lgaFilter || undefined,
-        fromDate: fromDate || undefined,
-        toDate: toDate || undefined,
+      setStatesLoading(true);
+
+      const res = await api.get("/management/states", {
+        params: {
+          page: 1,
+          pageSize: 100,
+        },
       });
 
-      const rows = normalizeRows(data);
-      setSamples(applyDateFilter(rows));
-      setTotalPages(resolveTotalPages(data));
+      const normalized = normalizeStates(res.data);
+      setStates(normalized);
+      sessionStorage.setItem(STATES_CACHE_KEY, JSON.stringify(normalized));
     } catch (error) {
-      console.error("Failed to fetch MOH samples:", error);
-      setSamples([]);
-      setTotalPages(1);
+      console.error("Failed to fetch states:", error);
+      setStates([]);
     } finally {
-      setLoading(false);
+      setStatesLoading(false);
     }
   };
 
@@ -123,50 +185,118 @@ const Samples = () => {
       return;
     }
 
+    const cacheKey = `${LGAS_CACHE_PREFIX}${selectedStateId}`;
+
     try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        setLgaOptions(JSON.parse(cached));
+        return;
+      }
+
       setLgaLoading(true);
 
-      const data = await getMOHSamples({
-        page: 1,
-        pageSize: 5000,
-        stateId: selectedStateId,
+      const res = await api.get("/management/lgas", {
+        params: {
+          page: 1,
+          pageSize: 1000,
+        },
       });
 
-      const rows = normalizeRows(data);
-
-      const lgaMap = new Map();
-
-      rows.forEach((item) => {
-        const lgaId = item?.lga?.id || item?.lgaId;
-        const lgaName =
-          item?.lga?.name ||
-          item?.lgaName ||
-          item?.lga?.label;
-
-        if (lgaId && lgaName && !lgaMap.has(lgaId)) {
-          lgaMap.set(lgaId, {
-            id: lgaId,
-            name: lgaName,
-          });
-        }
-      });
-
-      const uniqueLgas = Array.from(lgaMap.values()).sort((a, b) =>
-        a.name.localeCompare(b.name)
-      );
-
-      setLgaOptions(uniqueLgas);
+      const normalized = normalizeLgas(res.data, selectedStateId);
+      setLgaOptions(normalized);
+      sessionStorage.setItem(cacheKey, JSON.stringify(normalized));
     } catch (error) {
-      console.error("Failed to fetch LGAs by state:", error);
+      console.error("Failed to fetch LGAs:", error);
       setLgaOptions([]);
     } finally {
       setLgaLoading(false);
     }
   };
 
+  const fetchSamples = async ({ nextPage = 1, append = false } = {}) => {
+    try {
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+
+      const data = await getMOHSamples({
+        page: nextPage,
+        pageSize,
+        stateId: appliedFilters.stateId || undefined,
+        lgaId: appliedFilters.lgaId || undefined,
+        fromDate: appliedFilters.fromDate || undefined,
+        toDate: appliedFilters.toDate || undefined,
+      });
+
+      const rows = applyDateFilter(normalizeRows(data), appliedFilters);
+      const computedTotalPages = resolveTotalPages(data, pageSize);
+
+      setTotalPages(computedTotalPages);
+      setHasMore(nextPage < computedTotalPages);
+
+      if (append) {
+        setSamples((prev) => {
+          const existingIds = new Set(prev.map((item) => item.id));
+          const dedupedNewRows = rows.filter((item) => !existingIds.has(item.id));
+          return [...prev, ...dedupedNewRows];
+        });
+      } else {
+        setSamples(rows);
+      }
+
+      setPage(nextPage);
+    } catch (error) {
+      console.error("Failed to fetch MOH samples:", error);
+
+      if (!append) {
+        setSamples([]);
+        setTotalPages(1);
+        setHasMore(false);
+        setPage(1);
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const applyFilters = () => {
+    setSamples([]);
+    setPage(1);
+    setHasMore(false);
+
+    setAppliedFilters({
+      stateId: stateFilter,
+      lgaId: lgaFilter,
+      fromDate,
+      toDate,
+    });
+  };
+
+  const clearFilters = () => {
+    setStateFilter("");
+    setLgaFilter("");
+    setFromDate("");
+    setToDate("");
+    setLgaOptions([]);
+    setSamples([]);
+    setPage(1);
+    setHasMore(false);
+
+    setAppliedFilters({
+      stateId: "",
+      lgaId: "",
+      fromDate: "",
+      toDate: "",
+    });
+  };
+
   useEffect(() => {
-    fetchSamples();
-  }, [page, pageSize, stateFilter, lgaFilter, fromDate, toDate]);
+    fetchStates();
+  }, []);
 
   useEffect(() => {
     setLgaFilter("");
@@ -179,14 +309,9 @@ const Samples = () => {
     }
   }, [stateFilter]);
 
-  const clearFilters = () => {
-    setStateFilter("");
-    setLgaFilter("");
-    setFromDate("");
-    setToDate("");
-    setLgaOptions([]);
-    setPage(1);
-  };
+  useEffect(() => {
+    fetchSamples({ nextPage: 1, append: false });
+  }, [pageSize, appliedFilters]);
 
   const tableRows = useMemo(() => samples || [], [samples]);
 
@@ -203,10 +328,14 @@ const Samples = () => {
             onChange={(e) => {
               setStateFilter(e.target.value);
             }}
-            className={`${inputClass} flex-1 sm:flex-none`}
+            className={`${inputClass} flex-1 sm:flex-none min-w-[220px]`}
+            disabled={statesLoading}
           >
-            <option value="">All States</option>
-            {STATES.map((state) => (
+            <option value="">
+              {statesLoading ? "Loading states..." : "All States"}
+            </option>
+
+            {states.map((state) => (
               <option key={state.id} value={state.id}>
                 {state.name}
               </option>
@@ -221,10 +350,9 @@ const Samples = () => {
             value={lgaFilter}
             onChange={(e) => {
               setLgaFilter(e.target.value);
-              setPage(1);
             }}
             disabled={!stateFilter || lgaLoading}
-            className={`${inputClass} flex-1 sm:flex-none disabled:opacity-60 disabled:cursor-not-allowed`}
+            className={`${inputClass} flex-1 sm:flex-none min-w-[220px] disabled:opacity-60 disabled:cursor-not-allowed`}
           >
             <option value="">
               {!stateFilter
@@ -253,7 +381,6 @@ const Samples = () => {
             value={fromDate}
             onChange={(e) => {
               setFromDate(e.target.value);
-              setPage(1);
             }}
             className={`${inputClass} flex-1 sm:flex-none`}
           />
@@ -266,7 +393,6 @@ const Samples = () => {
             value={toDate}
             onChange={(e) => {
               setToDate(e.target.value);
-              setPage(1);
             }}
             className={`${inputClass} flex-1 sm:flex-none`}
           />
@@ -275,20 +401,14 @@ const Samples = () => {
         <FilterSep />
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <BtnPrimary
-            onClick={() => {
-              setPage(1);
-              fetchSamples();
-            }}
-          >
-            Apply filters
-          </BtnPrimary>
-
+          <BtnPrimary onClick={applyFilters}>Apply filters</BtnPrimary>
           <BtnGhost onClick={clearFilters}>Clear</BtnGhost>
         </div>
       </FilterBar>
 
-      <div className={`${theme.card} rounded-xl border ${theme.border} overflow-hidden`}>
+      <div
+        className={`${theme.card} rounded-xl border ${theme.border} overflow-hidden`}
+      >
         <div
           className={`px-4 py-3 border-b ${theme.border} flex flex-wrap items-center justify-between gap-2`}
         >
@@ -301,19 +421,24 @@ const Samples = () => {
             </div>
           </div>
 
-          <select
-            value={pageSize}
-            onChange={(e) => {
-              setPageSize(Number(e.target.value));
-              setPage(1);
-            }}
-            className={`${inputClass} flex-shrink-0`}
-          >
-            <option value={10}>10 per page</option>
-            <option value={20}>20 per page</option>
-            <option value={50}>50 per page</option>
-            <option value={100}>100 per page</option>
-          </select>
+          <div className="flex items-center gap-2">
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+              }}
+              className={`${inputClass} flex-shrink-0`}
+            >
+              <option value={10}>10 per load</option>
+              <option value={20}>20 per load</option>
+              <option value={50}>50 per load</option>
+              <option value={100}>100 per load</option>
+            </select>
+
+            <div className={`text-xs ${theme.textMuted}`}>
+              Loaded page {page} of {totalPages}
+            </div>
+          </div>
         </div>
 
         {loading ? (
@@ -350,8 +475,10 @@ const Samples = () => {
                       key={row.id}
                       className={`${theme.card} ${theme.textMuted} transition-colors`}
                     >
-                      <td className={`px-4 py-3 border-b ${tableCellClass} font-mono text-xs ${theme.text}`}>
-                        {row.sampleId || "—"}
+                      <td
+                        className={`px-4 py-3 border-b ${tableCellClass} font-mono text-xs ${theme.text}`}
+                      >
+                        {row.code || "—"}
                       </td>
                       <td className={`px-4 py-3 border-b ${tableCellClass}`}>
                         {row.state?.name || row.stateName || "—"}
@@ -362,7 +489,9 @@ const Samples = () => {
                       <td className={`px-4 py-3 border-b ${tableCellClass}`}>
                         {row.market?.name || row.marketName || "—"}
                       </td>
-                      <td className={`px-4 py-3 border-b ${tableCellClass} font-medium`}>
+                      <td
+                        className={`px-4 py-3 border-b ${tableCellClass} font-medium`}
+                      >
                         {row.productName || "—"}
                       </td>
                       <td className={`px-4 py-3 border-b ${tableCellClass}`}>
@@ -371,10 +500,14 @@ const Samples = () => {
                           row.category ||
                           "—"}
                       </td>
-                      <td className={`px-4 py-3 border-b ${tableCellClass} font-mono text-xs`}>
+                      <td
+                        className={`px-4 py-3 border-b ${tableCellClass} font-mono text-xs`}
+                      >
                         {row.nafdacNumber || "—"}
                       </td>
-                      <td className={`px-4 py-3 border-b ${tableCellClass} font-mono text-xs`}>
+                      <td
+                        className={`px-4 py-3 border-b ${tableCellClass} font-mono text-xs`}
+                      >
                         {row.sonNumber || "—"}
                       </td>
                       <td className={`px-4 py-3 border-b ${tableCellClass}`}>
@@ -386,7 +519,9 @@ const Samples = () => {
                       <td className={`px-4 py-3 border-b ${tableCellClass}`}>
                         {row.productOrigin || "—"}
                       </td>
-                      <td className={`px-4 py-3 border-b ${theme.border} ${theme.textMuted}`}>
+                      <td
+                        className={`px-4 py-3 border-b ${theme.border} ${theme.textMuted}`}
+                      >
                         {row.createdAt
                           ? new Date(row.createdAt).toLocaleDateString()
                           : "—"}
@@ -406,7 +541,7 @@ const Samples = () => {
                         darkMode ? "text-green-300" : "text-green-700"
                       }`}
                     >
-                      {row.sampleId || "—"}
+                      {row.code || "—"}
                     </span>
                     <StatusBadge status={row.status} />
                   </div>
@@ -422,7 +557,7 @@ const Samples = () => {
                       </span>
                       <span className={`${theme.text} truncate`}>
                         {row.state?.name || row.stateName || "—"}
-                        {(row.lga?.name || row.lgaName)
+                        {row.lga?.name || row.lgaName
                           ? ` · ${row.lga?.name || row.lgaName}`
                           : ""}
                       </span>
@@ -497,10 +632,27 @@ const Samples = () => {
                 </div>
               ))}
             </div>
+
+            <div className={`px-4 py-4 border-t ${theme.border} flex flex-col items-center gap-3`}>
+              <div className={`text-xs ${theme.textMuted}`}>
+                Showing {tableRows.length} loaded record{tableRows.length === 1 ? "" : "s"}
+                {totalPages > 1 ? ` · page ${page} of ${totalPages}` : ""}
+              </div>
+
+              {hasMore ? (
+                <BtnPrimary
+                  onClick={() => fetchSamples({ nextPage: page + 1, append: true })}
+                >
+                  {loadingMore ? "Loading..." : "Load more"}
+                </BtnPrimary>
+              ) : (
+                <div className={`text-xs ${theme.textMuted}`}>
+                  No more samples to load.
+                </div>
+              )}
+            </div>
           </>
         )}
-
-        <Pagination page={page} setPage={setPage} totalPages={totalPages} />
       </div>
     </div>
   );

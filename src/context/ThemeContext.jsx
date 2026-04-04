@@ -11,10 +11,15 @@ const themes = {
     border: "border-gray-200",
     hover: "hover:bg-gray-100",
     input: "bg-white border-gray-300 text-gray-900",
+
     safe: "bg-green-100 text-green-700",
     moderate: "bg-orange-100 text-orange-700",
     danger: "bg-red-100 text-red-700",
     info: "bg-blue-50 text-blue-700",
+
+    emerald: "border border-emerald-200 bg-emerald-50 text-emerald-700",
+    emeraldText: "text-emerald-700",
+    emeraldBorder: "border border-emerald-200 bg-emerald-50",
   },
 
   dark: {
@@ -25,10 +30,15 @@ const themes = {
     border: "border-gray-700",
     hover: "hover:bg-gray-700",
     input: "bg-gray-700 border-gray-600 text-gray-100",
+
     safe: "bg-green-900/30 text-green-300",
     moderate: "bg-orange-900/30 text-orange-300",
     danger: "bg-red-900/30 text-red-300",
     info: "bg-blue-900/30 text-blue-300",
+
+    emerald: "border border-emerald-900/40 bg-emerald-900/20 text-emerald-300",
+    emeraldText: "text-emerald-300",
+    emeraldBorder: "border border-emerald-900/40 bg-emerald-900/20",
   },
 };
 

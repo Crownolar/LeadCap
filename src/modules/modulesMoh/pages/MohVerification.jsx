@@ -7,6 +7,7 @@ import { SectionLabel } from "../components/SectionLabel";
 import { WhiteCard } from "../components/WhiteCard";
 import { StatusBadge } from "../components/StatusBadge";
 import api from "../../../utils/api";
+import { useTheme } from "../../../context/ThemeContext";
 
 const STATUS_TABS = ["All", "Verified", "Failed", "Pending"];
 
@@ -25,6 +26,7 @@ const Verification = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const {theme} = useTheme();
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -217,26 +219,26 @@ const Verification = () => {
       </WhiteCard>
 
       <FilterBar>
-        <label className="text-xs text-gray-500 whitespace-nowrap">From</label>
+        <label className={`text-xs ${theme.textMuted} whitespace-nowrap`}>From</label>
         <input
           type="date"
           value={fromDate}
           onChange={(e) => setFromDate(e.target.value)}
-          className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+          className={`w-full sm:w-auto text-xs px-2 py-1.5 border ${theme.border} ${theme.textMuted} rounded-md outline-none focus:border-green-500`}
         />
 
-        <label className="text-xs text-gray-500 whitespace-nowrap">To</label>
+        <label className={`text-xs ${theme.textMuted} whitespace-nowrap`}>To</label>
         <input
           type="date"
           value={toDate}
           onChange={(e) => setToDate(e.target.value)}
-          className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+          className={`w-full sm:w-auto text-xs px-2 py-1.5 border ${theme.border} ${theme.textMuted} rounded-md outline-none focus:border-green-500`}
         />
 
         <FilterSep />
 
-        <label className="text-xs text-gray-500">State</label>
-        <select className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500">
+        <label className={`text-xs ${theme.textMuted}`}>State</label>
+        <select className={`w-full sm:w-auto text-xs px-2 py-1.5 border ${theme.border} ${theme.textMuted} rounded-md outline-none focus:border-green-500`}>
           <option>All States</option>
           <option>Lagos</option>
           <option>Kano</option>
@@ -274,14 +276,14 @@ const Verification = () => {
         ))}
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className={`${theme.card} rounded-xl border ${theme.border} overflow-hidden`}>  
         {/* Table header — stack on mobile, row on sm+ */}
-        <div className="px-4 py-3 border-b border-gray-100 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className={`px-4 py-3 border-b ${theme.border} flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between`}>
           <div>
-            <div className="text-sm font-medium text-gray-900">
+            <div className={`text-sm font-medium ${theme.text}`}>
               Verification log
             </div>
-            <div className="text-xs text-gray-400 mt-0.5">
+            <div className={`text-xs ${theme.textMuted} mt-0.5`}>
               Read-only · No verify/re-verify actions
             </div>
           </div>
@@ -292,7 +294,7 @@ const Verification = () => {
               setPageSize(Number(e.target.value));
               setPage(1);
             }}
-            className="w-full sm:w-auto text-xs px-2 py-1.5 border border-gray-200 rounded-md outline-none focus:border-green-500"
+            className={` w-full sm:w-auto text-xs px-2 py-1.5 border ${theme.border} ${theme.textMuted} rounded-md outline-none focus:border-green-500`}
           >
             <option value={10}>10 per page</option>
             <option value={20}>20 per page</option>
@@ -327,7 +329,7 @@ const Verification = () => {
                 <tr>
                   <td
                     colSpan={9}
-                    className="px-4 py-6 text-center text-gray-500"
+                    className={`${theme.textMuted} px-4 py-6 text-center`}
                   >
                     Loading verification logs...
                   </td>
@@ -336,7 +338,7 @@ const Verification = () => {
                 <tr>
                   <td
                     colSpan={9}
-                    className="px-4 py-6 text-center text-red-600"
+                    className={`${theme.textMuted} px-4 py-6 text-center text-red-600`}
                   >
                     {error}
                   </td>
@@ -345,7 +347,7 @@ const Verification = () => {
                 <tr>
                   <td
                     colSpan={9}
-                    className="px-4 py-6 text-center text-gray-500"
+                    className={`${theme.textMuted} px-4 py-6 text-center`}
                   >
                     No verification logs found
                   </td>
@@ -357,7 +359,7 @@ const Verification = () => {
                   return (
                     <tr
                       key={row.id || row.sampleId || row._id || index}
-                      className="hover:bg-gray-50"
+                      className={`${theme.hover}`}
                     >
                       <td className={`${TD} font-mono text-xs text-green-700`}>
                         {row.id ||

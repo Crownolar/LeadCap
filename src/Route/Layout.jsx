@@ -8,13 +8,13 @@ import { useState } from "react";
 import SampleFormModal from "../components/modals/SampleFormModal";
 import HeavyMetalFormModalNew from "../components/modals/lab-result_modal/HeavyMetalFormModalNew";
 import { createSample } from "../redux/slice/samplesSlice";
-// import api from "../utils/api";
 import useRoleDataLoader from "../hooks/useRoleDataLoader";
 
 const Layout = () => {
   const dispatch = useDispatch();
   const { currentUser } = useSelector((state) => state.auth);
   const { theme } = useTheme();
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentView, setCurrentView] = useState("dashboard");
   const [showForm, setShowForm] = useState(false);
@@ -39,26 +39,55 @@ const Layout = () => {
   useRoleDataLoader(currentUser);
 
   return (
-    <div className={`min-h-screen flex flex-col ${theme.bg}`}>
-      <Header
-        currentUser={currentUser}
-        handleLogout={logout}
-        mobileMenuOpen={mobileMenuOpen}
-        setMobileMenuOpen={setMobileMenuOpen}
-      />
-
-      <div className='flex flex-1'>
-        <Sidebar
+    <div className={`min-h-screen ${theme.bg} ${theme.text}`}>
+      <div className="flex min-h-screen flex-col">
+        <Header
+          currentUser={currentUser}
+          handleLogout={logout}
           mobileMenuOpen={mobileMenuOpen}
           setMobileMenuOpen={setMobileMenuOpen}
-          currentView={currentView}
-          setCurrentView={setCurrentView}
-          setShowForm={setShowForm}
-          setShowHeavyMetalModal={setShowHeavyMetalModal}
         />
-        <main className={`flex-1 p-6 overflow-y-auto ${theme.bg}`}>
-          <Outlet />
-        </main>
+
+        <div className="flex flex-1 min-h-0 relative">
+          <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-1 min-h-0 gap-6">
+            <Sidebar
+              mobileMenuOpen={mobileMenuOpen}
+              setMobileMenuOpen={setMobileMenuOpen}
+              currentView={currentView}
+              setCurrentView={setCurrentView}
+              setShowForm={setShowForm}
+              setShowHeavyMetalModal={setShowHeavyMetalModal}
+            />
+
+            <main
+              className={`
+                flex-1 min-w-0 min-h-0 overflow-y-auto
+                py-4 sm:py-6 lg:py-7
+                transition-all duration-300
+                ${theme.bg}
+              `}
+            >
+              <div
+                className={`
+                  min-h-[calc(100vh-110px)] rounded-2xl
+                  border shadow-sm
+                  p-4 sm:p-5 lg:p-6
+                  ${theme.card}
+                  ${theme.border}
+                `}
+              >
+                <Outlet />
+              </div>
+            </main>
+          </div>
+
+          {mobileMenuOpen && (
+            <div
+              className="fixed inset-0 z-30 bg-black/30 backdrop-blur-[1px] lg:hidden"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+          )}
+        </div>
 
         {showForm && (
           <SampleFormModal

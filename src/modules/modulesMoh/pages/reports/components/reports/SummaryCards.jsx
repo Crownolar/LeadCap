@@ -1,7 +1,10 @@
+import { useTheme } from "../../../../../../context/ThemeContext";
+
 const SummaryCards = ({
   items = [],
   columns = "grid-cols-2 xl:grid-cols-3",
 }) => {
+  const {theme} = useTheme();
   if (!items.length) return null;
 
   return (
@@ -9,9 +12,9 @@ const SummaryCards = ({
       {items.map((item) => (
         <div
           key={item.label}
-          className="rounded-xl border border-gray-200 bg-white p-3"
+          className={`rounded-xl border ${theme.border} ${theme.card} p-3`}
         >
-          <div className="mb-1 text-xs font-medium uppercase tracking-widest text-gray-500">
+          <div className={`mb-1 text-xs font-medium uppercase tracking-widest ${theme.textMuted}`}>
             {item.label}
           </div>
           <div
@@ -20,7 +23,7 @@ const SummaryCards = ({
             {item.value}
           </div>
           {item.subtext ? (
-            <div className="mt-1 text-xs text-gray-400">{item.subtext}</div>
+            <div className={`mt-1 text-xs ${theme.textMuted}`}>{item.subtext}</div>
           ) : null}
         </div>
       ))}
