@@ -6,14 +6,6 @@ export const normalizeRole = (role = "") =>
   role.toLowerCase().replace(/[\s_]/g, "");
 
 const ROLE_LOADERS = {
-  datacollector: (dispatch) => {
-    dispatch(fetchSamples({ page: 1, limit: 50 }));
-  },
-
-  // supervisor: (dispatch) => {
-  //   dispatch(fetchSamples({ page: 1, limit: 5000 }));
-  // },
-
   superadmin: (dispatch) => {
     dispatch(fetchSamples({ page: 1, limit: 100 }));
   },
