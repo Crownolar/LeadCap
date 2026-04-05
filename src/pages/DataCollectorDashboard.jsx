@@ -242,34 +242,12 @@ const DataCollectorDashboard = () => {
     };
   };
 
-  const filteredSamples = useMemo(() => {
-    return allSamples.filter((sample) => {
-      if (filterStatus === "pending" && hasAllReadings(sample)) return false;
-      if (filterStatus === "completed" && !hasAllReadings(sample)) return false;
-
-      if (variantFilter !== "all") {
-        const variantName =
-          sample.productVariant?.displayName || sample.productVariant?.name;
-        if (variantName !== variantFilter) return false;
-      }
-
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchesId = sample.sampleId?.toLowerCase().includes(q);
-        const matchesName = sample.productName?.toLowerCase().includes(q);
-        if (!matchesId && !matchesName) return false;
-      }
-
-      return true;
-    });
-  }, [allSamples, filterStatus, variantFilter, searchQuery]);
-
   const totalPages = pagination?.totalPages || 1;
 
   const displayedPages = pagination
     ? Array.from({ length: pagination.totalPages }, (_, i) => i + 1).slice(
         pageNumbers.startPage - 1,
-        pageNumbers.startPage - 1 + maxPageButtons
+        pageNumbers.startPage - 1 + maxPageButtons,
       )
     : [];
 
@@ -326,11 +304,15 @@ const DataCollectorDashboard = () => {
                       Sample Operations
                     </div>
 
-                    <h1 className={`text-2xl lg:text-3xl font-bold ${theme?.text}`}>
+                    <h1
+                      className={`text-2xl lg:text-3xl font-bold ${theme?.text}`}
+                    >
                       Data Collector Dashboard
                     </h1>
 
-                    <p className={`text-sm sm:text-base mt-2 ${theme?.textMuted}`}>
+                    <p
+                      className={`text-sm sm:text-base mt-2 ${theme?.textMuted}`}
+                    >
                       Manage submitted samples, monitor result progress, and add
                       heavy metal readings from one clean workspace.
                     </p>
@@ -347,7 +329,9 @@ const DataCollectorDashboard = () => {
                       >
                         Collector
                       </p>
-                      <p className={`mt-1 text-sm font-semibold ${theme?.text}`}>
+                      <p
+                        className={`mt-1 text-sm font-semibold ${theme?.text}`}
+                      >
                         {currentUser?.fullName || "--"}
                       </p>
                       {currentUser?.organization && (
@@ -470,7 +454,9 @@ const DataCollectorDashboard = () => {
                   >
                     {label}
                   </p>
-                  <p className={`${theme?.text} text-2xl lg:text-3xl font-bold mt-2`}>
+                  <p
+                    className={`${theme?.text} text-2xl lg:text-3xl font-bold mt-2`}
+                  >
                     {value}
                   </p>
                 </div>
@@ -569,7 +555,8 @@ const DataCollectorDashboard = () => {
 
               {filterStatus !== "all" && (
                 <span className='inline-flex items-center gap-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-medium px-3 py-1.5 rounded-full'>
-                  Status: {filterStatus === "pending" ? "Pending" : "With Results"}
+                  Status:{" "}
+                  {filterStatus === "pending" ? "Pending" : "With Results"}
                   <button onClick={() => setFilterStatus("all")}>
                     <X className='w-3 h-3' />
                   </button>
@@ -662,7 +649,8 @@ const DataCollectorDashboard = () => {
                     Submitted Samples
                   </h2>
                   <p className={`text-sm ${theme?.textMuted} mt-1`}>
-                    Review sample information and manage heavy metal result entry.
+                    Review sample information and manage heavy metal result
+                    entry.
                   </p>
                 </div>
 
@@ -676,7 +664,9 @@ const DataCollectorDashboard = () => {
             <div className='hidden lg:block overflow-x-auto scrollbar-hide'>
               <table className='w-full text-sm'>
                 <thead>
-                  <tr className={`border-b ${theme?.border} bg-gray-50 dark:bg-gray-800/40`}>
+                  <tr
+                    className={`border-b ${theme?.border} bg-gray-50 dark:bg-gray-800/40`}
+                  >
                     {[
                       "Product / Variant",
                       "Location",
@@ -709,7 +699,9 @@ const DataCollectorDashboard = () => {
                       >
                         <td className='px-5 py-4 align-top'>
                           <div className='min-w-[220px]'>
-                            <p className={`font-semibold ${theme?.text} leading-5`}>
+                            <p
+                              className={`font-semibold ${theme?.text} leading-5`}
+                            >
                               {sample.productName}
                             </p>
                             <p className={`text-xs ${theme?.textMuted} mt-1`}>
@@ -723,7 +715,9 @@ const DataCollectorDashboard = () => {
                         <td className='px-5 py-4 align-top'>
                           <div className='min-w-[190px]'>
                             <p className={`${theme?.text} font-medium`}>
-                              {sample.marketName || sample.market?.name || "N/A"}
+                              {sample.marketName ||
+                                sample.market?.name ||
+                                "N/A"}
                             </p>
                             <p className={`text-xs ${theme?.textMuted} mt-1`}>
                               {sample.lga?.name}, {sample.state?.name}
@@ -751,13 +745,17 @@ const DataCollectorDashboard = () => {
                                 </span>
                               ))}
                               {readings.length > 3 && (
-                                <span className={`text-xs ${theme?.textMuted} self-center`}>
+                                <span
+                                  className={`text-xs ${theme?.textMuted} self-center`}
+                                >
                                   +{readings.length - 3} more
                                 </span>
                               )}
                             </div>
                           ) : (
-                            <span className={`text-xs ${theme?.textMuted} italic`}>
+                            <span
+                              className={`text-xs ${theme?.textMuted} italic`}
+                            >
                               None yet
                             </span>
                           )}
@@ -789,7 +787,9 @@ const DataCollectorDashboard = () => {
                               className='inline-flex items-center gap-2 px-4 h-10 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700 text-white text-xs font-semibold rounded-xl transition shadow-sm hover:shadow-md whitespace-nowrap'
                             >
                               <Plus className='w-3.5 h-3.5' />
-                              {readings.length > 0 ? "Update Results" : "Add Results"}
+                              {readings.length > 0
+                                ? "Update Results"
+                                : "Add Results"}
                             </button>
                           </div>
                         </td>
@@ -804,15 +804,17 @@ const DataCollectorDashboard = () => {
               {filteredSamples.map((sample) => {
                 const status = getReadingStatus(sample);
                 const readings =
-                  allSamples?.find((s) => s.id === sample.id)?.heavyMetalReadings ||
-                  [];
+                  allSamples?.find((s) => s.id === sample.id)
+                    ?.heavyMetalReadings || [];
 
                 return (
                   <div key={sample.id} className='p-4 sm:p-5'>
                     <div className='rounded-2xl border border-gray-100 dark:border-gray-700/60 p-4'>
                       <div className='flex items-start justify-between gap-3'>
                         <div className='min-w-0 flex-1'>
-                          <p className={`font-semibold ${theme?.text} truncate`}>
+                          <p
+                            className={`font-semibold ${theme?.text} truncate`}
+                          >
                             {sample.productName}
                           </p>
                           <p className={`text-xs ${theme?.textMuted} mt-1`}>
@@ -825,7 +827,9 @@ const DataCollectorDashboard = () => {
                         <span
                           className={`inline-flex items-center gap-1.5 ${status.color} px-2.5 py-1 rounded-full text-[11px] font-semibold flex-shrink-0`}
                         >
-                          <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${status.dot}`}
+                          />
                           {status.label}
                         </span>
                       </div>
@@ -837,7 +841,9 @@ const DataCollectorDashboard = () => {
                           >
                             Location
                           </p>
-                          <p className={`${theme?.text} font-medium text-sm mt-1`}>
+                          <p
+                            className={`${theme?.text} font-medium text-sm mt-1`}
+                          >
                             {sample.marketName || sample.market?.name || "N/A"}
                           </p>
                           <p className={`text-xs ${theme?.textMuted} mt-1`}>
@@ -851,7 +857,9 @@ const DataCollectorDashboard = () => {
                           >
                             Price
                           </p>
-                          <p className={`${theme?.text} font-medium text-sm mt-1`}>
+                          <p
+                            className={`${theme?.text} font-medium text-sm mt-1`}
+                          >
                             {!Number.isNaN(parseFloat(sample.price))
                               ? `₦${parseFloat(sample.price).toLocaleString()}`
                               : "N/A"}
@@ -886,7 +894,9 @@ const DataCollectorDashboard = () => {
                           className='flex-1 inline-flex items-center justify-center gap-1.5 px-4 h-11 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700 text-white text-xs font-semibold rounded-xl transition shadow-sm'
                         >
                           <Plus className='w-3.5 h-3.5' />
-                          {readings.length > 0 ? "Update Results" : "Add Results"}
+                          {readings.length > 0
+                            ? "Update Results"
+                            : "Add Results"}
                         </button>
                       </div>
                     </div>
@@ -906,7 +916,8 @@ const DataCollectorDashboard = () => {
                   <span className='font-semibold'>
                     {Math.min(
                       pageNumbers.currentPage * PAGE_SIZE,
-                      pagination?.totalCount || pageNumbers.currentPage * PAGE_SIZE
+                      pagination?.totalCount ||
+                        pageNumbers.currentPage * PAGE_SIZE,
                     )}
                   </span>{" "}
                   of{" "}
@@ -955,7 +966,9 @@ const DataCollectorDashboard = () => {
                       ))}
 
                       {totalPages > maxPageButtons && (
-                        <span className={`text-xs ${theme?.textMuted} px-1`}>…</span>
+                        <span className={`text-xs ${theme?.textMuted} px-1`}>
+                          …
+                        </span>
                       )}
 
                       <button
