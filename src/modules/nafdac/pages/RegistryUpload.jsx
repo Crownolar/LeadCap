@@ -12,6 +12,7 @@ import {
   getRegistryVersions,
 } from "../api/nafdacService";
 import { LoaderSpinner } from "../utils/iconComponent";
+import api from "../../../utils/api";
 
 const formatDate = (d) =>
   d
@@ -32,7 +33,9 @@ const RegistryUpload = () => {
   const [error, setError] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
-
+  const [versions, setVersions] = useState(null);
+  const [version, setVersion] = useState(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   // testing
 
   const mockVersions = [
@@ -76,10 +79,21 @@ const RegistryUpload = () => {
       errorCount: 5213,
     },
   ];
-  const [versions, setVersions] = useState(null);
 
-  const [version, setVersion] = useState(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const handleVerifySamples = () => {
+    if (!version)
+      return alert("No active registry version found for verification");
+    api
+      .get(`/nafdac/verification/registry/${version}/verify-samples`)
+      .then((res) => {
+        alert(res.data.message);
+      })
+      .catch((err) => {
+        alert(
+          err.response?.data?.error || err.message || "Verification failed",
+        );
+      });
+  };
 
   useEffect(() => {
     if (!version && versions && versions.length > 0) {
@@ -202,7 +216,6 @@ const RegistryUpload = () => {
     if (file) handleFileSelect(file);
     e.target.value = "";
   };
-
   return (
     <div>
       <PageHeader
@@ -210,6 +223,16 @@ const RegistryUpload = () => {
         subtitle='Upload and publish the NAFDAC product registry. Only active version is used for verification.'
         action={summary?.status ? <Badge status={summary.status} /> : null}
       />
+      <div className='mt-5 mb-10   text-center md:text-left '>
+        <button
+          className='px-5 py-2.5  bg-emerald-600 text-white font-medium rounded-lg shadow-md 
+hover:bg-emerald-700 active:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 
+transition duration-200 ease-in-out'
+          onClick={handleVerifySamples}
+        >
+          Verify
+        </button>
+      </div>
 
       <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8'>
         <StatCard
