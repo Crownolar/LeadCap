@@ -13,7 +13,8 @@ const NavItem = ({
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isActive = location.pathname === route;
+  const isActive = location.pathname === route ||
+    (route !== "/" && location.pathname.startsWith(`${route}/`));
 
   return (
     <button

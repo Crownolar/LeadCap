@@ -140,7 +140,7 @@ const SupervisorDashboard = () => {
               This dashboard gives you a clear operational view of your assigned
               collectors, submitted samples, and pending review workload.
             </p>
-          </div>
+          </div> 
 
           <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 lg:w-auto lg:min-w-[420px]">
             <QuickActionCard
