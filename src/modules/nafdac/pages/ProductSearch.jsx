@@ -10,21 +10,47 @@ import {
   searchRegistryProducts,
 } from "../api/nafdacService";
 
-const PAGE_SIZE = 20;
-
 const ProductSearch = () => {
   const [query, setQuery] = useState("");
   const [nafdacNumber, setNafdacNumber] = useState("");
   const [filter, setFilter] = useState("ALL");
-  const [page, setPage] = useState(1);
+  const [take, setTake] = useState(20);
+  const [skip, setSkip] = useState(0);
+
   const [data, setData] = useState({
     items: [],
-    total: 0,
-    page: 1,
-    pageSize: PAGE_SIZE,
+    skip: 0,
+    take: 1,
+    totalCount: 0,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
+
+  function handleFetchMore() {
+    const newSkip = skip + 20;
+    const noMore = skip + take >= (data.totalCount || 1);
+    if (noMore) return;
+
+    setSkip(newSkip);
+    setLoading(true);
+    setError(null);
+    searchRegistryProducts({
+      q: query || undefined,
+      status: filter !== "ALL" ? filter : undefined,
+      skip: newSkip,
+      take,
+    })
+      .then((data) =>
+        setData((prev) => ({
+          ...prev,
+          skip: data.skip || prev.skip,
+          items: [...prev.items, ...data.items],
+        })),
+      )
+      .catch((err) => setError(err.response?.data?.error || err.message))
+      .finally(() => setLoading(false));
+  }
 
   function handleSearch() {
     setLoading(true);
@@ -32,8 +58,8 @@ const ProductSearch = () => {
     searchRegistryProducts({
       q: query || undefined,
       status: filter !== "ALL" ? filter : undefined,
-      page,
-      pageSize: PAGE_SIZE,
+      skip: 0,
+      take,
     })
       .then(setData)
       .catch((err) => setError(err.response?.data?.error || err.message))
@@ -41,20 +67,16 @@ const ProductSearch = () => {
   }
 
   useEffect(() => {
-    if (!query && (filter === "ALL") & (page === 1)) return;
+    setSkip(0);
     handleSearch();
-  }, [query, filter, page]);
+  }, [debouncedQuery, filter]);
 
-  const totalPages = Math.max(1, Math.ceil((data.total || 0) / PAGE_SIZE));
-
-  const handleSearchNafdac = (nafdacNo) => {
-    setLoading(true);
-    setError(null);
-    getProductByNafdacNumber(nafdacNumber || "")
-      .then(setData)
-      .catch((err) => setError(err.response?.data?.error || err.message))
-      .finally(() => setLoading(false));
-  };
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [query]);
 
   return (
     <div>
@@ -63,61 +85,30 @@ const ProductSearch = () => {
         subtitle='Search and verify registered products. Used for investigation, legal checks, and cross-agency confirmation.'
       />
 
-      {error && (
-        <div className='mb-4 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2'>
-          <Icon
-            d={icons.alert}
-            size={18}
-            className='text-red-500 flex-shrink-0'
-          />
-          <p className='text-sm text-red-700'>{error}</p>
-        </div>
-      )}
-
       <div className='flex flex-col sm:flex-row gap-3 mb-6'>
         <div className='flex-1 relative'>
           <Icon
             d={icons.search}
             size={16}
-            className='absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400'
+            className='absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 '
           />
           <input
             type='text'
             placeholder='Search by by nafdac number, product name, or brand...'
-            className='w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 bg-white'
+            className='w-full pl-10 pr-4 py-2.5 text-sm border text-black border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 bg-white'
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
-              setPage(1);
             }}
           />
         </div>
 
-        {/* nafdac search */}
-        {/* <div className='flex-1 relative'>
-          <Icon
-            d={icons.search}
-            size={16}
-            className='absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400'
-          />
-          <input
-            type='text'
-            placeholder='Search by NAFDAC number'
-            className='w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 bg-white'
-            value={nafdacNumber}
-            onChange={(e) => {
-              setNafdacNumber(e.target.value);
-              setPage(1);
-            }}
-          />
-        </div> */}
         <div className='flex gap-2 flex-wrap'>
           {["ALL", "ACTIVE", "SUSPENDED"].map((s) => (
             <button
               key={s}
               onClick={() => {
                 setFilter(s);
-                setPage(1);
               }}
               className={`px-4 py-2.5 text-xs font-semibold rounded-xl border transition-all ${filter === s ? "bg-emerald-600 text-white border-emerald-600" : "border-slate-200 text-slate-500 hover:border-emerald-300 bg-white"}`}
             >
@@ -132,32 +123,8 @@ const ProductSearch = () => {
           <p className='text-xl text-slate-400'>
             {loading
               ? "Loading..."
-              : `${(data.total ?? 0).toLocaleString()} results found`}
+              : `${(data?.items?.length ?? 0).toLocaleString()} results  of ${(data?.totalCount ?? 0).toLocaleString()}`}
           </p>
-
-          {totalPages > 1 && (
-            <div className='flex items-center gap-2'>
-              <button
-                type='button'
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1 || loading}
-                className='px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50'
-              >
-                Previous
-              </button>
-              <span className='text-xs text-slate-500'>
-                Page {page} of {totalPages}
-              </span>
-              <button
-                type='button'
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages || loading}
-                className='px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50'
-              >
-                Next
-              </button>
-            </div>
-          )}
         </div>
 
         <div className='p-4'>
@@ -190,11 +157,32 @@ const ProductSearch = () => {
               // </Btn>,
             ])}
           />
+          {data?.items?.length > 0 && (
+            <div className='py-3 flex justify-center'>
+              <button
+                onClick={handleFetchMore}
+                disabled={loading || skip + take >= (data.totalCount || 1)}
+                className={`px-4 py-2 rounded-lg text-sm text-white ${loading || skip + take >= (data.totalCount || 0) ? "bg-gray-400 opacity-60 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700"}`}
+              >
+                {loading ? "Loading..." : "Load more"}
+              </button>
+            </div>
+          )}
         </div>
         {!loading && (!data.items || data.items.length === 0) && (
           <div className='p-8 text-center text-slate-500 text-sm'>
             No products found. Try a different search or ensure an active
             registry version exists.
+          </div>
+        )}
+        {error && (
+          <div className='mb-4 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2'>
+            <Icon
+              d={icons.alert}
+              size={18}
+              className='text-red-500 flex-shrink-0'
+            />
+            <p className='text-sm text-red-700'>{error}</p>
           </div>
         )}
       </div>

@@ -139,7 +139,7 @@ const RegistryHistory = () => {
                     <Icon
                       d={icons.chevronDown}
                       size={16}
-                      className={`text-slate-300 transition-transform ${selected === v.id ? "rotate-180" : ""}`}
+                      className={`text-slate-500 transition-transform ${selected === v.id ? "rotate-180" : ""}`}
                     />
                   </div>
                 </div>
