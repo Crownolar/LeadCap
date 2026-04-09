@@ -20,10 +20,10 @@ export const fetchStates = createAsyncThunk(
       return res.data.data;
     } catch (err) {
       return rejectWithValue(
-        extractErrorMessage(err, "Failed to fetch states")
+        extractErrorMessage(err, "Failed to fetch states"),
       );
     }
-  }
+  },
 );
 
 // Fetch LGAs
@@ -36,7 +36,7 @@ export const fetchLGAs = createAsyncThunk(
     } catch (err) {
       return rejectWithValue(extractErrorMessage(err, "Failed to fetch LGAs"));
     }
-  }
+  },
 );
 
 // Fetch Markets
@@ -48,10 +48,10 @@ export const fetchMarkets = createAsyncThunk(
       return res.data.data;
     } catch (err) {
       return rejectWithValue(
-        extractErrorMessage(err, "Failed to fetch markets")
+        extractErrorMessage(err, "Failed to fetch markets"),
       );
     }
-  }
+  },
 );
 
 // Fetch Calibration Curves
@@ -63,10 +63,10 @@ export const fetchCalibrations = createAsyncThunk(
       return res.data.data || res.data;
     } catch (err) {
       return rejectWithValue(
-        extractErrorMessage(err, "Failed to fetch calibration curves")
+        extractErrorMessage(err, "Failed to fetch calibration curves"),
       );
     }
-  }
+  },
 );
 
 // Fetch Samples with Filters
@@ -77,7 +77,7 @@ export const fetchSamples = createAsyncThunk(
       const response = await api.get("/samples", {
         params: {
           page: filters.page || 1,
-          limit: filters.limit || 20,
+          limit: filters.limit || 5000,
           stateId: filters.stateId || undefined,
           lgaId: filters.lgaId || undefined,
           sampleType: filters.sampleType || undefined,
@@ -96,10 +96,10 @@ export const fetchSamples = createAsyncThunk(
       };
     } catch (err) {
       return rejectWithValue(
-        extractErrorMessage(err, "Failed to fetch samples")
+        extractErrorMessage(err, "Failed to fetch samples"),
       );
     }
-  }
+  },
 );
 
 export const createSample = createAsyncThunk(
@@ -110,10 +110,10 @@ export const createSample = createAsyncThunk(
       return response.data.data;
     } catch (err) {
       return rejectWithValue(
-        extractErrorMessage(err, "Failed to create sample")
+        extractErrorMessage(err, "Failed to create sample"),
       );
     }
-  }
+  },
 );
 
 // ===== SLICE =====
