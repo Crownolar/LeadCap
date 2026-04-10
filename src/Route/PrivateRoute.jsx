@@ -17,18 +17,25 @@ const PrivateRoute = ({ children, allowedRoles = [] }) => {
 
   if (!currentUser) return null;
 
-  const userRole = currentUser?.role;
-  const normalizedRole = normalizeRole(userRole);
-  console.log("PrivateRoute", { isAuthenticated, currentUser, normalizedRole, location: location.pathname });
+  const normalizedRole = normalizeRole(currentUser?.role);
 
-if (normalizedRole.startsWith("policymaker") && normalizedRole !== "policymakerfmohsw") {
-  const blockedRoutes = ["/reports", "/database", "/agents"];
-  if (blockedRoutes.includes(location.pathname)) {
-    return <Navigate to="/map" replace />;
+  console.log("PrivateRoute", {
+    isAuthenticated,
+    currentUser,
+    normalizedRole,
+    location: location.pathname,
+  });
+
+  // POLICYMAKER RESTRICTIONS
+  if (
+    normalizedRole.startsWith("policymaker") &&
+    normalizedRole !== "policymakerfmohsw"
+  ) {
+    const blockedRoutes = ["/reports", "/database", "/agents"];
+    if (blockedRoutes.includes(location.pathname)) {
+      return <Navigate to="/dashboard" replace />;
+    }
   }
-}
-
-
 
   // SUPERVISOR RESTRICTIONS
   if (normalizedRole === "supervisor") {
@@ -38,9 +45,10 @@ if (normalizedRole.startsWith("policymaker") && normalizedRole !== "policymakerf
     }
   }
 
-  // ADMIN-ONLY ROUTES - Normalize allowed roles for comparison
+  // ROLE ACCESS CHECK
   if (allowedRoles.length > 0) {
     const normalizedAllowedRoles = allowedRoles.map(normalizeRole);
+
     if (!normalizedAllowedRoles.includes(normalizedRole)) {
       return <Navigate to="/" replace />;
     }

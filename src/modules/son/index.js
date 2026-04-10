@@ -1,0 +1,1 @@
+export { default as PolicyDashboard } from "./pages/PolicyDashboard";

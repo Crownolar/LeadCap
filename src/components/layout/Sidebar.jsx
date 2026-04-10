@@ -38,6 +38,16 @@ const roleConfig = {
     excelImport: false,
     navItems: ["dashboard", "map"],
   },
+  policymakeruniversity: {
+    sampleButton: false,
+    excelImport: false,
+    navItems: ["dashboard", "map"],
+  },
+  policymakerresolve: {
+    sampleButton: false,
+    excelImport: false,
+    navItems: ["dashboard", "map"],
+  },
   policymakernafdac: {
     sampleButton: false,
     excelImport: false,
@@ -86,7 +96,9 @@ const Sidebar = ({
   excelImportRef,
 }) => {
   const { currentUser } = useSelector((state) => state.auth);
-  const normalizedRole = currentUser?.role?.toLowerCase().replace(/[\s_]/g, "");
+  const normalizedRole = currentUser?.role
+    ?.toLowerCase()
+    .replace(/[\s_.-]/g, "");
   const config = roleConfig[normalizedRole] || roleConfig.superadmin;
   const { theme, darkMode } = useTheme();
 

@@ -71,12 +71,20 @@ const AuthModal = () => {
   };
 
   const navigateBasedOnRole = (user) => {
-    const normalizedRole = user.role?.toLowerCase().replace(/[\s_.]/g, "");
+    const normalizedRole = user.role?.toLowerCase().replace(/[\s_.-]/g, "");
 
     if (normalizedRole === "policymakerfmohsw") {
       navigate("/moh/dashboard", { replace: true });
-    } else if (normalizedRole?.startsWith("policymaker")) {
-      navigate("/map");
+    } else if (
+      [
+        "policymakerson",
+        "policymakerresolve",
+        "policymakeruniversity",
+      ].includes(normalizedRole)
+    ) {
+      navigate("/dashboard", { replace: true });
+    } else if (normalizedRole === "policymakernafdac") {
+      navigate("/dashboard", { replace: true });
     } else if (normalizedRole === "supervisor") {
       navigate("/collectors");
     } else if (normalizedRole === "datacollector") {
