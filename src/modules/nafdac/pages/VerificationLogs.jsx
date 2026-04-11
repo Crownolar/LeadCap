@@ -26,21 +26,48 @@ const VerificationLogs = () => {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [page, setPage] = useState(1);
   const [summary, setSummary] = useState(null);
   const [logsData, setLogsData] = useState({
     items: [],
-    total: 0,
-    page: 1,
-    pageSize: PAGE_SIZE,
+    skip: 0,
+    take: 20,
+    totalCount: 0,
   });
   const [loadingSummary, setLoadingSummary] = useState(true);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [error, setError] = useState(null);
   const [verifyingId, setVerifyingId] = useState(null);
+  const [take, setTake] = useState(20);
+  const [skip, setSkip] = useState(0);
   const fromRef = useRef(null);
   const toRef = useRef(null);
 
+  function handleFetchMore() {
+    const newSkip = skip + 20;
+    const noMore = skip + take >= (logsData.totalCount || 1);
+    if (noMore) return;
+
+    setSkip(newSkip);
+    setLoadingLogs(true);
+    setError(null);
+
+    const params = { skip: newSkip, take };
+    if (statusFilter !== "ALL") params.status = statusFilter;
+    if (dateFrom) params.from = dateFrom;
+    if (dateTo) params.to = dateTo;
+    getVerificationLogs(params)
+      .then((data) => {
+        setLogsData((prev) => ({
+          ...prev,
+          skip: data.skip || prev.skip,
+          items: [...prev.items, ...data.items],
+        }));
+      })
+      .catch((err) => setError(err.response?.data?.error || err.message))
+      .finally(() => setLoadingLogs(false));
+  }
+
+  // SUMMARY
   useEffect(() => {
     getVerificationSummary()
       .then(setSummary)
@@ -50,7 +77,15 @@ const VerificationLogs = () => {
 
   useEffect(() => {
     setLoadingLogs(true);
-    const params = { page, pageSize: PAGE_SIZE };
+    setError(null);
+    setSkip(0);
+    setLogsData({
+      items: [],
+      skip: 0,
+      take: 20,
+      totalCount: 0,
+    });
+    const params = { skip: 0, take };
     if (statusFilter !== "ALL") params.status = statusFilter;
     if (dateFrom) params.from = dateFrom;
     if (dateTo) params.to = dateTo;
@@ -58,15 +93,15 @@ const VerificationLogs = () => {
       .then(setLogsData)
       .catch((err) => setError(err.response?.data?.error || err.message))
       .finally(() => setLoadingLogs(false));
-  }, [statusFilter, dateFrom, dateTo, page]);
+  }, [statusFilter, dateFrom, dateTo]);
 
   const handleVerify = (id) => {
     setVerifyingId(id);
     verifySample(id)
       .then(() => {
         getVerificationLogs({
-          page,
-          pageSize: PAGE_SIZE,
+          skip,
+          take,
           status: statusFilter !== "ALL" ? statusFilter : undefined,
           from: dateFrom || undefined,
           to: dateTo || undefined,
@@ -77,7 +112,6 @@ const VerificationLogs = () => {
       .finally(() => setVerifyingId(null));
   };
 
-  const totalPages = Math.max(1, Math.ceil((logsData.total || 0) / PAGE_SIZE));
   const total = summary?.totalVerifications ?? 0;
   const matchRate =
     total > 0 ? Math.round(((summary?.verified ?? 0) / total) * 100) : 0;
@@ -153,7 +187,6 @@ const VerificationLogs = () => {
                 key={s}
                 onClick={() => {
                   setStatusFilter(s);
-                  setPage(1);
                 }}
                 className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${statusFilter === s ? "bg-emerald-600 text-white border-emerald-600" : "border-slate-200 text-slate-500 hover:border-emerald-300 bg-white"}`}
               >
@@ -179,7 +212,6 @@ const VerificationLogs = () => {
                   value={dateFrom}
                   onChange={(e) => {
                     setDateFrom(e.target.value);
-                    setPage(1);
                   }}
                   onClick={() => {
                     fromRef.current.showPicker();
@@ -206,7 +238,6 @@ const VerificationLogs = () => {
                   onClick={() => toRef.current?.showPicker()}
                   onChange={(e) => {
                     setDateTo(e.target.value);
-                    setPage(1);
                   }}
                   ref={toRef}
                   className='opacity-0 absolute left-0 top-0 w-full h-full'
@@ -227,30 +258,12 @@ const VerificationLogs = () => {
             </i>
           </div>
         </div>
+        <div>
+          <p className='px-4 py-2 text-sm text-slate-500'>
+            Showing {logsData.items?.length || 0} of {logsData.totalCount || 0}
+          </p>
+        </div>
         <div className='p-4'>
-          {totalPages > 1 && (
-            <div className='flex items-center justify-end gap-2 mb-2'>
-              <button
-                type='button'
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1 || loadingLogs}
-                className='px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50'
-              >
-                Previous
-              </button>
-              <span className='text-xs text-slate-500'>
-                Page {page} of {totalPages}
-              </span>
-              <button
-                type='button'
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages || loadingLogs}
-                className='px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50'
-              >
-                Next
-              </button>
-            </div>
-          )}
           <Table
             headers={[
               "Sample ID",
@@ -298,11 +311,43 @@ const VerificationLogs = () => {
             ])}
           />
         </div>
-        {!loadingLogs && (!logsData.items || logsData.items.length === 0) && (
-          <div className='p-8 text-center text-slate-500 text-sm'>
-            No verification logs found.
-          </div>
-        )}
+        {/* LOADING AND ERROR STATES */}
+        <div className='flex flex-col items-center justify-center '>
+          {loadingLogs && (
+            <div className='flex items-center justify-center gap-3 mt-5 p-4 '>
+              <div className='w-6 h-6 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin text-center' />
+            </div>
+          )}
+
+          {logsData?.items?.length > 0 && (
+            <div className='py-3 flex justify-center '>
+              <button
+                onClick={handleFetchMore}
+                disabled={
+                  loadingLogs || skip + take >= (logsData.totalCount || 1)
+                }
+                className={`px-4 py-2 rounded-lg text-sm text-white ${loadingLogs || skip + take >= (logsData.totalCount || 0) ? "bg-gray-400 opacity-60 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700"}`}
+              >
+                {loadingLogs ? "Loading..." : "Load more"}
+              </button>
+            </div>
+          )}
+          {error && (
+            <div className='mb-4 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2'>
+              <Icon
+                d={icons.alert}
+                size={18}
+                className='text-red-500 flex-shrink-0'
+              />
+              <p className='text-sm text-red-700'>{error}</p>
+            </div>
+          )}
+          {!loadingLogs && (!logsData.items || logsData.items.length === 0) && (
+            <div className='p-8 text-center text-slate-500 text-sm'>
+              No verification logs found.
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

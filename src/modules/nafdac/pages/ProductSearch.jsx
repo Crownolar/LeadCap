@@ -61,13 +61,17 @@ const ProductSearch = () => {
       skip: 0,
       take,
     })
-      .then(setData)
+      .then((data) => {
+        setData(data);
+      })
+
       .catch((err) => setError(err.response?.data?.error || err.message))
       .finally(() => setLoading(false));
   }
 
   useEffect(() => {
     setSkip(0);
+    setData([]);
     handleSearch();
   }, [debouncedQuery, filter]);
 
@@ -121,9 +125,7 @@ const ProductSearch = () => {
       <div className='bg-white border border-slate-100 rounded-2xl shadow-sm overflow-auto'>
         <div className='p-4 border-b border-slate-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3'>
           <p className='text-xl text-slate-400'>
-            {loading
-              ? "Loading..."
-              : `${(data?.items?.length ?? 0).toLocaleString()} results  of ${(data?.totalCount ?? 0).toLocaleString()}`}
+            {`${(data?.items?.length ?? 0).toLocaleString()} results  of ${(data?.totalCount ?? 0).toLocaleString()}`}
           </p>
         </div>
 
@@ -152,11 +154,15 @@ const ProductSearch = () => {
               p.manufacturer ?? "—",
               p.category ?? "—",
               <Badge key='st' status={p.status ?? "ACTIVE"} />,
-              // <Btn key='v' variant='ghost' icon='eye' small>
-              //   View
-              // </Btn>,
             ])}
           />
+        </div>
+        <div className='flex flex-col items-center justify-center '>
+          {loading && (
+            <div className='flex items-center justify-center gap-3 mt-5 p-4'>
+              <div className='w-6 h-6 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin' />
+            </div>
+          )}
           {data?.items?.length > 0 && (
             <div className='py-3 flex justify-center'>
               <button
@@ -168,23 +174,23 @@ const ProductSearch = () => {
               </button>
             </div>
           )}
+          {!loading && (!data.items || data.items.length === 0) && (
+            <div className='p-8 text-center text-slate-500 text-sm'>
+              No products found. Try a different search or ensure an active
+              registry version exists.
+            </div>
+          )}
+          {error && (
+            <div className='mb-4 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2'>
+              <Icon
+                d={icons.alert}
+                size={18}
+                className='text-red-500 flex-shrink-0'
+              />
+              <p className='text-sm text-red-700'>{error}</p>
+            </div>
+          )}
         </div>
-        {!loading && (!data.items || data.items.length === 0) && (
-          <div className='p-8 text-center text-slate-500 text-sm'>
-            No products found. Try a different search or ensure an active
-            registry version exists.
-          </div>
-        )}
-        {error && (
-          <div className='mb-4 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2'>
-            <Icon
-              d={icons.alert}
-              size={18}
-              className='text-red-500 flex-shrink-0'
-            />
-            <p className='text-sm text-red-700'>{error}</p>
-          </div>
-        )}
       </div>
     </div>
   );
