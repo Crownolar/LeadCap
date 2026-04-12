@@ -25,7 +25,7 @@ import { Package, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import StatCard from "../common/StatCard";
 import { COLORS } from "../../utils/constants";
 import { useSelector, useDispatch } from "react-redux";
-import { fetchSamples } from "../../redux/slice/samplesSlice";
+import { fetchSamples, fetchSampleStats } from "../../redux/slice/samplesSlice";
 import {
   aggregateByMonth,
   deriveLocationData,
@@ -69,7 +69,7 @@ const CustomTooltip = ({ active, payload, label, theme }) => {
 
 const Dashboard = () => {
   const dispatch = useDispatch();
-  const { samples, loading, error, errorCode, hasFetched } = useSelector(
+  const { samples, loading, error, errorCode, hasFetched, stats } = useSelector(
     (state) => state.samples,
   );
 
@@ -79,8 +79,17 @@ const Dashboard = () => {
   const [filterProduct, setFilterProduct] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [states, setStates] = useState([]);
-  const [stats, setStats] = useState(null);
+  // const [stats, setStats] = useState(null);
   const { theme } = useTheme();
+
+  useEffect(() => {
+    dispatch(
+      fetchSampleStats({
+        ...(filterState !== "all" && { stateId: filterState }),
+        ...(filterProduct !== "all" && { productVariantId: filterProduct }),
+      }),
+    );
+  }, [dispatch, filterState, filterProduct]);
 
   // Variants that appear in loaded samples only (so "All Products" never shows empty)
   const productVariantsInSamples = useMemo(() => {

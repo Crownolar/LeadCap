@@ -2,7 +2,10 @@ import React, { useEffect, useMemo, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { useTheme } from "../../../context/ThemeContext";
-import { fetchSamples } from "../../../redux/slice/samplesSlice";
+import {
+  fetchSamples,
+  fetchSampleStats,
+} from "../../../redux/slice/samplesSlice";
 import PolicyAlertPanel from "../components/PolicyAlertPanel";
 import PolicyFilterBar from "../components/PolicyFilterBar";
 import PolicyFooterSummary from "../components/PolicyFooterSummary";
@@ -39,11 +42,18 @@ const PolicyDashboard = () => {
   const { theme } = useTheme();
 
   const { currentUser } = useSelector((state) => state.auth);
-  const { samples, loading, error, errorCode, hasFetched, pagination } = useSelector(
-    (state) => state.samples
-  );
+  const {
+    samples,
+    loading,
+    error,
+    errorCode,
+    hasFetched,
+    pagination,
+    stats,
+  } = useSelector((state) => state.samples);
 
-  const totalSamples = pagination?.totalCount ?? samples.length;
+  const totalSamples =
+    stats?.totalSamples ?? pagination?.totalCount ?? samples.length;
 
   const [states, setStates] = useState([]);
   const [filterState, setFilterState] = useState("all");
@@ -61,6 +71,16 @@ const PolicyDashboard = () => {
       }
     );
   }, [normalizedRole]);
+
+  useEffect(() => {
+    dispatch(
+      fetchSampleStats({
+        ...(filterState !== "all" && { stateId: filterState }),
+        ...(fromDate && { dateFrom: fromDate }),
+        ...(toDate && { dateTo: toDate }),
+      }),
+    );
+  }, [dispatch, filterState, fromDate, toDate]);
 
   useEffect(() => {
     const fetchStates = async () => {
@@ -198,9 +218,13 @@ const PolicyDashboard = () => {
       <PolicyHeroStats
         theme={theme}
         total={totalSamples}
-        contaminationRateText={contaminationRateText}
-        highRiskStates={highRiskStates}
-        pending={pending}
+        contaminationRateText={
+          stats?.contaminationRate != null
+            ? `${Number(stats.contaminationRate).toFixed(1)}%`
+            : contaminationRateText
+        }
+        highRiskStates={stats?.highRiskStates ?? highRiskStates}
+        pending={stats?.pending ?? pending}
       />
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">

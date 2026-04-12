@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../utils/api";
-import { buildSamplePayload } from "../../utils/formHelpers";
+// import { buildSamplePayload } from "../../utils/formHelpers";
 
 // Universal Error Extractor
 const extractErrorMessage = (error, fallback) => {
@@ -116,11 +116,26 @@ export const createSample = createAsyncThunk(
   },
 );
 
+export const fetchSampleStats = createAsyncThunk(
+  "samples/fetchSampleStats",
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      const response = await api.get("/samples/stats", { params });
+      return response.data?.data || response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data?.message || "Failed to fetch sample stats"
+      );
+    }
+  }
+);
+
 // ===== SLICE =====
 
 const initialState = {
   samples: [],
   pagination: null,
+  stats: null,
   states: [],
   lgas: [],
   markets: [],
@@ -220,8 +235,22 @@ const samplesSlice = createSlice({
       .addCase(fetchCalibrations.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      });
+      })
     // .addCase(handleLogout, () => initialState);
+
+    // SAMPLE STATS
+    .addCase(fetchSampleStats.pending, (state) => {
+    state.statsLoading = true;
+    state.statsError = null;
+  })
+  .addCase(fetchSampleStats.fulfilled, (state, action) => {
+    state.statsLoading = false;
+    state.stats = action.payload;
+  })
+  .addCase(fetchSampleStats.rejected, (state, action) => {
+    state.statsLoading = false;
+    state.statsError = action.payload || "Failed to fetch sample stats";
+  })
   },
 });
 

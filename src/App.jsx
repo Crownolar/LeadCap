@@ -37,6 +37,7 @@ import MohVerification from "./modules/modulesMoh/pages/MohVerification";
 import MohContamination from "./modules/modulesMoh/pages/MohContamination";
 import { useTheme } from "./context/ThemeContext";
 import { PolicyDashboard } from "./modules/son";
+import { NafdacDashboard } from "./modules/nafdac";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -45,11 +46,10 @@ const App = () => {
     return role.toLowerCase().replace(/[\s_.-]/g, "");
   };
 
-  
   const { currentUser, isAuthenticated } = useSelector((state) => state.auth);
   // const { theme, darkMode, toggleDarkMode } = useTheme();
   const { theme, darkMode, toggleDarkMode } = useTheme();
-  
+
   const logout = () => dispatch(handleLogout());
   const normalizedRole = normalizeRole(currentUser?.role);
 
@@ -105,6 +105,8 @@ const App = () => {
                       "policymakeruniversity",
                     ].includes(normalizedRole) ? (
                     <PolicyDashboard />
+                  ) : normalizedRole === "policymakernafdac" ? (
+                    <NafdacDashboard />
                   ) : (
                     <Dashboard theme={theme} />
                   )}
