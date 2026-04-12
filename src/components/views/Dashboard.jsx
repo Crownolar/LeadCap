@@ -33,6 +33,7 @@ import {
   getContaminationStatus,
 } from "../../utils/chartDataHelpers";
 import { useTheme } from "../../context/ThemeContext";
+import api from "../../utils/api";
 
 const CustomTooltip = ({ active, payload, label, theme }) => {
   if (active && payload && payload.length) {
@@ -54,7 +55,7 @@ const CustomTooltip = ({ active, payload, label, theme }) => {
         {payload.map((entry, index) => (
           <p
             key={index}
-            className="text-xs sm:text-sm"
+            className='text-xs sm:text-sm'
             style={{ color: entry.color }}
           >
             {entry.name}: {entry.value}
@@ -69,10 +70,12 @@ const CustomTooltip = ({ active, payload, label, theme }) => {
 const Dashboard = () => {
   const dispatch = useDispatch();
   const { samples, loading, error, errorCode, hasFetched } = useSelector(
-    (state) => state.samples
+    (state) => state.samples,
   );
 
   const [filterState, setFilterState] = useState("all");
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [loadingError, setLoadingError] = useState(false);
   const [filterProduct, setFilterProduct] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [states, setStates] = useState([]);
@@ -82,12 +85,18 @@ const Dashboard = () => {
   // Variants that appear in loaded samples only (so "All Products" never shows empty)
   const productVariantsInSamples = useMemo(() => {
     if (!samples || samples.length === 0) return [];
-    const variantIds = [...new Set(samples.map((s) => s.productVariant?.id).filter(Boolean))];
-    return variantIds.map((id) => {
-      const sample = samples.find((s) => s.productVariant?.id === id);
-      const v = sample?.productVariant;
-      return v ? { id: v.id, name: v.name, displayName: v.displayName } : null;
-    }).filter(Boolean);
+    const variantIds = [
+      ...new Set(samples.map((s) => s.productVariant?.id).filter(Boolean)),
+    ];
+    return variantIds
+      .map((id) => {
+        const sample = samples.find((s) => s.productVariant?.id === id);
+        const v = sample?.productVariant;
+        return v
+          ? { id: v.id, name: v.name, displayName: v.displayName }
+          : null;
+      })
+      .filter(Boolean);
   }, [samples]);
 
   // Fetch states on mount
@@ -95,7 +104,9 @@ const Dashboard = () => {
     const fetchStates = async () => {
       try {
         const api = await import("../../utils/api").then((m) => m.default);
-        const response = await api.get("/management/states", { params: { activeOnly: "true" } });
+        const response = await api.get("/management/states", {
+          params: { activeOnly: "true" },
+        });
         setStates(response.data.data || []);
       } catch (err) {
         console.error("Failed to fetch states:", err);
@@ -107,9 +118,23 @@ const Dashboard = () => {
   // Load samples once into Redux (no refetch when filters change)
   useEffect(() => {
     if (!hasFetched) {
-      dispatch(fetchSamples({ page: 1, limit: 5000 }));
+      dispatch(fetchSamples({ page: 1, limit: 20 }));
     }
   }, [dispatch, hasFetched]);
+
+  // fetch stats
+
+  useEffect(() => {
+    setLoadingStats(true);
+    setLoadingError(null);
+    api
+      .get("/samples/stats?stateId=cmn94zdu400l1fpxf5ri72dpq")
+      .then((res) => setStats(res.data.data))
+      .catch(() => setLoadingError(true))
+      .finally(() => setLoadingStats(false));
+  }, []);
+
+  // console.log(stats);
 
   // Filter samples based on filters
   const filteredSamples = useMemo(() => {
@@ -131,13 +156,13 @@ const Dashboard = () => {
     if (!filteredSamples) return {};
     const total = filteredSamples.length;
     const contaminated = filteredSamples.filter(
-      (s) => getContaminationStatus(s).toLowerCase() === "contaminated"
+      (s) => getContaminationStatus(s).toLowerCase() === "contaminated",
     ).length;
     const safe = filteredSamples.filter(
-      (s) => getContaminationStatus(s).toLowerCase() === "safe"
+      (s) => getContaminationStatus(s).toLowerCase() === "safe",
     ).length;
     const pending = filteredSamples.filter(
-      (s) => getContaminationStatus(s).toLowerCase() === "pending"
+      (s) => getContaminationStatus(s).toLowerCase() === "pending",
     ).length;
 
     const byState = Object.entries(
@@ -145,7 +170,7 @@ const Dashboard = () => {
         const stateName = s.state?.name || "Unknown";
         acc[stateName] = (acc[stateName] || 0) + 1;
         return acc;
-      }, {})
+      }, {}),
     ).map(([name, value]) => ({ name, value }));
 
     const byProductType = Object.entries(
@@ -156,7 +181,7 @@ const Dashboard = () => {
           "Unknown";
         acc[type] = (acc[type] || 0) + 1;
         return acc;
-      }, {})
+      }, {}),
     ).map(([name, value]) => ({ name, value }));
 
     const registeredVsUnregistered = [
@@ -185,20 +210,28 @@ const Dashboard = () => {
 
   const exposureData = useMemo(
     () => aggregateByMonth(filteredSamples, 6),
-    [filteredSamples]
+    [filteredSamples],
   );
+
+  console.log("exposureData", exposureData);
+
   const locationData = useMemo(
     () => deriveLocationData(filteredSamples).slice(0, 8),
-    [filteredSamples]
+    [filteredSamples],
   );
+
+  console.log("locationData", locationData);
+
   const detectionMetrics = useMemo(
     () => deriveDetectionMetrics(filteredSamples),
-    [filteredSamples]
+    [filteredSamples],
   );
+
+  console.log("detectionMetrics", detectionMetrics);
 
   if (error) {
     return (
-      <div className="w-full flex justify-center mt-6 sm:mt-10 px-3 sm:px-4">
+      <div className='w-full flex justify-center mt-6 sm:mt-10 px-3 sm:px-4'>
         <div
           className={`border-l-4 ${
             errorCode === 401
@@ -206,24 +239,24 @@ const Dashboard = () => {
               : "border-yellow-500 bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
           } p-3 sm:p-4 rounded shadow max-w-xl w-full`}
         >
-          <h2 className="font-semibold text-base sm:text-lg flex items-center gap-2">
+          <h2 className='font-semibold text-base sm:text-lg flex items-center gap-2'>
             {errorCode === 401 ? (
               <>
-                <AlertTriangle size={18} className="sm:w-5 sm:h-5" />{" "}
+                <AlertTriangle size={18} className='sm:w-5 sm:h-5' />{" "}
                 Authentication Error
               </>
             ) : (
               <>
-                <AlertTriangle size={18} className="sm:w-5 sm:h-5" /> Server
+                <AlertTriangle size={18} className='sm:w-5 sm:h-5' /> Server
                 Error
               </>
             )}
           </h2>
-          <p className="mt-1 text-xs sm:text-sm">{error}</p>
+          <p className='mt-1 text-xs sm:text-sm'>{error}</p>
           {error?.status === 401 && (
             <button
               onClick={() => (window.location.href = "/login")}
-              className="mt-3 px-3 py-1.5 sm:px-4 sm:py-2 bg-red-600 text-white rounded hover:bg-red-700 transition text-sm"
+              className='mt-3 px-3 py-1.5 sm:px-4 sm:py-2 bg-red-600 text-white rounded hover:bg-red-700 transition text-sm'
             >
               Login Again
             </button>
@@ -241,7 +274,7 @@ const Dashboard = () => {
         Loading dashboard data...
       </p>
     );
-  if (!samples || samples.length === 0)
+  if (!loading && (!samples || samples.length === 0))
     return (
       <p
         className={`text-center mt-6 sm:mt-10 text-base sm:text-lg ${theme?.text} px-4`}
@@ -258,14 +291,14 @@ const Dashboard = () => {
       <div
         className={`${theme.card} rounded-lg shadow-md border ${theme?.border} p-3 sm:p-4`}
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          <div className="w-full">
+        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4'>
+          <div className='w-full'>
             <select
               value={filterState}
               onChange={(e) => setFilterState(e.target.value)}
               className={`w-full px-3 py-2 sm:px-4 text-sm sm:text-base border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
             >
-              <option value="all">All States</option>
+              <option value='all'>All States</option>
               {states.map((state) => (
                 <option key={state.id} value={state.id}>
                   {state.name}
@@ -279,7 +312,7 @@ const Dashboard = () => {
             onChange={(e) => setFilterProduct(e.target.value)}
             className={`w-full px-3 py-2 sm:px-4 text-sm sm:text-base border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
           >
-            <option value="all">All Products</option>
+            <option value='all'>All Products</option>
             {productVariantsInSamples.map((v) => (
               <option key={v.id} value={v.id}>
                 {v.displayName || v.name || "Unknown"}
@@ -292,98 +325,101 @@ const Dashboard = () => {
             onChange={(e) => setFilterStatus(e.target.value)}
             className={`w-full px-3 py-2 sm:px-4 text-sm sm:text-base border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500 sm:col-span-2 lg:col-span-1`}
           >
-            <option value="all">All Status</option>
-            <option value="safe">Safe</option>
-            <option value="moderate">Moderate</option>
-            <option value="contaminated">Contaminated</option>
-            <option value="pending">Pending</option>
+            <option value='all'>All Status</option>
+            <option value='safe'>Safe</option>
+            <option value='moderate'>Moderate</option>
+            <option value='contaminated'>Contaminated</option>
+            <option value='pending'>Pending</option>
           </select>
         </div>
       </div>
 
       {/* Stats Cards (server-side stats when available, else client analytics) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4'>
         <StatCard
           icon={Package}
-          label="Total Samples"
+          label='Total Samples'
           value={stats?.totalSamples ?? analytics.total}
-          color="bg-blue-600"
+          color='bg-blue-600'
           theme={theme}
         />
         <StatCard
           icon={AlertTriangle}
-          label="Contaminated"
+          label='Contaminated'
           value={stats?.contaminated ?? analytics.contaminated}
-          color="bg-red-600"
+          color='bg-red-600'
           subtext={`${(
-            ((stats?.contaminated ?? analytics.contaminated) / (stats?.totalSamples || analytics.total || 1)) *
+            ((stats?.contaminated ?? analytics.contaminated) /
+              (stats?.totalSamples || analytics.total || 1)) *
             100
           ).toFixed(1)}% of total`}
           theme={theme}
         />
         <StatCard
           icon={CheckCircle}
-          label="Safe"
+          label='Safe'
           value={stats?.safe ?? analytics.safe}
-          color="bg-green-600"
-          subtext={`${(((stats?.safe ?? analytics.safe) / (stats?.totalSamples || analytics.total || 1)) * 100).toFixed(
-            1
-          )}% of total`}
+          color='bg-green-600'
+          subtext={`${(
+            ((stats?.safe ?? analytics.safe) /
+              (stats?.totalSamples || analytics.total || 1)) *
+            100
+          ).toFixed(1)}% of total`}
           theme={theme}
         />
         <StatCard
           icon={Clock}
-          label="Pending"
+          label='Pending'
           value={stats?.pending ?? analytics.pending}
-          color="bg-yellow-500"
+          color='bg-yellow-500'
           theme={theme}
         />
       </div>
 
       {/* Charts Grid 1: Area & Radar */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      <div className='grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6'>
         <div
           className={`${theme?.card} rounded-lg shadow-md p-4 sm:p-6 border ${theme?.border}`}
         >
-          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
+          <h3 className='text-base sm:text-lg font-semibold mb-3 sm:mb-4'>
             Contamination Status Trends
           </h3>
           <ResponsiveContainer
-            width="100%"
+            width='100%'
             height={250}
-            className="sm:h-[300px]"
+            className='sm:h-[300px]'
           >
             <AreaChart data={exposureData}>
               <defs>
-                <linearGradient id="colorDetected" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1} />
+                <linearGradient id='colorDetected' x1='0' y1='0' x2='0' y2='1'>
+                  <stop offset='5%' stopColor='#ef4444' stopOpacity={0.8} />
+                  <stop offset='95%' stopColor='#ef4444' stopOpacity={0.1} />
                 </linearGradient>
-                <linearGradient id="colorSafe" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0.1} />
+                <linearGradient id='colorSafe' x1='0' y1='0' x2='0' y2='1'>
+                  <stop offset='5%' stopColor='#10b981' stopOpacity={0.8} />
+                  <stop offset='95%' stopColor='#10b981' stopOpacity={0.1} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="month" stroke="#6b7280" tick={{ fontSize: 12 }} />
-              <YAxis stroke="#6b7280" tick={{ fontSize: 12 }} />
+              <CartesianGrid strokeDasharray='3 3' stroke='#e5e7eb' />
+              <XAxis dataKey='month' stroke='#6b7280' tick={{ fontSize: 12 }} />
+              <YAxis stroke='#6b7280' tick={{ fontSize: 12 }} />
               <RechartsTooltip content={<CustomTooltip theme={theme} />} />
               <Legend wrapperStyle={{ fontSize: "12px" }} />
               <Area
-                type="monotone"
-                dataKey="safe"
-                stroke="#10b981"
+                type='monotone'
+                dataKey='safe'
+                stroke='#10b981'
                 fillOpacity={1}
-                fill="url(#colorSafe)"
-                name="Safe Levels"
+                fill='url(#colorSafe)'
+                name='Safe Levels'
               />
               <Area
-                type="monotone"
-                dataKey="detected"
-                stroke="#ef4444"
+                type='monotone'
+                dataKey='detected'
+                stroke='#ef4444'
                 fillOpacity={1}
-                fill="url(#colorDetected)"
-                name="Contaminated"
+                fill='url(#colorDetected)'
+                name='Contaminated'
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -392,32 +428,32 @@ const Dashboard = () => {
         <div
           className={`${theme?.card} rounded-lg shadow-md p-4 sm:p-6 border ${theme?.border}`}
         >
-          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
+          <h3 className='text-base sm:text-lg font-semibold mb-3 sm:mb-4'>
             Detection Capacity Metrics
           </h3>
           <ResponsiveContainer
-            width="100%"
+            width='100%'
             height={250}
-            className="sm:h-[300px]"
+            className='sm:h-[300px]'
           >
             <RadarChart data={detectionMetrics}>
-              <PolarGrid stroke="#e5e7eb" />
+              <PolarGrid stroke='#e5e7eb' />
               <PolarAngleAxis
-                dataKey="metric"
-                stroke="#6b7280"
+                dataKey='metric'
+                stroke='#6b7280'
                 tick={{ fontSize: 11 }}
               />
               <PolarRadiusAxis
                 angle={90}
                 domain={[0, 100]}
-                stroke="#6b7280"
+                stroke='#6b7280'
                 tick={{ fontSize: 10 }}
               />
               <Radar
-                name="Capacity Score"
-                dataKey="value"
-                stroke="#3b82f6"
-                fill="#3b82f6"
+                name='Capacity Score'
+                dataKey='value'
+                stroke='#3b82f6'
+                fill='#3b82f6'
                 fillOpacity={0.6}
               />
               <RechartsTooltip content={<CustomTooltip theme={theme} />} />
@@ -430,47 +466,47 @@ const Dashboard = () => {
       <div
         className={`${theme?.card} rounded-lg shadow-md p-4 sm:p-6 border ${theme?.border}`}
       >
-        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
+        <h3 className='text-base sm:text-lg font-semibold mb-3 sm:mb-4'>
           Monthly Analysis & Critical Cases
         </h3>
         <ResponsiveContainer
-          width="100%"
+          width='100%'
           height={300}
-          className="sm:h-[350px] md:h-[400px]"
+          className='sm:h-[350px] md:h-[400px]'
         >
           <ComposedChart data={exposureData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="month" stroke="#6b7280" tick={{ fontSize: 11 }} />
-            <YAxis yAxisId="left" stroke="#6b7280" tick={{ fontSize: 11 }} />
+            <CartesianGrid strokeDasharray='3 3' stroke='#e5e7eb' />
+            <XAxis dataKey='month' stroke='#6b7280' tick={{ fontSize: 11 }} />
+            <YAxis yAxisId='left' stroke='#6b7280' tick={{ fontSize: 11 }} />
             <YAxis
-              yAxisId="right"
-              orientation="right"
-              stroke="#6b7280"
+              yAxisId='right'
+              orientation='right'
+              stroke='#6b7280'
               tick={{ fontSize: 11 }}
             />
             <RechartsTooltip content={<CustomTooltip theme={theme} />} />
             <Legend wrapperStyle={{ fontSize: "11px" }} />
             <Bar
-              yAxisId="left"
-              dataKey="detected"
-              fill="#f59e0b"
-              name="Contaminated"
+              yAxisId='left'
+              dataKey='detected'
+              fill='#f59e0b'
+              name='Contaminated'
               radius={[8, 8, 0, 0]}
             />
             <Bar
-              yAxisId="left"
-              dataKey="critical"
-              fill="#ef4444"
-              name="Critical Cases"
+              yAxisId='left'
+              dataKey='critical'
+              fill='#ef4444'
+              name='Critical Cases'
               radius={[8, 8, 0, 0]}
             />
             <Line
-              yAxisId="right"
-              type="monotone"
-              dataKey="capacity"
-              stroke="#3b82f6"
+              yAxisId='right'
+              type='monotone'
+              dataKey='capacity'
+              stroke='#3b82f6'
               strokeWidth={2}
-              name="Contamination Rate %"
+              name='Contamination Rate %'
               dot={{ r: 4, fill: "#3b82f6" }}
             />
           </ComposedChart>
@@ -481,37 +517,37 @@ const Dashboard = () => {
       <div
         className={`${theme?.card} rounded-lg shadow-md p-4 sm:p-6 border ${theme?.border}`}
       >
-        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
+        <h3 className='text-base sm:text-lg font-semibold mb-3 sm:mb-4'>
           Location Analysis
         </h3>
         <ResponsiveContainer
-          width="100%"
+          width='100%'
           height={300}
-          className="sm:h-[350px] md:h-[400px]"
+          className='sm:h-[350px] md:h-[400px]'
         >
-          <BarChart data={locationData} layout="vertical">
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis type="number" stroke="#6b7280" tick={{ fontSize: 11 }} />
+          <BarChart data={locationData} layout='vertical'>
+            <CartesianGrid strokeDasharray='3 3' stroke='#e5e7eb' />
+            <XAxis type='number' stroke='#6b7280' tick={{ fontSize: 11 }} />
             <YAxis
-              dataKey="location"
-              type="category"
-              stroke="#6b7280"
+              dataKey='location'
+              type='category'
+              stroke='#6b7280'
               width={80}
               tick={{ fontSize: 10 }}
-              className="sm:w-[100px] md:w-[120px]"
+              className='sm:w-[100px] md:w-[120px]'
             />
             <RechartsTooltip content={<CustomTooltip theme={theme} />} />
             <Legend wrapperStyle={{ fontSize: "11px" }} />
             <Bar
-              dataKey="exposure"
-              fill="#8b5cf6"
-              name="Contaminated Cases"
+              dataKey='exposure'
+              fill='#8b5cf6'
+              name='Contaminated Cases'
               radius={[0, 8, 8, 0]}
             />
             <Bar
-              dataKey="capacity"
-              fill="#10b981"
-              name="Detection Rate"
+              dataKey='capacity'
+              fill='#10b981'
+              name='Detection Rate'
               radius={[0, 8, 8, 0]}
             />
           </BarChart>
@@ -519,27 +555,27 @@ const Dashboard = () => {
       </div>
 
       {/* Pie Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      <div className='grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6'>
         <div
           className={`${theme?.card} rounded-lg shadow-md p-4 sm:p-6 border ${theme?.border}`}
         >
-          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
+          <h3 className='text-base sm:text-lg font-semibold mb-3 sm:mb-4'>
             Product Type Distribution
           </h3>
           <ResponsiveContainer
-            width="100%"
+            width='100%'
             height={250}
-            className="sm:h-[300px]"
+            className='sm:h-[300px]'
           >
             <PieChart>
               <Pie
                 data={analytics.byProductType}
-                cx="50%"
-                cy="50%"
+                cx='50%'
+                cy='50%'
                 outerRadius={80}
                 label={(entry) => entry.name}
                 labelLine={{ stroke: "#6b7280", strokeWidth: 1 }}
-                dataKey="value"
+                dataKey='value'
               >
                 {analytics.byProductType.map((_, i) => (
                   <Cell key={i} fill={COLORS[i % COLORS.length]} />
@@ -553,13 +589,13 @@ const Dashboard = () => {
         <div
           className={`${theme?.card} rounded-lg shadow-md p-4 sm:p-6 border ${theme?.border}`}
         >
-          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
+          <h3 className='text-base sm:text-lg font-semibold mb-3 sm:mb-4'>
             Contamination Distribution
           </h3>
           <ResponsiveContainer
-            width="100%"
+            width='100%'
             height={250}
-            className="sm:h-[300px]"
+            className='sm:h-[300px]'
           >
             <PieChart>
               <Pie
@@ -568,16 +604,16 @@ const Dashboard = () => {
                   { name: "Contaminated", value: analytics.contaminated },
                   { name: "Pending", value: analytics.pending },
                 ]}
-                cx="50%"
-                cy="50%"
+                cx='50%'
+                cy='50%'
                 outerRadius={80}
                 label={(entry) => entry.name}
                 labelLine={{ stroke: "#6b7280", strokeWidth: 1 }}
-                dataKey="value"
+                dataKey='value'
               >
-                <Cell fill="#10b981" />
-                <Cell fill="#ef4444" />
-                <Cell fill="#f59e0b" />
+                <Cell fill='#10b981' />
+                <Cell fill='#ef4444' />
+                <Cell fill='#f59e0b' />
               </Pie>
               <RechartsTooltip />
             </PieChart>
