@@ -56,7 +56,7 @@ export const sampleToFormState = (sample) => {
     productName: sample.productName || "",
     brandName: sample.brandName || "",
     batchNumber: sample.batchNumber || "",
-    brand_letter: sample.brandLetter || "",
+    brandLetter: sample.brandLetter || "",
 
     manufacturerName: sample.manufacturerName || "",
     vendorType: sample.vendorType || "",
@@ -313,7 +313,7 @@ export const buildSamplePayload = (formData) => {
     batchNumber: formData.batchNumber || null,
     manufacturerName: formData.manufacturerName || "",
 
-    brand_letter: formData.brandLetter || null,
+    brandLetter: formData.brandLetter || null,
     brandName: formData.brandName || null,
 
     gpsLatitude: formData.gpsLatitude ? parseFloat(formData.gpsLatitude) : null,
@@ -350,26 +350,15 @@ export const validateSampleForm = (formData) => {
   if (!formData.stateId) errors.stateId = "State is required";
   if (!formData.lgaId) errors.lgaId = "LGA is required";
 
-  // if (!formData.marketId && !formData.marketName) {
-  //   errors.marketId =
-  //     "Either select a market from the list or enter a custom market name";
-  // }
-  // if (formData.marketId === "OTHER" && !formData.marketName) {
-  //   errors.marketName = "Market name is required when selecting 'Other'";
-  // }
   if (!formData.productCategoryId)
     errors.productCategoryId = "Product category is required";
   if (!formData.productVariantId)
     errors.productVariantId = "Product variant is required";
   if (!formData.productName) errors.productName = "Product name is required";
   if (!formData.vendorType) errors.vendorType = "Vendor type is required";
-  // if (!formData.brandLetter) errors.brandLetter = "Brand letter is required";
   if (formData.vendorType === "OTHER" && !formData.vendorTypeOther) {
     errors.vendorTypeOther = "Vendor type specification is required";
   }
-  // if (!formData.price) errors.price = "Price is required";
-  // if (isNaN(parseFloat(formData.price)))
-  //   errors.price = "Price must be a number";
 
   return {
     valid: Object.keys(errors).length === 0,

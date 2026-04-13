@@ -38,11 +38,17 @@ const LabAnalystDashboard = () => {
       setIsLoadingMore(true);
       setError(null);
       setSkip(newSkip);
-      const res = await api.get("/lab/samples-requiring-confirmation", {
-        params: query
-          ? { take, skip: newSkip, q: query }
-          : { take, skip: newSkip },
-      });
+      let res;
+      if (query) {
+        res = await api.get("lab/samples/search", {
+          params: { take, skip: newSkip, q: query },
+        });
+      } else {
+        res = await api.get("/lab/samples-requiring-confirmation", {
+          params: { take, skip: newSkip },
+        });
+      }
+
       if (res.data?.data) {
         setSamplesRequiringConfirmation((prev) => [...prev, ...res.data.data]);
       }
@@ -54,7 +60,7 @@ const LabAnalystDashboard = () => {
     }
   };
 
-  const fetchLabData = async (params) => {
+  const fetchLabData = async () => {
     try {
       setError(null);
       setLoading(true);
@@ -65,13 +71,20 @@ const LabAnalystDashboard = () => {
         setLoading(false);
         return;
       }
-      const samplesRes = await api.get("/lab/samples-requiring-confirmation", {
-        params: debouncedQuery
-          ? { take, skip: 0, q: debouncedQuery }
-          : { take, skip },
-      });
-      setSamplesRequiringConfirmation(samplesRes.data.data);
-      setTotalItems(samplesRes.data.pagination.total || 1);
+
+      let res;
+      if (query) {
+        res = await api.get("lab/samples/search", {
+          params: { take, skip: 0, q: query },
+        });
+      } else {
+        res = await api.get("/lab/samples-requiring-confirmation", {
+          params: { take, skip: 0 },
+        });
+      }
+
+      setSamplesRequiringConfirmation(res.data.data);
+      setTotalItems(res.data.pagination.total || 1);
     } catch (err) {
       console.error("❌ [LabAnalystDashboard] Failed to fetch lab data:", err);
       console.error("   Error message:", err.message);
