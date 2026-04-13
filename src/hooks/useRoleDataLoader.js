@@ -7,7 +7,7 @@ export const normalizeRole = (role = "") =>
 
 const ROLE_LOADERS = {
   superadmin: (dispatch) => {
-    dispatch(fetchSamples({ page: 1, limit: 100 }));
+    dispatch(fetchSamples({ page: 1, limit: 1000 }));
   },
 };
 

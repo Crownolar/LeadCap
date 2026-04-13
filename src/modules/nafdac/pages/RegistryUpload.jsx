@@ -44,9 +44,11 @@ const RegistryUpload = () => {
     if (!version)
       return alert("No active registry version found for verification");
     api
-      .get(`/nafdac/verification/registry/${version.id}/verify-samples`)
+      .post(`/nafdac/verification/registry/${version.id}/verify-samples`)
       .then((res) => {
-        alert(res.data.message);
+        alert(
+          "Samples have been verified against the active registry version.👍✔",
+        );
       })
       .catch((err) => {
         alert(

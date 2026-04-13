@@ -549,11 +549,13 @@ const SampleFormModal = ({ onClose, onSubmit, mode, initialSample }) => {
                     className={`w-full px-4 py-2 border rounded-lg ${theme.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent`}
                   >
                     <option value=''>Select Brand Letter</option>
-                    {["a", "b", "c", "d", "e"].map((letter) => (
-                      <option key={letter} value={letter}>
-                        {letter}
-                      </option>
-                    ))}
+                    {["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"].map(
+                      (letter) => (
+                        <option key={letter} value={letter}>
+                          {letter}
+                        </option>
+                      ),
+                    )}
                   </select>
                 </div>
 

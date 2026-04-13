@@ -109,6 +109,7 @@ const Sidebar = ({
       route: "/dashboard",
       key: "dashboard",
     },
+
     {
       icon: Beaker,
       label: "My Samples",
@@ -230,7 +231,6 @@ const Sidebar = ({
   const navItemsToRender = allNavItems.filter((item) =>
     config.navItems.includes(item.key),
   );
-
   const handleSampleButtonClick = () => {
     setShowForm(true);
     setMobileMenuOpen(false);
@@ -316,7 +316,7 @@ const Sidebar = ({
           <nav
             className='
               space-y-2 pr-1 overflow-y-auto scrollbar-hide
-              max-h-[min(55vh,calc(100vh-14rem))]
+              max-h-[min(70vh,calc(100vh-10rem))]
             '
           >
             {navItemsToRender.map((item) => (
