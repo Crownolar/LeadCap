@@ -7,106 +7,70 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchSamples } from "../../redux/slice/samplesSlice";
 import MapSampleDetailsModal from "../modals/MapSampleDetailsModal";
-import { MapPin } from "lucide-react";
+import { AlertTriangle, MapPin } from "lucide-react";
 import Map from "../other/Map";
-
-// coordinates for LAGOS
-const defaultPosition = [6.5244, 3.3792];
-
-const FitBounds = ({ markers }) => {
-  const map = useMap();
-  useEffect(() => {
-    if (markers.length > 0) {
-      try {
-        const bounds = L.latLngBounds(
-          markers.map((m) => {
-            return [parseFloat(m.gpsLatitude), parseFloat(m.gpsLongitude)];
-          })
-        );
-
-        map.fitBounds(bounds, { padding: [50, 50] });
-      } catch (e) {
-        console.error(e.message);
-      }
-    }
-  }, []);
-};
-
-const iconObject = (samplesLength, position) => {
-  return new L.divIcon({
-    className: "",
-    html: ` <div class='relative '>
-                <img
-                src=${markerIcon}
-                alt='marker'
-                class='h-[50px]'
-                />
-                ${
-                  samplesLength > 1
-                    ? `<span class='absolute rounded-full grid place-items-center -top-2 -left-2 w-6 h-6 bg-red-800 text-white  '>
-                ${samplesLength}
-                </span>`
-                    : ""
-                }    
-            </div>`,
-
-    shadowUrl: markerShadow,
-    iconSize: null,
-    iconAnchor: position,
-    popupAnchor: [-5, -35],
-  });
-};
+import api from "../../utils/api";
 
 const MapView = ({ theme: propTheme, samples: propSamples }) => {
-  const dispatch = useDispatch();
-  const { samples: reduxSamples } = useSelector((state) => state.samples);
-  const samples = propSamples || reduxSamples || [];
-
   const [mapDetails, setMapDetails] = useState({
     isOpen: false,
     samples: null,
   });
+  const [samples, setSamples] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   // Fetch samples on mount if not provided via props
   useEffect(() => {
-    if (!propSamples) {
-      dispatch(fetchSamples());
-    }
-  }, [dispatch, propSamples]);
-
-  const sameLngAndLat = (samplesArray, LatAndLngArray) => {
-    return samplesArray.filter(
-      (s) =>
-        parseFloat(s.gpsLatitude) === parseFloat(LatAndLngArray[0]) &&
-        parseFloat(s.gpsLongitude) === parseFloat(LatAndLngArray[1])
-    );
-  };
-
-  const getDefaultIcon = (samples, position) => {
-    const samplesLength = sameLngAndLat(samples, position).length;
-    return iconObject(samplesLength, position);
-  };
-
-  const handleMarkerClick = (samplesArray, LatAndLngArray) => {
-    const samplesWithSameCoordinates = sameLngAndLat(
-      samplesArray,
-      LatAndLngArray
-    );
-    setMapDetails({ isOpen: true, samples: samplesWithSameCoordinates });
-  };
+    setLoading(true);
+    setError(false);
+    api
+      .get("/samples/geographic")
+      .then((res) => {
+        if (res.data.data?.length > 0) {
+          setSamples(res.data.data);
+          setLoading(false);
+        } else {
+          setSamples([]);
+        }
+      })
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  }, []);
 
   // Filter samples with GPS coordinates
   const samplesWithCoords =
     samples?.filter((s) => s.gpsLatitude && s.gpsLongitude) || [];
 
-  if (samplesWithCoords.length === 0) {
+  if (loading) {
+    return (
+      <p
+        className={`text-center mt-6 sm:mt-10 text-base sm:text-lg animate-pulse  px-4 pt-[30px] pb-[30px] ${propTheme.text}`}
+      >
+        Loading Map...
+      </p>
+    );
+  }
+  if (error) {
     return (
       <div
-        className={`${propTheme?.card} rounded-lg sm:rounded-xl shadow-md p-4 sm:p-6 md:p-8 border ${propTheme?.border} text-center py-8 sm:py-12`}
+        className={`border-l-4 border-red-600 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-3 sm:p-4 rounded shadow max-w-xl w-full`}
       >
-        <MapPin className='w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 text-gray-400' />
-        <p className={`text-sm sm:text-base ${propTheme?.textMuted}`}>
-          No samples with GPS coordinates yet
+        <h2 className='font-semibold text-base sm:text-lg flex items-center gap-2'>
+          <>
+            <AlertTriangle size={18} className='sm:w-5 sm:h-5' />
+            Error ocurred. Try refreshing.
+          </>
+        </h2>
+      </div>
+    );
+  }
+  if (!error && !loading && !samplesWithCoords.length > 0) {
+    return (
+      <div className='bg-white/20 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex-shrink-0 self-end sm:self-auto'>
+        <p className='text-white font-semibold text-xs sm:text-sm whitespace-nowrap'>
+          {samplesWithCoords.length}{" "}
+          {samplesWithCoords.length === 1 ? "sample" : "samples"}
         </p>
       </div>
     );
@@ -140,13 +104,6 @@ const MapView = ({ theme: propTheme, samples: propSamples }) => {
               Interactive map of sample locations
             </p>
           </div>
-          {samplesWithCoords.length > 0 && (
-            <div className='bg-white/20 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex-shrink-0 self-end sm:self-auto'>
-              <p className='text-white font-semibold text-xs sm:text-sm whitespace-nowrap'>
-                {samplesWithCoords.length} {samplesWithCoords.length === 1 ? 'sample' : 'samples'}
-              </p>
-            </div>
-          )}
         </div>
         <Map samples={samplesWithCoords} />
       </div>
