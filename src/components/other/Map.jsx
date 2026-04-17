@@ -49,7 +49,7 @@ const FitBounds = ({ markers }) => {
 const iconObject = (samplesLength) => {
   // Responsive marker size
   const isSmallScreen = window.innerWidth < 640;
-  const markerHeight = isSmallScreen ? 35 : 50;
+  const markerHeight = isSmallScreen ? 45 : 70;
   const badgeSize = isSmallScreen ? "w-5 h-5 text-xs" : "w-6 h-6 text-sm";
   const badgePosition = isSmallScreen ? "-top-1 -left-1" : "-top-2 -left-2";
 
@@ -59,7 +59,7 @@ const iconObject = (samplesLength) => {
              <img
                src=${markerIcon}
                alt='marker'
-               class='h-[${markerHeight}px]'
+               style="height:${markerHeight}px"
              />
              ${
                samplesLength > 0
@@ -222,7 +222,7 @@ export default function Map({ samples }) {
             }
             return null;
           })}
-          {/* {samples && <FitBounds markers={samples} />} */}
+          {samples && <FitBounds markers={samples} />}
         </MapContainer>
 
         {mapDetails.isOpen && (
