@@ -5,7 +5,10 @@ export const getContaminationStatus = (sample) => {
     return String(sample.contaminationStatus).toLowerCase();
   }
 
-  if (sample.labStatus && String(sample.labStatus).toLowerCase() !== "completed") {
+  if (
+    sample.labStatus &&
+    String(sample.labStatus).toLowerCase() !== "completed"
+  ) {
     return "pending";
   }
 
@@ -15,11 +18,14 @@ export const getContaminationStatus = (sample) => {
     return "safe";
   }
 
-  if (Array.isArray(sample.heavyMetalReadings) && sample.heavyMetalReadings.length > 0) {
+  if (
+    Array.isArray(sample.heavyMetalReadings) &&
+    sample.heavyMetalReadings.length > 0
+  ) {
     const maxValue = Math.max(
       ...sample.heavyMetalReadings
         .map((item) => Number(item?.value ?? item?.reading ?? 0))
-        .filter((v) => !Number.isNaN(v))
+        .filter((v) => !Number.isNaN(v)),
     );
 
     if (maxValue > 90) return "contaminated";
@@ -43,7 +49,11 @@ export const normalizeVerificationStatus = (sample) => {
 
 export const isVerifiedMatch = (sample) => {
   const status = normalizeVerificationStatus(sample);
-  return status === "VERIFIED_ORIGINAL" || status === "MATCHED" || status === "VERIFIED";
+  return (
+    status === "VERIFIED_ORIGINAL" ||
+    status === "MATCHED" ||
+    status === "VERIFIED"
+  );
 };
 
 export const isFlaggedRecord = (sample) => {
@@ -71,10 +81,10 @@ export const isPendingReview = (sample) => {
 export const isRegisteredProduct = (sample) => {
   return Boolean(
     sample?.isRegistered ||
-      sample?.registrationNumber ||
-      sample?.nafdacNumber ||
-      sample?.nafdacNo ||
-      isVerifiedMatch(sample)
+    sample?.registrationNumber ||
+    sample?.nafdacNumber ||
+    sample?.nafdacNo ||
+    isVerifiedMatch(sample),
   );
 };
 
@@ -135,42 +145,24 @@ export const deriveVerificationSummary = (samples = []) => {
   ];
 };
 
-export const deriveRiskCategories = (samples = []) => {
-  const grouped = samples.reduce((acc, sample) => {
-    const productType =
-      sample?.productVariant?.category?.name ||
-      sample?.productVariant?.displayName ||
-      sample?.productVariant?.name ||
-      "Unknown";
-
-    if (!acc[productType]) {
-      acc[productType] = {
-        category: productType,
-        total: 0,
-        flagged: 0,
-      };
-    }
-
-    acc[productType].total += 1;
-    if (isFlaggedRecord(sample)) acc[productType].flagged += 1;
-
-    return acc;
-  }, {});
-
-  return Object.values(grouped)
-    .map((item) => ({
-      ...item,
-      flaggedRate: item.total ? (item.flagged / item.total) * 100 : 0,
-      riskLevel:
-        item.total && item.flagged / item.total >= 0.35
-          ? "High"
-          : item.total && item.flagged / item.total >= 0.15
-          ? "Medium"
-          : "Low",
-    }))
-    .sort((a, b) => b.flaggedRate - a.flaggedRate)
-    .slice(0, 6);
-};
+// export const deriveRiskCategories = (stats = {}) => {
+//   const grouped = {
+//     category: "Unknown",
+//     registeredProductCount: stats.registeredProductCount,
+//     fakeRecordsCount: stats.fakeRecordsCount,
+//     fakeRecordsRate:
+//       (stats.fakeRecordsCount / stats.registeredProductCount) * 100,
+//     riskLevel:
+//       item.registeredProductCount &&
+//       item.fakeRecordsCount / item.registeredProductCount >= 0.35
+//         ? "High"
+//         : item.registeredProductCount &&
+//             item.fakeRecordsCount / item.registeredProductCount >= 0.15
+//           ? "Medium"
+//           : "Low",
+//   };
+//   return grouped;
+// };
 
 export const deriveFlaggedProducts = (samples = []) => {
   return samples

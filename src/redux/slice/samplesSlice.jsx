@@ -87,6 +87,7 @@ export const fetchSamples = createAsyncThunk(
           productVariantId: filters.productVariantId || undefined,
           productCategoryId: filters.productCategoryId || undefined,
           status: filters.status || undefined,
+          fields: "minimal",
         },
       });
 
@@ -124,10 +125,10 @@ export const fetchSampleStats = createAsyncThunk(
       return response.data?.data || response.data;
     } catch (error) {
       return rejectWithValue(
-        error?.response?.data?.message || "Failed to fetch sample stats"
+        error?.response?.data?.message || "Failed to fetch sample stats",
       );
     }
-  }
+  },
 );
 
 // ===== SLICE =====
@@ -236,21 +237,21 @@ const samplesSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-    // .addCase(handleLogout, () => initialState);
+      // .addCase(handleLogout, () => initialState);
 
-    // SAMPLE STATS
-    .addCase(fetchSampleStats.pending, (state) => {
-    state.statsLoading = true;
-    state.statsError = null;
-  })
-  .addCase(fetchSampleStats.fulfilled, (state, action) => {
-    state.statsLoading = false;
-    state.stats = action.payload;
-  })
-  .addCase(fetchSampleStats.rejected, (state, action) => {
-    state.statsLoading = false;
-    state.statsError = action.payload || "Failed to fetch sample stats";
-  })
+      // SAMPLE STATS
+      .addCase(fetchSampleStats.pending, (state) => {
+        state.statsLoading = true;
+        state.statsError = null;
+      })
+      .addCase(fetchSampleStats.fulfilled, (state, action) => {
+        state.statsLoading = false;
+        state.stats = action.payload;
+      })
+      .addCase(fetchSampleStats.rejected, (state, action) => {
+        state.statsLoading = false;
+        state.statsError = action.payload || "Failed to fetch sample stats";
+      });
   },
 });
 

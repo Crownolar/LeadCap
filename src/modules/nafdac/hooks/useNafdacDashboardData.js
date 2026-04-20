@@ -20,7 +20,7 @@ const useNafdacDashboardData = ({ samples = [] }) => {
 
     const verificationSummary = deriveVerificationSummary(samples);
     const trendData = aggregateRegistryTrend(samples, 6);
-    const riskCategories = deriveRiskCategories(samples);
+    // const riskCategories = deriveRiskCategories(samples);
     const flaggedProducts = deriveFlaggedProducts(samples);
 
     return {
@@ -31,7 +31,7 @@ const useNafdacDashboardData = ({ samples = [] }) => {
       pendingReviews,
       verificationSummary,
       trendData,
-      riskCategories,
+      // riskCategories,
       flaggedProducts,
     };
   }, [samples]);
