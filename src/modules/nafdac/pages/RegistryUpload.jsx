@@ -13,6 +13,7 @@ import {
 } from "../api/nafdacService";
 import { LoaderSpinner } from "../utils/iconComponent";
 import api from "../../../utils/api";
+import { useTheme } from "../../../context/ThemeContext";
 
 const formatDate = (d) =>
   d
@@ -36,6 +37,7 @@ const RegistryUpload = () => {
   const [versions, setVersions] = useState(null);
   const [version, setVersion] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const { theme } = useTheme()
 
   // to test click loading state
   const [clickedVersion, setClickedVersion] = useState(null);
@@ -184,9 +186,9 @@ const RegistryUpload = () => {
       />
       <div className='mt-5 mb-10   text-center md:text-left '>
         <button
-          className='px-5 py-2.5  bg-emerald-600 text-white font-medium rounded-lg shadow-md 
+          className={`px-5 py-2.5  bg-emerald-600 text-white font-medium rounded-lg shadow-md 
 hover:bg-emerald-700 active:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 
-transition duration-200 ease-in-out'
+transition duration-200 ease-in-out`}
           onClick={handleVerifySamples}
         >
           Verify
@@ -242,10 +244,10 @@ transition duration-200 ease-in-out'
             <div className='w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4'>
               <Icon d={icons.upload} size={26} className='text-emerald-600' />
             </div>
-            <p className='text-slate-700 font-semibold mb-1'>
+            <p className={`${theme.text} font-semibold mb-1`}>
               Drop registry file here
             </p>
-            <p className='text-xs text-slate-400 mb-4'>
+            <p className={`text-xs ${theme.textMuted} mb-4`}>
               Supports .csv — max 50MB
             </p>
             <Btn
@@ -271,29 +273,29 @@ transition duration-200 ease-in-out'
 
           {uploadResult && (
             <div>
-              <h3 className='text-xl font-semibold text-slate-400 uppercase tracking-widest mb-2 mt-5'>
+              <h3 className={`text-xl font-semibold ${theme.textMuted} uppercase tracking-widest mb-2 mt-5`}>
                 Recent Upload
               </h3>
-              <div className='bg-white border border-slate-100 rounded-2xl p-5 shadow-sm'>
-                <p className='font-semibold text-slate-700 mb-4'>
+              <div className={`${theme.bg} border ${theme.border} rounded-2xl p-5 shadow-sm`}>
+                <p className={`font-semibold ${theme.textMuted} mb-4`}>
                   Upload complete
                 </p>
                 <div className='space-y-2'>
                   <div className='flex items-center justify-between text-sm py-2 border-b border-slate-50'>
-                    <span className='text-slate-500'>Records processed</span>
-                    <span className='font-semibold text-slate-700'>
+                    <span className={`${theme.textMuted}`}>Records processed</span>
+                    <span className={`font-semibold ${theme.textMuted}`}>
                       {uploadResult.recordsProcessed?.toLocaleString() ?? "—"}
                     </span>
                   </div>
                   <div className='flex items-center justify-between text-sm py-2 border-b border-slate-50'>
-                    <span className='text-slate-500'>Errors</span>
-                    <span className='font-semibold text-slate-700'>
+                    <span className={`${theme.textMuted}`}>Errors</span>
+                    <span className={`font-semibold ${theme.textMuted}`}>
                       {uploadResult.errorsCount ?? 0}
                     </span>
                   </div>
-                  <div className='flex items-center justify-between text-sm py-2 border-b border-slate-50'>
-                    <span className='text-slate-500'>Version</span>
-                    <span className='font-semibold text-slate-700'>
+                  <div className={`flex items-center justify-between text-sm py-2 border-b ${theme.border}`}>
+                    <span className={`${theme.textMuted}`}>Version</span>
+                    <span className='font-semibold ${theme.textMutd}'>
                       {uploadResult.versionLabel ?? uploadResult.versionId}
                     </span>
                   </div>
@@ -314,30 +316,30 @@ transition duration-200 ease-in-out'
         </div>
 
         <div className='lg:col-span-2 col-span-1 space-y-3'>
-          <p className='text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2'>
+          <p className={`text-xs font-semibold ${theme.textMuted} uppercase tracking-widest mb-2`}>
             Registry Versions
           </p>
-          <div className='bg-white border border-slate-100 rounded-xl p-3.5 shadow-sm mb-3'>
-            <label className='text-xs text-slate-500 font-semibold mb-2 block'>
+          <div className={`${theme.bg} border ${theme.border} rounded-xl p-3.5 shadow-sm mb-3`}>
+            <label className={`text-xs ${theme.textMuted} font-semibold mb-2 block`}>
               Registry Versions
             </label>
             <div className='relative'>
               <button
                 type='button'
                 onClick={() => setDropdownOpen((s) => !s)}
-                className='w-full text-left bg-slate-50 border border-slate-100 rounded-md px-3 py-2 flex items-center justify-between gap-3'
+                className={`w-full text-left ${theme.bg} border ${theme.border} rounded-md px-3 py-2 flex items-center justify-between gap-3`}
               >
                 <div className='flex items-center gap-3'>
-                  <div className='text-sm text-slate-700'>
+                  <div className={`text-sm ${theme.textMuted}`}>
                     {!versions ||
                       (versions.length < 0 && (
-                        <span className='text-slate-400'>No versions</span>
+                        <span className={`${theme.textMuted}`}>No versions</span>
                       ))}
                     {loading && (
                       <Icon
                         d={icons.refresh}
                         size={16}
-                        className='text-slate-400 animate-spin'
+                        className={`${theme.textMuted} animate-spin`}
                       />
                     )}
                     {version && !loading && (
@@ -354,13 +356,13 @@ transition duration-200 ease-in-out'
                   <Icon
                     d={icons.chevronDown}
                     size={16}
-                    className='text-slate-400'
+                    className={`${theme.textMuted}`}
                   />
                 </div>
               </button>
 
               {dropdownOpen && (
-                <div className='absolute z-20  left-0 right-0 mt-2 bg-white 0 shadow-lg max-h-36 overflow-auto rounded-lg'>
+                <div className={`absolute z-20  left-0 right-0 mt-2 ${theme.bg} 0 shadow-lg max-h-36 overflow-auto rounded-lg`}>
                   {versions?.map((v) => (
                     <button
                       key={v.id}
@@ -368,13 +370,13 @@ transition duration-200 ease-in-out'
                         setClickedVersion(v.id);
                         handleActivate(v);
                       }}
-                      className='w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center justify-between gap-3 border-b border-slate-400'
+                      className={`w-full text-left px-3 py-2 ${theme.hover} flex items-center justify-between gap-3 border-b ${theme.border}`}
                     >
                       <div>
-                        <div className='text-sm text-slate-700 font-semibold'>
+                        <div className={`text-sm ${theme.textMuted} font-semibold`}>
                           {v.versionLabel || "—"}
                         </div>
-                        <div className='text-xs text-slate-400'>
+                        <div className={`text-xs ${theme.textMuted}`}>
                           {formatDate(v.uploadedAt)} •{" "}
                           {v.recordCount?.toLocaleString() ?? "—"} records
                         </div>
