@@ -31,7 +31,9 @@ const Contamination = () => {
   const selectedState = states.find((state) => state.id === filters.stateId);
   const selectedStateName = selectedState?.name || "All regions";
 
-  const handleLoadSummary = async () => {
+  const handleLoadSummary = async (e) => {
+    e.preventDefault();
+    
     if (!filters.dateFrom || !filters.dateTo) {
       setError("Please select both date range fields.");
       return;
@@ -42,6 +44,11 @@ const Contamination = () => {
       return;
     }
 
+    if (!filters.stateId) {
+      setError("Please select a state.");
+      return;
+    }
+
     try {
       setLoading(true);
       setHotspotLoading(true);
@@ -49,7 +56,8 @@ const Contamination = () => {
 
       const payload = {
         stateId: filters.stateId,
-        stateName: selectedState?.name || "",
+        state: selectedState?.name || "",
+        // stateName: selectedState?.name || "",
         dateFrom: filters.dateFrom,
         dateTo: filters.dateTo,
       };
@@ -85,9 +93,9 @@ const Contamination = () => {
   const contaminationBreakdown = summary?.contaminationBreakdown || {};
   const byLGA = summaryData?.byLGA || {};
   const byProductType = summaryData?.byProductType || {};
-  console.log(byProductType)
+  console.log(byProductType);
   const highRiskSamples = summaryData?.highRiskSamples || [];
-  console.log(highRiskSamples)
+  console.log(highRiskSamples);
   const registrationStatus = summaryData?.registrationStatus || {};
   const vendorType = summaryData?.vendorType || {};
   const recommendations = summaryData?.recommendations || [];
@@ -201,7 +209,7 @@ const Contamination = () => {
                 ? "#dc2626"
                 : item.riskScore >= 5
                   ? "#d97706"
-                  : "#059669"
+                  : "#059669",
             ),
           },
         ],

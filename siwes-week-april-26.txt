@@ -1,0 +1,13 @@
+040f620 - 2026-04-22 : fix: theme consistency across all tab - NAFDAC Page
+0c90e2c - 2026-04-22 : fix: Theme consistency continues - NAFDAC Page
+8e406f9 - 2026-04-21 : fix: Redesign Comment section and removed variant name
+f0d8890 - 2026-04-21 : Merge pull request #40 from Crownolar/Abdulz11
+878f90d - 2026-04-20 : feat(MapView): update sample fetching logic to include specific fields and enhance no samples display
+2be50ae - 2026-04-20 : feat(nafdac): update risk categories and verification summary components, enhance dashboard data handling
+041bcee - 2026-04-20 : fix: Removed Filter UI From SON Dashboard
+cfeab1d - 2026-04-20 : fix: standardize reports to use stateId instead of state name and resolve rendering issues
+8fa0fa0 - 2026-04-17 : Merge pull request #32 from Crownolar/Abdulz11
+e539de1 - 2026-04-17 : feat(MapView): enhance loading and error handling, update sample fetching logic refactor(Map): adjust marker size for better responsiveness
+67d54d5 - 2026-04-16 : Merge branch 'main' of https://github.com/Crownolar/ledacapDev into Abdulz11
+be0d19f - 2026-04-16 : refactor(Dashboard): removes unused Redux logic and uses stats for generating dashboard data
+a395d66 - 2026-04-16 : fix(policy-dashboard): resolve duplicate product risk table, restore map preview, and optimize sample fetching
