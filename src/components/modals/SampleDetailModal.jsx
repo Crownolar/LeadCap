@@ -1,5 +1,8 @@
 import { X, AlertTriangle, Pencil } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
+import { useState } from "react";
+import ImageWithLoader from "./ImageWithLoader";
+import ImagePreviewModal from "./ImagePreviewModal";
 
 const formatVendorType = (vendorType, vendorTypeOther) => {
   if (vendorType === "OTHER" && vendorTypeOther) return vendorTypeOther;
@@ -48,6 +51,7 @@ const Card = ({ title, children }) => (
 const SampleDetailModal = ({ sample, onClose, onEditRequest }) => {
   const { theme } = useTheme();
   const contaminationInfo = getContaminationInfo(sample?.heavyMetalReadings);
+  const [previewImage, setPreviewImage] = useState(null);
 
   const handleEdit = () => {
     onEditRequest?.(sample);
@@ -226,15 +230,20 @@ const SampleDetailModal = ({ sample, onClose, onEditRequest }) => {
           {(sample?.productPhotoUrl || sample?.calibrationCurve?.fileUrl) && (
             <div className="grid sm:grid-cols-2 gap-4">
               {sample?.productPhotoUrl && (
-                <img
+                <ImageWithLoader
                   src={sample.productPhotoUrl}
-                  className="rounded-xl h-52 w-full object-cover"
+                  alt="Product"
+                  onClick={() => setPreviewImage(sample.productPhotoUrl)}
                 />
               )}
+
               {sample?.calibrationCurve?.fileUrl && (
-                <img
+                <ImageWithLoader
                   src={sample.calibrationCurve.fileUrl}
-                  className="rounded-xl h-52 w-full object-cover"
+                  alt="Calibration Curve"
+                  onClick={() =>
+                    setPreviewImage(sample.calibrationCurve.fileUrl)
+                  }
                 />
               )}
             </div>
@@ -256,6 +265,10 @@ const SampleDetailModal = ({ sample, onClose, onEditRequest }) => {
           )}
         </div>
       </div>
+      <ImagePreviewModal
+        src={previewImage}
+        onClose={() => setPreviewImage(null)}
+      />
     </div>
   );
 };

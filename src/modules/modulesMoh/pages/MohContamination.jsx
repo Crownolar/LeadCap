@@ -32,8 +32,8 @@ const Contamination = () => {
   const selectedStateName = selectedState?.name || "All regions";
 
   const handleLoadSummary = async (e) => {
-    e.preventDefault();
-    
+    e?.preventDefault();
+
     if (!filters.dateFrom || !filters.dateTo) {
       setError("Please select both date range fields.");
       return;
@@ -54,10 +54,17 @@ const Contamination = () => {
       setHotspotLoading(true);
       setError("");
 
+      // const payload = {
+      //   stateId: filters.stateId,
+      //   state: filters.stateId, // ✅ THIS is what backend wants
+      //   // state: selectedState?.name || "",
+      //   // stateName: selectedState?.name || "",
+      //   dateFrom: filters.dateFrom,
+      //   dateTo: filters.dateTo,
+      // };
+
       const payload = {
-        stateId: filters.stateId,
-        state: selectedState?.name || "",
-        // stateName: selectedState?.name || "",
+        state: filters.stateId, // ✅ THIS is what backend wants
         dateFrom: filters.dateFrom,
         dateTo: filters.dateTo,
       };
@@ -100,6 +107,16 @@ const Contamination = () => {
   const vendorType = summaryData?.vendorType || {};
   const recommendations = summaryData?.recommendations || [];
 
+  const hasPending = summary?.contaminationBreakdown?.PENDING > 0;
+
+  {
+    hasPending && (
+      <div className="text-xs text-amber-600">
+        Some results are still pending laboratory analysis.
+      </div>
+    );
+  }
+
   const summaryCards = [
     {
       label: "Total samples",
@@ -111,7 +128,7 @@ const Contamination = () => {
       label: "Contaminated",
       value: contaminationBreakdown.CONTAMINATED ?? 0,
       color: "text-red-600",
-      subtext: `${summary.percentageContaminated ?? 0}% of all samples`,
+      subtext: `${Number(summary.percentageContaminated ?? 0)}% of all samples`,
     },
     {
       label: "High risk",
@@ -140,8 +157,11 @@ const Contamination = () => {
       .map(([lgaName, stats]) => {
         const total = stats?.total ?? 0;
         const contaminated = stats?.contaminated ?? 0;
+        const pending = stats?.pending ?? 0;
+        const tested = total - pending;
+
         const rate =
-          total > 0 ? `${((contaminated / total) * 100).toFixed(1)}%` : "0%";
+          tested > 0 ? `${((contaminated / tested) * 100).toFixed(1)}%` : "N/A";
 
         return {
           lgaName,
@@ -156,11 +176,14 @@ const Contamination = () => {
   const productRows = useMemo(() => {
     return Object.entries(byProductType)
       .map(([productType, stats]) => {
-        const total = stats?.total ?? stats?.totalSamples ?? 0;
+        const total = stats?.total ?? 0;
         const contaminated = stats?.contaminated ?? 0;
+        const pending = stats?.pending ?? 0;
+
+        const tested = total - pending;
+
         const rate =
-          stats?.contaminationRate ||
-          (total > 0 ? `${((contaminated / total) * 100).toFixed(1)}%` : "0%");
+          tested > 0 ? `${((contaminated / tested) * 100).toFixed(1)}%` : "N/A";
 
         return {
           productType,
@@ -340,12 +363,7 @@ const Contamination = () => {
           emptyMessage="No product type data available."
           renderRow={(row) => (
             <tr key={row.productType} className={theme.hover}>
-              <td className={TD}>
-                {row.productType?.displayName ||
-                  row.productType?.name ||
-                  row.productType ||
-                  "—"}
-              </td>
+              <td className={TD}>{row.productType || "-"}</td>
               <td className={TD}>{row.total}</td>
               <td className={TD}>{row.contaminated}</td>
               <td className={TD}>
@@ -429,7 +447,7 @@ const Contamination = () => {
 
             const value =
               item.value ||
-              `${item.contaminatedMetals[0].metal}: ${item.contaminatedMetals[0].concentration ?? item.reading ?? "-"} ppm`;
+              `${item.contaminatedMetals?.[0]?.metal}: ${item.contaminatedMetals?.[0]?.concentration ?? item.reading ?? "-"} ppm`;
 
             const numericReading = Number(item.leadLevel ?? item.reading ?? 0);
             const color =
