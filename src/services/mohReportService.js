@@ -60,6 +60,8 @@ export const getContaminationAnalysisReport = async ({
     headers: { Accept: "application/json" },
   });
 
+  console.log("REQUEST PARAMS:", params);
+
   return response.data;
 };
 
@@ -102,14 +104,12 @@ export const getRiskAssessmentReport = async ({
 };
 
 export const getContaminationSummary = async ({
-  stateId,
-  stateName,
+  state,
   dateFrom,
   dateTo,
 }) => {
   const params = {
-    ...(stateId && { stateId }),
-    ...(stateName && { state: stateName }),
+    ...(state && { state }), // ✅ correct key
     ...(dateFrom && { dateFrom }),
     ...(dateTo && { dateTo }),
   };

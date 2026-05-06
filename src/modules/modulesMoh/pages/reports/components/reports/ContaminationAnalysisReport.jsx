@@ -538,11 +538,11 @@ const ContaminationAnalysisReport = () => {
                             key={index}
                             className={`${theme.hover} cursor-pointer`}
                           >
-                            <td className={TD}>{item.sampleId || "-"}</td>
+                            <td className={TD}>{item.code || "-"}</td>
                             <td className={TD}>{item.state || "-"}</td>
-                            <td className={TD}>{item.heavyMetal || "-"}</td>
-                            <td className={TD}>{item.reading ?? "-"}</td>
-                            <td className={TD}>{item.status || "-"}</td>
+                            <td className={TD}>{item.contaminatedMetals[0].metal || "-"}</td>
+                            <td className={TD}>{item.contaminatedMetals[0].concentration ?? "-"}</td>
+                            <td className={TD}>{item.verificationStatus || "-"}</td>
                           </tr>
                         ))
                       ) : (

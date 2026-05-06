@@ -92,22 +92,31 @@ const Contamination = () => {
   };
 
   useEffect(() => {
+  if (filters.stateId) {
     handleLoadSummary();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }
+}, [filters.stateId]);
 
   const summary = summaryData?.summary || {};
   const contaminationBreakdown = summary?.contaminationBreakdown || {};
   const byLGA = summaryData?.byLGA || {};
   const byProductType = summaryData?.byProductType || {};
-  console.log(byProductType);
   const highRiskSamples = summaryData?.highRiskSamples || [];
-  console.log(highRiskSamples);
   const registrationStatus = summaryData?.registrationStatus || {};
   const vendorType = summaryData?.vendorType || {};
   const recommendations = summaryData?.recommendations || [];
 
   const hasPending = summary?.contaminationBreakdown?.PENDING > 0;
+
+  console.log(summary);
+  console.log(contaminationBreakdown);
+  console.log(byLGA);
+  console.log(byProductType);
+  console.log(highRiskSamples);
+  console.log(registrationStatus);
+  console.log(vendorType);
+  console.log(recommendations);
+  console.log(hasPending);
 
   {
     hasPending && (
