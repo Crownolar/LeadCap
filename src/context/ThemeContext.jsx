@@ -20,6 +20,9 @@ const themes = {
     emerald: "border border-emerald-200 bg-emerald-50 text-emerald-700",
     emeraldText: "text-emerald-700",
     emeraldBorder: "border border-emerald-200 bg-emerald-50",
+
+    safeText: "text-green-700",
+    dangerText: "text-red-700",
   },
 
   dark: {
@@ -39,6 +42,9 @@ const themes = {
     emerald: "border border-emerald-900/40 bg-emerald-900/20 text-emerald-300",
     emeraldText: "text-emerald-300",
     emeraldBorder: "border border-emerald-900/40 bg-emerald-900/20",
+
+    safeText: "text-green-300",
+    dangerText: "text-red-300",
   },
 };
 
