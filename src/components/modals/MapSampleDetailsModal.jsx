@@ -12,11 +12,15 @@ export default function MapSampleDetailsModal({ setMapDetails, mapDetails }) {
   });
 
   const samples = mapDetails.samples || [];
-  const contaminated = samples.filter((s) => s.status === "CONTAMINATED").length;
-  const safe = samples.filter((s) => s.status === "SAFE").length;
-  const pending = samples.filter((s) => s.status === "PENDING").length;
+  const contaminated = samples.filter(
+    (s) => s.contaminationStatus === "CONTAMINATED",
+  ).length;
 
-  console.log(samples)
+  const safe = samples.filter((s) => s.contaminationStatus === "SAFE").length;
+
+  const pending = samples.filter((s) => s.review?.status === "PENDING").length;
+
+  console.log(samples);
 
   return (
     <>
@@ -26,8 +30,9 @@ export default function MapSampleDetailsModal({ setMapDetails, mapDetails }) {
       />
 
       <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-        <div className={`w-full max-h-[90vh] max-w-4xl flex flex-col rounded-xl overflow-hidden shadow-2xl border ${theme.border}`}>
-
+        <div
+          className={`w-full max-h-[90vh] max-w-4xl flex flex-col rounded-xl overflow-hidden shadow-2xl border ${theme.border}`}
+        >
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-3.5 flex-shrink-0 bg-gradient-to-r from-emerald-700 to-emerald-500 border-b-2 border-emerald-400">
             <div className="flex items-center gap-3">
@@ -54,10 +59,16 @@ export default function MapSampleDetailsModal({ setMapDetails, mapDetails }) {
 
           {/* Summary bar */}
           {!commentSectionView.isOpen && (
-            <div className={`flex flex-shrink-0 px-5 ${theme.card} border-b ${theme.border}`}>
+            <div
+              className={`flex flex-shrink-0 px-5 ${theme.card} border-b ${theme.border}`}
+            >
               {[
                 { label: "total", value: samples.length, color: theme.text },
-                { label: "contaminated", value: contaminated, color: "text-red-500" },
+                {
+                  label: "contaminated",
+                  value: contaminated,
+                  color: "text-red-500",
+                },
                 { label: "safe", value: safe, color: "text-emerald-500" },
                 { label: "pending", value: pending, color: "text-amber-500" },
               ].map((stat, i, arr) => (
@@ -65,10 +76,14 @@ export default function MapSampleDetailsModal({ setMapDetails, mapDetails }) {
                   key={stat.label}
                   className={`py-2.5 pr-4 mr-4 ${i !== arr.length - 1 ? `border-r ${theme.border}` : ""}`}
                 >
-                  <span className={`block text-[18px] font-semibold font-mono leading-none ${stat.color}`}>
+                  <span
+                    className={`block text-[18px] font-semibold font-mono leading-none ${stat.color}`}
+                  >
                     {stat.value}
                   </span>
-                  <span className={`text-[10px] uppercase tracking-widest font-mono ${theme.textMuted}`}>
+                  <span
+                    className={`text-[10px] uppercase tracking-widest font-mono ${theme.textMuted}`}
+                  >
                     {stat.label}
                   </span>
                 </div>
@@ -90,7 +105,6 @@ export default function MapSampleDetailsModal({ setMapDetails, mapDetails }) {
               />
             )}
           </div>
-
         </div>
       </div>
     </>
