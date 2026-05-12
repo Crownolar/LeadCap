@@ -9,15 +9,16 @@ import { Toaster, toast } from "react-hot-toast";
 import Comments from "./Comments";
 import api from "../../utils/api";
 import { useSelector } from "react-redux";
+import { useTheme } from "../../context/ThemeContext";   // ← import theme hook
 
 /* ─── status tiny helpers ─────────────────────────────────────────── */
 const fmt = (val, decimals = 6) =>
   val !== null && val !== undefined ? parseFloat(val).toFixed(decimals) : "—";
 
 const REVIEW_CONFIG = {
-  PENDING:  { label: "Pending Review",  color: "amber",   Icon: Clock          },
-  APPROVED: { label: "Approved",        color: "emerald", Icon: CheckCircle    },
-  REJECTED: { label: "Rejected",        color: "red",     Icon: AlertTriangle  },
+  PENDING:  { label: "Pending Review",  color: "amber",   Icon: Clock         },
+  APPROVED: { label: "Approved",        color: "emerald", Icon: CheckCircle   },
+  REJECTED: { label: "Rejected",        color: "red",     Icon: AlertTriangle },
 };
 
 const CONTAMINATION_CONFIG = {
@@ -25,6 +26,9 @@ const CONTAMINATION_CONFIG = {
   CONTAMINATED:{ label: "Contaminated",color: "red",     Icon: AlertTriangle },
 };
 
+// Static color maps — these reference Tailwind classes directly because
+// StatusBadge colours are semantic (amber/emerald/red) and don't change
+// with the page theme beyond what Tailwind already handles.
 const colorClass = {
   amber:   { bg: "bg-amber-500/10",   border: "border-amber-500/20",   text: "text-amber-400"   },
   emerald: { bg: "bg-emerald-500/10", border: "border-emerald-500/20", text: "text-emerald-400" },
@@ -32,8 +36,8 @@ const colorClass = {
 };
 
 function StatusBadge({ status, configMap }) {
-  const cfg  = configMap[status] ?? { label: status, color: "amber", Icon: Info };
-  const cls  = colorClass[cfg.color];
+  const cfg = configMap[status] ?? { label: status, color: "amber", Icon: Info };
+  const cls = colorClass[cfg.color];
   return (
     <span className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-full border ${cls.bg} ${cls.border} ${cls.text}`}>
       <cfg.Icon className="w-3 h-3" />
@@ -44,6 +48,7 @@ function StatusBadge({ status, configMap }) {
 
 /* ─── heavy-metal mini-bar ──────────────────────────────────── */
 function MetalReadings({ readings }) {
+  const { theme } = useTheme();
   if (!readings?.length) return null;
   const safe  = readings.filter(r => r.finalStatus === "SAFE").length;
   const total = readings.length;
@@ -52,10 +57,10 @@ function MetalReadings({ readings }) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">
+        <span className={`text-[10px] font-semibold uppercase tracking-widest ${theme.cs_metalLabel}`}>
           Heavy Metal Readings
         </span>
-        <span className={`text-[10px] font-bold ${pct === 100 ? "text-emerald-400" : "text-red-400"}`}>
+        <span className={`text-[10px] font-bold ${pct === 100 ? theme.safeText : theme.dangerText}`}>
           {safe}/{total} safe
         </span>
       </div>
@@ -70,7 +75,6 @@ function MetalReadings({ readings }) {
           />
         ))}
       </div>
-      {/* progress label */}
       <div className="w-full bg-gray-800 rounded-full h-0.5 overflow-hidden">
         <div
           className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-700"
@@ -83,15 +87,18 @@ function MetalReadings({ readings }) {
 
 /* ─── single meta field ─────────────────────────────────────── */
 function MetaField({ icon, label, value, mono, children }) {
+  const { theme } = useTheme();
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center gap-1.5 text-gray-500">
+      <div className={`flex items-center gap-1.5 ${theme.cs_metaIconColor}`}>
         {icon}
-        <span className="text-[10px] font-semibold uppercase tracking-widest">{label}</span>
+        <span className={`text-[10px] font-semibold uppercase tracking-widest ${theme.cs_metaLabel}`}>
+          {label}
+        </span>
       </div>
       {children ?? (
         <p className={`text-sm font-medium leading-relaxed break-all ${
-          mono ? "font-mono text-xs text-emerald-300" : "text-gray-100"
+          mono ? theme.cs_metaMono : theme.cs_metaValue
         }`}>
           {value ?? "—"}
         </p>
@@ -104,6 +111,7 @@ function MetaField({ icon, label, value, mono, children }) {
 function CommentSection({ commentSectionView, setCommentSectionView }) {
   const { sample } = commentSectionView;
   const { currentUser } = useSelector((state) => state.auth);
+  const { theme } = useTheme();   // ← consume theme
 
   const COMMENT_ROLES = [
     "SUPER_ADMIN","HEAD_RESEARCHER","SUPERVISOR",
@@ -112,11 +120,11 @@ function CommentSection({ commentSectionView, setCommentSectionView }) {
   ];
   const canComment = COMMENT_ROLES.includes(currentUser?.role);
 
-  const [fetchedComments, setFetchedComments]   = useState([]);
-  const [loading, setLoading]                   = useState(false);
-  const [writtenComment, setWrittenComment]     = useState("");
-  const [isFocused, setIsFocused]               = useState(false);
-  const [submitting, setSubmitting]             = useState(false);
+  const [fetchedComments, setFetchedComments] = useState([]);
+  const [loading, setLoading]                 = useState(false);
+  const [writtenComment, setWrittenComment]   = useState("");
+  const [isFocused, setIsFocused]             = useState(false);
+  const [submitting, setSubmitting]           = useState(false);
 
   /* ── fetch ── */
   const fetchComments = async () => {
@@ -154,12 +162,8 @@ function CommentSection({ commentSectionView, setCommentSectionView }) {
     ? `${sample.lga.name}, ${sample?.state?.name}`
     : sample?.state?.name;
 
-  const reviewCfg       = REVIEW_CONFIG[sample?.review?.status]       ?? REVIEW_CONFIG.PENDING;
-  const contaminCfg     = CONTAMINATION_CONFIG[sample?.contaminationStatus] ?? CONTAMINATION_CONFIG.SAFE;
-
   return (
     <>
-      {/* Toast provider — place once near root; safe to put here for isolation */}
       <Toaster
         position="top-right"
         toastOptions={{
@@ -175,23 +179,26 @@ function CommentSection({ commentSectionView, setCommentSectionView }) {
         }}
       />
 
-      <div className="min-h-screen bg-[#080c12] text-white" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <div
+        className={`min-h-screen ${theme.cs_pageBg} text-white transition-colors duration-300`}
+        style={{ fontFamily: "'DM Sans', sans-serif" }}
+      >
 
         {/* ── top nav ── */}
-        <div className="sticky top-0 z-20 bg-[#080c12]/80 backdrop-blur-xl border-b border-white/[0.05]">
+        <div className={`sticky top-0 z-20 ${theme.cs_navBg} backdrop-blur-xl border-b ${theme.cs_navBorder}`}>
           <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
             <button
               onClick={() => setCommentSectionView({ isOpen: false, sample: null })}
-              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors group"
+              className={`flex items-center gap-2 transition-colors group ${theme.cs_navBackIcon}`}
             >
-              <div className="w-7 h-7 rounded-lg bg-white/5 group-hover:bg-white/10 flex items-center justify-center transition-colors">
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${theme.cs_navBackBtn}`}>
                 <ArrowLeft className="w-3.5 h-3.5" />
               </div>
               <span className="text-sm font-medium hidden sm:inline">Back to Samples</span>
             </button>
 
-            <div className="h-4 w-px bg-white/[0.08] hidden sm:block" />
-            <span className="text-[11px] text-gray-500 font-mono hidden sm:block truncate">
+            <div className={`h-4 w-px hidden sm:block ${theme.cs_navBorder}`} />
+            <span className={`text-[11px] font-mono hidden sm:block truncate ${theme.cs_navSampleId}`}>
               {sample.sampleId?.slice(0, 8)}…
             </span>
 
@@ -203,45 +210,46 @@ function CommentSection({ commentSectionView, setCommentSectionView }) {
 
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-7 space-y-4">
 
-          {/* ════════════════════════════════════════════════
-              SAMPLE IDENTITY CARD
-          ════════════════════════════════════════════════ */}
-          <div className="rounded-2xl bg-[#0e1420] border border-white/[0.06] overflow-hidden">
+          {/* ════════ SAMPLE IDENTITY CARD ════════ */}
+          <div className={`rounded-2xl ${theme.cs_cardBg} border ${theme.cs_cardBorder} overflow-hidden`}>
 
             {/* card header */}
-            <div className="px-5 py-4 border-b border-white/[0.05] flex items-center justify-between gap-2">
+            <div className={`px-5 py-4 border-b ${theme.cs_cardHeaderBorder} flex items-center justify-between gap-2`}>
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-indigo-500/10 flex items-center justify-center">
-                  <Beaker className="w-3.5 h-3.5 text-indigo-400" />
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${theme.cs_iconWellIndigo}`}>
+                  <Beaker className={`w-3.5 h-3.5 ${theme.cs_iconIndigo}`} />
                 </div>
-                <h2 className="text-sm font-semibold text-white">Sample Overview</h2>
+                <h2 className={`text-sm font-semibold ${theme.cs_sectionHeading}`}>Sample Overview</h2>
               </div>
               <StatusBadge status={sample?.contaminationStatus} configMap={CONTAMINATION_CONFIG} />
             </div>
 
             {/* product hero row */}
-            <div className="px-5 pt-5 pb-4 flex flex-col sm:flex-row sm:items-start gap-4 border-b border-white/[0.05]">
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/10 border border-indigo-500/15 flex items-center justify-center flex-shrink-0">
-                <FlaskConical className="w-5 h-5 text-indigo-300" />
+            <div className={`px-5 pt-5 pb-4 flex flex-col sm:flex-row sm:items-start gap-4 border-b ${theme.cs_cardHeaderBorder}`}>
+              <div className={`w-11 h-11 rounded-xl border flex items-center justify-center flex-shrink-0 ${theme.cs_heroIconWell}`}>
+                <FlaskConical className={`w-5 h-5 ${theme.cs_heroIcon}`} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-base font-bold text-white leading-tight">{sample.productName ?? "—"}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{sample.productVariant?.displayName ?? "—"}</p>
+                <p className={`text-base font-bold leading-tight ${theme.cs_productName}`}>
+                  {sample.productName ?? "—"}
+                </p>
+                <p className={`text-xs mt-0.5 ${theme.cs_productVariant}`}>
+                  {sample.productVariant?.displayName ?? "—"}
+                </p>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-purple-500/10 border border-purple-500/15 text-purple-300">
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${theme.cs_marketTypeBadge}`}>
                     {sample.marketType ?? "—"}
                   </span>
                   {sample.marketName && (
-                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-white/5 text-gray-400 capitalize">
+                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md capitalize ${theme.cs_marketNameBadge}`}>
                       {sample.marketName}
                     </span>
                   )}
                 </div>
               </div>
-              {/* price */}
               <div className="sm:text-right flex-shrink-0">
-                <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Price</p>
-                <p className="text-sm font-semibold text-gray-200">
+                <p className={`text-[10px] uppercase tracking-widest mb-1 ${theme.cs_priceLabel}`}>Price</p>
+                <p className={`text-sm font-semibold ${theme.cs_priceValue}`}>
                   {sample.price !== null && sample.price !== undefined ? `₦${sample.price}` : "—"}
                 </p>
               </div>
@@ -249,23 +257,9 @@ function CommentSection({ commentSectionView, setCommentSectionView }) {
 
             {/* fields grid */}
             <div className="p-5 grid grid-cols-2 gap-x-6 gap-y-5">
-              <MetaField
-                icon={<Hash className="w-3.5 h-3.5" />}
-                label="Sample ID"
-                value={sample.sampleId}
-                mono
-              />
-              <MetaField
-                icon={<Tag className="w-3.5 h-3.5" />}
-                label="Code"
-                value={sample.code}
-                mono
-              />
-              <MetaField
-                icon={<MapPin className="w-3.5 h-3.5" />}
-                label="Location"
-                value={locationStr}
-              />
+              <MetaField icon={<Hash className="w-3.5 h-3.5" />}    label="Sample ID"       value={sample.sampleId}  mono />
+              <MetaField icon={<Tag className="w-3.5 h-3.5" />}     label="Code"            value={sample.code}      mono />
+              <MetaField icon={<MapPin className="w-3.5 h-3.5" />}  label="Location"        value={locationStr} />
               <MetaField
                 icon={<Calendar className="w-3.5 h-3.5" />}
                 label="Collected"
@@ -293,25 +287,26 @@ function CommentSection({ commentSectionView, setCommentSectionView }) {
                   : "—"}
                 mono
               />
-
-              {/* heavy metals — spans full width */}
               <div className="col-span-2">
                 <MetalReadings readings={sample.heavyMetalReadings} />
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl bg-[#0e1420] border border-white/[0.06] overflow-hidden">
+          {/* ════════ COMMENTS CARD ════════ */}
+          <div className={`rounded-2xl ${theme.cs_cardBg} border ${theme.cs_cardBorder} overflow-hidden`}>
 
             {/* card header */}
-            <div className="px-5 py-4 border-b border-white/[0.05] flex items-center justify-between">
+            <div className={`px-5 py-4 border-b ${theme.cs_cardHeaderBorder} flex items-center justify-between`}>
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                  <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${theme.cs_iconWellEmerald}`}>
+                  <MessageSquare className={`w-3.5 h-3.5 ${theme.cs_iconEmerald}`} />
                 </div>
-                <h2 className="text-sm font-semibold text-white">Comments & Remarks</h2>
+                <h2 className={`text-sm font-semibold ${theme.cs_sectionHeading}`}>
+                  Comments &amp; Remarks
+                </h2>
               </div>
-              <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border ${theme.cs_commentsBadge}`}>
                 {fetchedComments.length} {fetchedComments.length === 1 ? "comment" : "comments"}
               </span>
             </div>
@@ -321,18 +316,18 @@ function CommentSection({ commentSectionView, setCommentSectionView }) {
 
               {loading && (
                 <div className="flex flex-col items-center justify-center py-16 gap-3">
-                  <Loader className="w-5 h-5 text-emerald-400 animate-spin" />
-                  <p className="text-xs text-gray-500">Loading comments…</p>
+                  <Loader className={`w-5 h-5 animate-spin ${theme.emeraldText}`} />
+                  <p className={`text-xs ${theme.cs_emptyTitle}`}>Loading comments…</p>
                 </div>
               )}
 
               {!loading && fetchedComments.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-16 gap-2">
-                  <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
-                    <MessageSquare className="w-5 h-5 text-gray-600" />
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${theme.cs_emptyIconWell}`}>
+                    <MessageSquare className={`w-5 h-5 ${theme.cs_emptyIcon}`} />
                   </div>
-                  <p className="text-sm text-gray-500 font-medium">No comments yet</p>
-                  <p className="text-xs text-gray-600">Be the first to leave a remark</p>
+                  <p className={`text-sm font-medium ${theme.cs_emptyTitle}`}>No comments yet</p>
+                  <p className={`text-xs ${theme.cs_emptySubtitle}`}>Be the first to leave a remark</p>
                 </div>
               )}
 
@@ -343,7 +338,6 @@ function CommentSection({ commentSectionView, setCommentSectionView }) {
                       key={comment.id}
                       comment={comment}
                       fetchComments={fetchComments}
-                      /* pass toast so Comments can call toast.success/error for delete */
                       toast={toast}
                     />
                   ))}
@@ -352,28 +346,28 @@ function CommentSection({ commentSectionView, setCommentSectionView }) {
             </div>
 
             {/* compose */}
-            <div className="px-5 pb-5 pt-3 border-t border-white/[0.05]">
+            <div className={`px-5 pb-5 pt-3 border-t ${theme.cs_cardHeaderBorder}`}>
               {!canComment ? (
-                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/15">
-                  <Lock className="w-4 h-4 text-amber-400/70 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-amber-300/70 leading-relaxed">
+                <div className={`flex items-start gap-3 p-3.5 rounded-xl border ${theme.cs_lockedBg}`}>
+                  <Lock className={`w-4 h-4 flex-shrink-0 mt-0.5 ${theme.cs_lockedIcon}`} />
+                  <p className={`text-xs leading-relaxed ${theme.cs_lockedText}`}>
                     Only supervisors, researchers, and policy makers can add comments.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-widest">
+                  <label className={`block text-[10px] font-semibold uppercase tracking-widest ${theme.cs_composeLabel}`}>
                     Add Remark
                   </label>
                   <div
-                    className={`flex items-end gap-2 rounded-xl border transition-colors bg-gray-800/40 px-3 py-2 ${
-                      isFocused ? "border-emerald-500/40" : "border-white/[0.06] hover:border-white/10"
-                    }`}
+                    className={`flex items-end gap-2 rounded-xl border transition-colors px-3 py-2 ${
+                      theme.cs_composeTextareaBg
+                    } ${isFocused ? theme.cs_composeTextareaFocused : ""}`}
                   >
                     <textarea
                       rows={2}
                       placeholder="Write your comment or remark…"
-                      className="flex-1 bg-transparent text-sm text-gray-100 placeholder-gray-600 resize-none outline-none leading-relaxed"
+                      className={`flex-1 bg-transparent text-sm resize-none outline-none leading-relaxed ${theme.cs_composePlaceholder} ${theme.cs_composeText}`}
                       value={writtenComment}
                       onChange={(e) => setWrittenComment(e.target.value)}
                       onFocus={() => setIsFocused(true)}
@@ -388,7 +382,11 @@ function CommentSection({ commentSectionView, setCommentSectionView }) {
                     <button
                       onClick={handleSubmitComment}
                       disabled={!writtenComment.trim() || submitting}
-                      className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-emerald-500 hover:bg-emerald-400 disabled:bg-gray-700 disabled:cursor-not-allowed disabled:text-gray-500 text-white shadow-lg shadow-emerald-500/20 disabled:shadow-none"
+                      className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all shadow-lg ${
+                        !writtenComment.trim() || submitting
+                          ? theme.cs_composeSendDisabled
+                          : theme.cs_composeSendBtn
+                      }`}
                     >
                       {submitting
                         ? <Loader className="w-3.5 h-3.5 animate-spin" />
@@ -396,7 +394,9 @@ function CommentSection({ commentSectionView, setCommentSectionView }) {
                       }
                     </button>
                   </div>
-                  <p className="text-[10px] text-gray-600">Press Enter to submit · Shift+Enter for new line</p>
+                  <p className={`text-[10px] ${theme.cs_composeHint}`}>
+                    Press Enter to submit · Shift+Enter for new line
+                  </p>
                 </div>
               )}
             </div>
