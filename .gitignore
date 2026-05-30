@@ -31,3 +31,8 @@ dist-ssr
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# Environment files
+.env
+.env.*
+!.env.exampl
