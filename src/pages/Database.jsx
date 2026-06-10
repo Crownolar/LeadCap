@@ -27,6 +27,10 @@ const Database = () => {
   const [fetchStateError, setFetchStateError] = useState(false);
   const [selectedSample, setSelectedSample] = useState(null);
 
+  //
+  const [loadingMore, setLoadingMore] = useState(null);
+  const [loadingMoreError, setLoadingMoreError] = useState(null);
+
   // search
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -72,8 +76,8 @@ const Database = () => {
   const handleFetchMore = async () => {
     if (loading) return;
     if (!pagination.hasNextPage) return;
-    setLoading(true);
-    setFetchSampleError(false);
+    setLoadingMore(true);
+    setLoadingMoreError(false);
 
     try {
       const params = {
@@ -92,48 +96,12 @@ const Database = () => {
         });
       }
     } catch (err) {
-      fetchSampleError(true);
+      setLoadingMoreError(true);
     } finally {
-      setLoading(false);
+      setLoadingMore(false);
     }
   };
 
-  // const handleSearch = async () => {
-  //   setSamples([]);
-  //   setLoading(true);
-  //   setFetchSampleError(false);
-  //   try {
-  //     let params = {
-  //       take: pagination.take,
-  //       skip: pagination.skip,
-  //       q: searchQuery ? searchQuery : undefined,
-  //     };
-  //     console.log(debouncedQuery);
-  //     let res;
-  //     if (!debouncedQuery) {
-  //       res = await api.get("/samples", { params });
-  //     } else {
-  //       res = await api.get("/samples/search", { params });
-  //     }
-
-  //     if (res.data?.data) {
-  //       setSamples(res.data.data);
-  //       setPagination({
-  //         totalPages: res.data.pagination?.totalCount || 0,
-  //         hasNextPage: res.data.pagination?.hasNextPage || null,
-  //         skip: res.data.pagination?.skip,
-  //         take: res.data.pagination?.take,
-  //       });
-  //     }
-  //   } catch (err) {
-  //     setFetchSampleError(err.message || "Failed to fetch samples");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  console.log("skip", pagination.skip);
-  console.log("take", pagination.take);
   useEffect(() => {
     if (searchQuery) {
       console.log("search is true");
@@ -206,6 +174,8 @@ const Database = () => {
         setSearchTerm={setSearchQuery}
         // load-more props
         handleFetchMore={handleFetchMore}
+        loadingMore={loadingMore}
+        loadingMoreError={loadingMoreError}
         skip={pagination.skip}
         take={pagination.take}
         totalItems={pagination.totalItems || 0}

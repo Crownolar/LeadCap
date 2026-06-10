@@ -45,6 +45,8 @@ const DatabaseView = ({
   setSearchTerm,
   // new props for load-more
   handleFetchMore,
+  loadingMore,
+  loadingMoreError,
   skip,
   take,
   totalItems,
@@ -431,14 +433,13 @@ const DatabaseView = ({
                   })}
                 </tbody>
               </table>
-              {filteredSamples?.length !== 0 && (
+
+              {fetchSampleError && (
                 <div className='py-3 flex justify-center'>
-                  {fetchSampleError && (
-                    <p className='text-sm mt-1 text-red-600'>
-                      Error occurred while fetching more samples. Check
-                      connection and refresh
-                    </p>
-                  )}
+                  <p className='text-sm mt-1 text-red-600'>
+                    Error occurred while fetching more samples. Check connection
+                    and refresh
+                  </p>
                 </div>
               )}
             </div>
@@ -569,17 +570,35 @@ const DatabaseView = ({
                   );
                 })}
             </div>
-            {filteredSamples?.length !== 0 && (
-              <div className='py-3 flex justify-center sm:hidden'>
-                {fetchSampleError && (
-                  <p className='text-sm mt-1 text-red-600'>
-                    Error occurred while fetching more samples. Check connection
-                    and refresh
-                  </p>
-                )}
+            {/* {!fetchSampleError && filteredSamples?.length == 0 && (
+              <div className='py-3 flex justify-center'>
+                <p className='text-sm mt-1 text-red-600'>
+                  No samples availiable.
+                </p>
+              </div>
+            )} */}
+            {fetchSampleError && (
+              <div className='py-3 flex justify-center'>
+                <p className='text-sm mt-1 text-red-600'>
+                  Error occurred while fetching more samples. Check connection
+                  and refresh
+                </p>
               </div>
             )}
-            {
+            {loadingMore && (
+              <div className='flex items-center justify-center h-48'>
+                <Loader className='animate-spin mr-2  size-10' />
+              </div>
+            )}
+            {loadingMoreError && (
+              <div className='py-3 flex justify-center'>
+                <p className='text-sm mt-1 text-red-600'>
+                  Error occurred while fetching more samples. Check connection
+                  and refresh
+                </p>
+              </div>
+            )}
+            {!fetchSampleError && !loading && filteredSamples?.length > 0 && (
               <button
                 onClick={handleFetchMore}
                 disabled={!pagination.hasNextPage}
@@ -591,7 +610,7 @@ const DatabaseView = ({
               >
                 {loading ? "Loading ..." : "Load More"}
               </button>
-            }
+            )}
           </div>
           {filteredSamples?.length === 0 && !loading && (
             <h2 className='text-center text-gray-500'>
