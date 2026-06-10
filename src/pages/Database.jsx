@@ -12,9 +12,13 @@ const Database = () => {
   const [samples, setSamples] = useState([]);
   const [loading, setLoading] = useState(false);
   const [fetchSampleError, setFetchSampleError] = useState(false);
+  const [pagination, setPagination] = useState({
+    totalPages: 0,
+    hasNextPage: false,
+    skip: 0,
+    take: 20,
+  });
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
   const [filterState, setFilterState] = useState("all");
   const [filterProductVariant, setFilterProductVariant] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
@@ -23,20 +27,37 @@ const Database = () => {
   const [fetchStateError, setFetchStateError] = useState(false);
   const [selectedSample, setSelectedSample] = useState(null);
 
+  // search
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
+  // initital load
   useEffect(() => {
-    let params = { page: pagination.page, limit: 50 };
     const fetchSamplesData = async () => {
+      setSamples([]);
       setLoading(true);
       setFetchSampleError(false);
       try {
-        const response = await api.get("/samples", { params });
-        if (response.data.success) {
-          setSamples((prev) => [...prev, ...response.data.data]);
-          if (pagination.page === 1) {
-            setPagination(
-              response.data.pagination || { page: 1, totalPages: 1 },
-            );
-          }
+        const params = {
+          take: 20,
+          skip: pagination.skip + pagination.take - 20,
+          q: searchQuery ? searchQuery : undefined,
+        };
+        let response;
+        if (!debouncedQuery) {
+          response = await api.get("/samples", { params });
+        } else {
+          response = await api.get("/samples/search", { params });
+        }
+
+        if (response.data?.data) {
+          setSamples(response.data.data);
+          setPagination({
+            totalPages: response.data.pagination?.totalCount || 0,
+            hasNextPage: response.data.pagination?.hasNextPage || null,
+            skip: response.data.pagination?.skip,
+            take: response.data.pagination?.take,
+          });
         }
       } catch (err) {
         setFetchSampleError(err.message || "Failed to fetch samples");
@@ -46,7 +67,80 @@ const Database = () => {
     };
 
     fetchSamplesData();
-  }, [pagination.page]);
+  }, [debouncedQuery]);
+
+  const handleFetchMore = async () => {
+    if (loading) return;
+    if (!pagination.hasNextPage) return;
+    setLoading(true);
+    setFetchSampleError(false);
+
+    try {
+      const params = {
+        take: 20,
+        skip: pagination.skip + 20,
+        q: searchQuery ? searchQuery : undefined,
+      };
+      const response = await api.get("/samples", { params });
+      if (response.data.success) {
+        setSamples((prev) => [...prev, ...response.data.data]);
+        setPagination({
+          totalPages: response.data.pagination?.totalCount || 0,
+          hasNextPage: response.data.pagination?.hasNextPage || null,
+          skip: response.data.pagination?.skip,
+          take: response.data.pagination?.take,
+        });
+      }
+    } catch (err) {
+      fetchSampleError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // const handleSearch = async () => {
+  //   setSamples([]);
+  //   setLoading(true);
+  //   setFetchSampleError(false);
+  //   try {
+  //     let params = {
+  //       take: pagination.take,
+  //       skip: pagination.skip,
+  //       q: searchQuery ? searchQuery : undefined,
+  //     };
+  //     console.log(debouncedQuery);
+  //     let res;
+  //     if (!debouncedQuery) {
+  //       res = await api.get("/samples", { params });
+  //     } else {
+  //       res = await api.get("/samples/search", { params });
+  //     }
+
+  //     if (res.data?.data) {
+  //       setSamples(res.data.data);
+  //       setPagination({
+  //         totalPages: res.data.pagination?.totalCount || 0,
+  //         hasNextPage: res.data.pagination?.hasNextPage || null,
+  //         skip: res.data.pagination?.skip,
+  //         take: res.data.pagination?.take,
+  //       });
+  //     }
+  //   } catch (err) {
+  //     setFetchSampleError(err.message || "Failed to fetch samples");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  console.log("skip", pagination.skip);
+  console.log("take", pagination.take);
+  useEffect(() => {
+    if (searchQuery) {
+      console.log("search is true");
+      setDebouncedQuery(searchQuery.trim());
+      setPagination((prev) => ({ ...prev, skip: 0 }));
+    }
+  }, [searchQuery]);
 
   useEffect(() => {
     const fetchStates = async () => {
@@ -63,11 +157,8 @@ const Database = () => {
     fetchStates();
   }, []);
 
+  // console.log(samples);
   const filteredSamplesArray = samples.filter((sample) => {
-    const matchesSearch =
-      sample.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sample.id?.toLowerCase().includes(searchTerm.toLowerCase());
-
     const matchesState =
       filterState === "all" || sample.state.id === filterState;
 
@@ -76,19 +167,14 @@ const Database = () => {
       sample.productVariantId === filterProductVariant;
 
     const matchesStatus =
-      filterStatus === "all" || sample.status === filterStatus;
+      filterStatus === "all" ||
+      sample.contaminationStatus?.toLowerCase() === filterStatus;
 
     const matchCategory =
       filterCategory === "all" ||
       sample.productVariant.categoryId === filterCategory;
 
-    return (
-      matchesSearch &&
-      matchCategory &&
-      matchesState &&
-      matchesProduct &&
-      matchesStatus
-    );
+    return matchCategory && matchesState && matchesProduct && matchesStatus;
   });
 
   return (
@@ -96,11 +182,10 @@ const Database = () => {
       <DatabaseView
         theme={theme}
         loading={loading}
+        fetchSampleError={fetchSampleError}
         samples={samples}
         states={states}
         currentUser={currentUser}
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
         filterState={filterState}
         setFilterState={setFilterState}
         filterProductVariant={filterProductVariant}
@@ -113,9 +198,17 @@ const Database = () => {
         selectedSample={selectedSample}
         setSelectedSample={setSelectedSample}
         fetchStateError={fetchStateError}
+        // pagination
         pagination={pagination}
         setPagination={setPagination}
-        fetchSampleError={fetchSampleError}
+        // search query
+        searchTerm={searchQuery}
+        setSearchTerm={setSearchQuery}
+        // load-more props
+        handleFetchMore={handleFetchMore}
+        skip={pagination.skip}
+        take={pagination.take}
+        totalItems={pagination.totalItems || 0}
       />
     </div>
   );

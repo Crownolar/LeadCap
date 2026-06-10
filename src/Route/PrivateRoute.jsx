@@ -12,7 +12,7 @@ const PrivateRoute = ({ children, allowedRoles = [] }) => {
   const location = useLocation();
 
   if (!isAuthenticated) {
-    return <Navigate to="/auth" replace />;
+    return <Navigate to='/auth' replace />;
   }
 
   if (!currentUser) return null;
@@ -33,7 +33,7 @@ const PrivateRoute = ({ children, allowedRoles = [] }) => {
   ) {
     const blockedRoutes = ["/reports", "/database", "/agents"];
     if (blockedRoutes.includes(location.pathname)) {
-      return <Navigate to="/dashboard" replace />;
+      return <Navigate to='/dashboard' replace />;
     }
   }
 
@@ -41,7 +41,7 @@ const PrivateRoute = ({ children, allowedRoles = [] }) => {
   if (normalizedRole === "supervisor") {
     const blockedRoutes = ["/invitecodes", "/reports"];
     if (blockedRoutes.includes(location.pathname)) {
-      return <Navigate to="/collectors" replace />;
+      return <Navigate to='/collectors' replace />;
     }
   }
 
@@ -50,7 +50,7 @@ const PrivateRoute = ({ children, allowedRoles = [] }) => {
     const normalizedAllowedRoles = allowedRoles.map(normalizeRole);
 
     if (!normalizedAllowedRoles.includes(normalizedRole)) {
-      return <Navigate to="/" replace />;
+      return <Navigate to='/' replace />;
     }
   }
 
