@@ -13,7 +13,7 @@ const Database = () => {
   const [loading, setLoading] = useState(false);
   const [fetchSampleError, setFetchSampleError] = useState(false);
   const [pagination, setPagination] = useState({
-    totalPages: 0,
+    totalCount: 0,
     hasNextPage: false,
     skip: 0,
     take: 20,
@@ -57,7 +57,7 @@ const Database = () => {
         if (response.data?.data) {
           setSamples(response.data.data);
           setPagination({
-            totalPages: response.data.pagination?.totalCount || 0,
+            totalCount: response.data.pagination?.totalCount || 0,
             hasNextPage: response.data.pagination?.hasNextPage || null,
             skip: response.data.pagination?.skip,
             take: response.data.pagination?.take,
@@ -89,7 +89,7 @@ const Database = () => {
       if (response.data.success) {
         setSamples((prev) => [...prev, ...response.data.data]);
         setPagination({
-          totalPages: response.data.pagination?.totalCount || 0,
+          totalCount: response.data.pagination?.totalCount || 0,
           hasNextPage: response.data.pagination?.hasNextPage || null,
           skip: response.data.pagination?.skip,
           take: response.data.pagination?.take,
@@ -103,11 +103,12 @@ const Database = () => {
   };
 
   useEffect(() => {
-    if (searchQuery) {
-      console.log("search is true");
+    const timer = setTimeout(() => {
       setDebouncedQuery(searchQuery.trim());
       setPagination((prev) => ({ ...prev, skip: 0 }));
-    }
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, [searchQuery]);
 
   useEffect(() => {
@@ -125,7 +126,6 @@ const Database = () => {
     fetchStates();
   }, []);
 
-  // console.log(samples);
   const filteredSamplesArray = samples.filter((sample) => {
     const matchesState =
       filterState === "all" || sample.state.id === filterState;
@@ -178,7 +178,7 @@ const Database = () => {
         loadingMoreError={loadingMoreError}
         skip={pagination.skip}
         take={pagination.take}
-        totalItems={pagination.totalItems || 0}
+        totalItems={pagination.totalCount || 0}
       />
     </div>
   );

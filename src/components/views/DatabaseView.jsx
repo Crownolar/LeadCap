@@ -297,6 +297,12 @@ const DatabaseView = ({
 
       {!fetchSampleError && (
         <>
+          {!loading && (
+            <h1>
+              Showing {filteredSamples.length} of {totalItems}{" "}
+            </h1>
+          )}
+
           <div
             className={`${theme?.card} rounded-lg shadow-md border ${theme?.border}`}
           >
@@ -323,7 +329,7 @@ const DatabaseView = ({
                   </tr>
                 </thead>
                 {/* desktop view */}
-                <tbody className='divide-y divide-gray-200 dark:divide-gray-700'>
+                <tbody className='divide-y divide-gray-200 dark:divide-gray-700 '>
                   {filteredSamples?.map((sample, i) => {
                     const maxReading = getMaxReading(
                       sample?.heavyMetalReadings,
@@ -570,13 +576,7 @@ const DatabaseView = ({
                   );
                 })}
             </div>
-            {/* {!fetchSampleError && filteredSamples?.length == 0 && (
-              <div className='py-3 flex justify-center'>
-                <p className='text-sm mt-1 text-red-600'>
-                  No samples availiable.
-                </p>
-              </div>
-            )} */}
+
             {fetchSampleError && (
               <div className='py-3 flex justify-center'>
                 <p className='text-sm mt-1 text-red-600'>
