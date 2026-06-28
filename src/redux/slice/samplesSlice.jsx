@@ -110,6 +110,7 @@ export const createSample = createAsyncThunk(
       const response = await api.post("/samples", payload);
       return response.data.data;
     } catch (err) {
+      console.error("Create sample error:", err?.response?.data);
       return rejectWithValue(
         extractErrorMessage(err, "Failed to create sample"),
       );
