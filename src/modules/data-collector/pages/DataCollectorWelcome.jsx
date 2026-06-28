@@ -1,3 +1,12 @@
+/**
+ * DataCollectorWelcome.jsx
+ * ─────────────────────────
+ * Animated splash screen shown immediately after login.
+ * Auto-redirects to /data-collector after 3 seconds.
+ *
+ * No changes to logic from the original — only moved into the module.
+ */
+
 import { motion } from "framer-motion";
 import { Beaker } from "lucide-react";
 import { useEffect } from "react";
