@@ -15,7 +15,7 @@ import { useSelector } from "react-redux";
 import { useTheme } from "../../context/ThemeContext";
 import NavItem from "../common/NavItem";
 import { useState } from "react";
-import CollectorPickerModal from "../views/supervisor/pages/CollectorPickerModal";
+import { CollectorPickerModal } from "../../modules/supervisor";
 import { useLocation } from "react-router";
 
 const roleConfig = {
