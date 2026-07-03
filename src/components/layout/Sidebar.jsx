@@ -14,6 +14,9 @@ import {
 import { useSelector } from "react-redux";
 import { useTheme } from "../../context/ThemeContext";
 import NavItem from "../common/NavItem";
+import { useState } from "react";
+import { CollectorPickerModal } from "../../modules/supervisor";
+import { useLocation } from "react-router";
 
 const roleConfig = {
   superadmin: {
@@ -101,6 +104,7 @@ const Sidebar = ({
     .replace(/[\s_.-]/g, "");
   const config = roleConfig[normalizedRole] || roleConfig.superadmin;
   const { theme, darkMode } = useTheme();
+  const [showCollectorPicker, setShowCollectorPicker] = useState(false);
 
   const allNavItems = [
     {
@@ -109,7 +113,6 @@ const Sidebar = ({
       route: "/dashboard",
       key: "dashboard",
     },
-
     {
       icon: Beaker,
       label: "My Samples",
@@ -231,44 +234,76 @@ const Sidebar = ({
   const navItemsToRender = allNavItems.filter((item) =>
     config.navItems.includes(item.key),
   );
+
   const handleSampleButtonClick = () => {
     setShowForm(true);
     setMobileMenuOpen(false);
+  };
+
+  const location = useLocation();
+
+  const renderNavItem = (item) => {
+    if (item.key === "sample-review") {
+      const isActive =
+        location.pathname === "/sample-review" ||
+        location.pathname.startsWith("/sample-review/");
+
+      return (
+        <button
+          key={item.key}
+          onClick={() => {
+            setShowCollectorPicker(true);
+            setMobileMenuOpen(false);
+          }}
+          className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+            isActive
+              ? darkMode
+                ? "bg-emerald-600 text-white"
+                : "bg-emerald-500 text-white"
+              : `${theme?.text} ${theme?.hover}`
+          }`}
+        >
+          <item.icon className="w-5 h-5" />
+          <span className="font-medium">Review Samples</span>
+        </button>
+      );
+    }
+
+    return (
+      <NavItem
+        key={item.key}
+        icon={item.icon}
+        label={item.label}
+        route={item.route}
+        setMobileMenuOpen={setMobileMenuOpen}
+        darkMode={darkMode}
+        theme={theme}
+      />
+    );
   };
 
   return (
     <>
       {mobileMenuOpen && (
         <div
-          className='fixed  inset-0 z-[2000] bg-black/40 lg:hidden'
+          className="fixed inset-0 z-[2000] bg-black/40 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
-      <div className='hidden lg:block w-64 shrink-0 pt-5'>
+      <div className="hidden lg:block w-64 shrink-0 pt-5">
         <aside
           className={`
             sticky top-24 z-30
             w-64 h-[calc(100vh-7rem)]
             border lg:border rounded-lg
-            shadow-md
-            p-4
+            shadow-md p-4
             flex flex-col
             ${theme?.card} ${theme?.border}
           `}
         >
-          <nav className='space-y-2 flex-1 min-h-0 overflow-y-auto scrollbar-hide pr-1'>
-            {navItemsToRender.map((item) => (
-              <NavItem
-                key={item.key}
-                icon={item.icon}
-                label={item.label}
-                route={item.route}
-                setMobileMenuOpen={setMobileMenuOpen}
-                darkMode={darkMode}
-                theme={theme}
-              />
-            ))}
+          <nav className="space-y-2 flex-1 min-h-0 overflow-y-auto scrollbar-hide pr-1">
+            {navItemsToRender.map((item) => renderNavItem(item))}
           </nav>
 
           <div
@@ -277,9 +312,9 @@ const Sidebar = ({
             {config.sampleButton && (
               <button
                 onClick={handleSampleButtonClick}
-                className='w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors'
+                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
               >
-                <Plus className='w-5 h-5' />
+                <Plus className="w-5 h-5" />
                 New Sample
               </button>
             )}
@@ -289,7 +324,7 @@ const Sidebar = ({
                 onClick={() => excelImportRef?.current?.click()}
                 className={`w-full border ${theme?.border} font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 ${theme?.text} transition-colors ${theme?.hover}`}
               >
-                <Upload className='w-5 h-5' />
+                <Upload className="w-5 h-5" />
                 Import Excel
               </button>
             )}
@@ -297,39 +332,21 @@ const Sidebar = ({
         </aside>
       </div>
 
-      {/* mobile sidebar */}
       <aside
         className={`
           fixed top-16 left-0 z-[2000] pt-6
           h-[calc(100vh-4rem)] w-64
-          shadow-xl
-          p-4
+          shadow-xl p-4
           flex flex-col
           transform transition-transform duration-300 ease-in-out
           lg:hidden
-         
           ${theme?.card} ${theme?.border}
           ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
-        <div className='flex flex-col h-full min-h-0'>
-          <nav
-            className='
-              space-y-2 pr-1 overflow-y-auto scrollbar-hide
-              max-h-[min(70vh,calc(100vh-10rem))]
-            '
-          >
-            {navItemsToRender.map((item) => (
-              <NavItem
-                key={item.key}
-                icon={item.icon}
-                label={item.label}
-                route={item.route}
-                setMobileMenuOpen={setMobileMenuOpen}
-                darkMode={darkMode}
-                theme={theme}
-              />
-            ))}
+        <div className="flex flex-col h-full min-h-0">
+          <nav className="space-y-2 pr-1 overflow-y-auto scrollbar-hide max-h-[min(70vh,calc(100vh-10rem))]">
+            {navItemsToRender.map((item) => renderNavItem(item))}
           </nav>
 
           <div
@@ -338,9 +355,9 @@ const Sidebar = ({
             {config.sampleButton && (
               <button
                 onClick={handleSampleButtonClick}
-                className='w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors'
+                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
               >
-                <Plus className='w-5 h-5' />
+                <Plus className="w-5 h-5" />
                 New Sample
               </button>
             )}
@@ -350,13 +367,17 @@ const Sidebar = ({
                 onClick={() => excelImportRef?.current?.click()}
                 className={`w-full border ${theme?.border} font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 ${theme?.text} transition-colors ${theme?.hover}`}
               >
-                <Upload className='w-5 h-5' />
+                <Upload className="w-5 h-5" />
                 Import Excel
               </button>
             )}
           </div>
         </div>
       </aside>
+
+      {showCollectorPicker && (
+        <CollectorPickerModal onClose={() => setShowCollectorPicker(false)} />
+      )}
     </>
   );
 };

@@ -12,18 +12,24 @@ import Reports from "./components/views/Reports";
 import Database from "./pages/Database";
 import PolicyWelcome from "./pages/PolicyWelcome";
 import HeavyMetalFormModalNew from "./components/modals/lab-result_modal/HeavyMetalFormModalNew";
-import DataCollectorDashboard from "./pages/DataCollectorDashboard";
-import DataCollectorWelcome from "./pages/DataCollectorWelcome";
+import {
+  DataCollectorDashboard,
+  DataCollectorWelcome,
+} from "./modules/data-collector";
 import ThresholdManagement from "./components/views/ThresholdManagement";
 import InviteCodeManagement from "./components/views/InviteCodeManagement";
-import SupervisorDashboard from "./components/views/supervisor/pages/SupervisorDashboard";
-import CollectorManagement from "./components/views/supervisor/pages/CollectorManagement";
-import SampleReview from "./components/views/supervisor/pages/SampleReview";
-import LabAnalystDashboard from "./components/views/LabAnalystDashboard";
-import LabConfirmationForm from "./components/views/LabConfirmationForm";
+import {
+  SupervisorDashboard,
+  CollectorManagement,
+  SampleReview,
+} from "./modules/supervisor";
+import {
+  LabAnalystDashboard,
+  LabConfirmationForm,
+  LabWorkloadAnalytics,
+} from "./modules/lab-analyst";
 import { EnumsProvider } from "./context/EnumsContext";
 import { Toaster } from "react-hot-toast";
-import LabWorkloadAnalytics from "./components/views/LabWorkloadAnalytics";
 import UsersGovernance from "./modules/nafdac/pages/UsersGovernance";
 import RiskIntelligence from "./modules/nafdac/pages/RiskIntelligence";
 import VerificationLogs from "./modules/nafdac/pages/VerificationLogs";
@@ -47,7 +53,6 @@ const App = () => {
   };
 
   const { currentUser, isAuthenticated } = useSelector((state) => state.auth);
-  // const { theme, darkMode, toggleDarkMode } = useTheme();
   const { theme, darkMode, toggleDarkMode } = useTheme();
 
   const logout = () => dispatch(handleLogout());
@@ -56,19 +61,22 @@ const App = () => {
   return (
     <EnumsProvider isAuthenticated={isAuthenticated}>
       <div>
-        <Toaster position='top-center' toastOptions={{ duration: 3000 }} />
+        <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
         <Routes>
-          <Route path='/' element={<Home />} />
-          <Route path='/auth' element={<AuthModal theme={theme} />} />{" "}
-          <Route path='/policy-welcome' element={<PolicyWelcome />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/auth" element={<AuthModal theme={theme} />} />
+          <Route path="/policy-welcome" element={<PolicyWelcome />} />
+
+          {/* ── Data Collector welcome splash (no Layout wrapper) ── */}
           <Route
-            path='/data-collector-welcome'
+            path="/data-collector-welcome"
             element={
               <PrivateRoute allowedRoles={["datacollector"]}>
                 <DataCollectorWelcome />
               </PrivateRoute>
             }
           />
+
           <Route
             element={
               <Layout
@@ -81,7 +89,7 @@ const App = () => {
             }
           >
             <Route
-              path='/dashboard'
+              path="/dashboard"
               element={
                 <PrivateRoute
                   isAuthenticated={isAuthenticated}
@@ -98,7 +106,7 @@ const App = () => {
                   ]}
                 >
                   {normalizedRole === "supervisor" ? (
-                    <SupervisorDashboard theme={theme} />
+                    <SupervisorDashboard />
                   ) : [
                       "policymakerson",
                       "policymakerresolve",
@@ -115,24 +123,25 @@ const App = () => {
             />
 
             <Route
-              path='/data-collector'
+              path="/data-collector"
               element={
                 <PrivateRoute allowedRoles={["datacollector"]}>
-                  <DataCollectorDashboard theme={theme} />
+                  <DataCollectorDashboard />
                 </PrivateRoute>
               }
             />
 
             <Route
-              path='/heavy-metal'
+              path="/heavy-metal"
               element={
                 <PrivateRoute allowedRoles={["datacollector"]}>
                   <HeavyMetalFormModalNew />
                 </PrivateRoute>
               }
             />
+
             <Route
-              path='database'
+              path="database"
               element={
                 <PrivateRoute
                   allowedRoles={["superadmin", "headresearcher", "supervisor"]}
@@ -143,7 +152,7 @@ const App = () => {
             />
 
             <Route
-              path='reports'
+              path="reports"
               element={
                 <PrivateRoute allowedRoles={["superadmin", "headresearcher"]}>
                   <Reports theme={theme} />
@@ -152,7 +161,7 @@ const App = () => {
             />
 
             <Route
-              path='map'
+              path="map"
               element={
                 <PrivateRoute
                   allowedRoles={[
@@ -173,7 +182,7 @@ const App = () => {
             />
 
             <Route
-              path='thresholds'
+              path="thresholds"
               element={
                 <PrivateRoute allowedRoles={["superadmin"]}>
                   <ThresholdManagement theme={theme} darkMode={darkMode} />
@@ -182,7 +191,7 @@ const App = () => {
             />
 
             <Route
-              path='invitecodes'
+              path="invitecodes"
               element={
                 <PrivateRoute allowedRoles={["superadmin", "headresearcher"]}>
                   <InviteCodeGenerate theme={theme} darkMode={darkMode} />
@@ -191,7 +200,7 @@ const App = () => {
             />
 
             <Route
-              path='invites'
+              path="invites"
               element={
                 <PrivateRoute allowedRoles={["superadmin", "headresearcher"]}>
                   <InviteCodeManagement theme={theme} darkMode={darkMode} />
@@ -200,41 +209,43 @@ const App = () => {
             />
 
             <Route
-              path='collectors'
+              path="collectors"
               element={
                 <PrivateRoute allowedRoles={["supervisor"]}>
-                  <CollectorManagement theme={theme} darkMode={darkMode} />
+                  <CollectorManagement />
                 </PrivateRoute>
               }
             />
 
             <Route
-              path='sample-review/:collectorId'
+              path="sample-review/:collectorId"
+              element={
+                <PrivateRoute allowedRoles={["supervisor"]}>
+                  <SampleReview />
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="sample-review"
               element={
                 <PrivateRoute allowedRoles={["supervisor"]}>
                   <SampleReview theme={theme} darkMode={darkMode} />
                 </PrivateRoute>
               }
             />
-            <Route
-              path='sample-review'
-              element={
-                <PrivateRoute allowedRoles={["supervisor"]}>
-                  <SampleReview theme={theme} darkMode={darkMode} />
-                </PrivateRoute>
-              }
-            />
 
             <Route
-              path='lab-samples'
+              path="lab-samples"
               element={
                 <PrivateRoute allowedRoles={["labanalyst"]}>
                   <LabAnalystDashboard theme={theme} darkMode={darkMode} />
                 </PrivateRoute>
               }
             />
+
             <Route
-              path='lab-recording'
+              path="lab-recording"
               element={
                 <PrivateRoute allowedRoles={["labanalyst"]}>
                   <LabWorkloadAnalytics theme={theme} darkMode={darkMode} />
@@ -243,7 +254,7 @@ const App = () => {
             />
 
             <Route
-              path='record-reading/:sampleId'
+              path="record-reading/:sampleId"
               element={
                 <PrivateRoute allowedRoles={["labanalyst"]}>
                   <LabConfirmationForm theme={theme} darkMode={darkMode} />
@@ -252,7 +263,7 @@ const App = () => {
             />
 
             <Route
-              path='nafdac-upload'
+              path="nafdac-upload"
               element={
                 <PrivateRoute allowedRoles={["policymakernafdac"]}>
                   <RegistryUpload theme={theme} />
@@ -261,7 +272,7 @@ const App = () => {
             />
 
             <Route
-              path='nafdac-history'
+              path="nafdac-history"
               element={
                 <PrivateRoute allowedRoles={["policymakernafdac"]}>
                   <RegistryHistory theme={theme} />
@@ -270,7 +281,7 @@ const App = () => {
             />
 
             <Route
-              path='nafdac-products'
+              path="nafdac-products"
               element={
                 <PrivateRoute
                   allowedRoles={[
@@ -285,7 +296,7 @@ const App = () => {
             />
 
             <Route
-              path='nafdac-verifications'
+              path="nafdac-verifications"
               element={
                 <PrivateRoute
                   allowedRoles={[
@@ -300,7 +311,7 @@ const App = () => {
             />
 
             <Route
-              path='nafdac-risk'
+              path="nafdac-risk"
               element={
                 <PrivateRoute
                   allowedRoles={["policymakernafdac", "policymakerson"]}
@@ -311,7 +322,7 @@ const App = () => {
             />
 
             <Route
-              path='nafdac-users'
+              path="nafdac-users"
               element={
                 <PrivateRoute
                   allowedRoles={["superadmin", "policymakernafdac"]}
@@ -321,9 +332,9 @@ const App = () => {
               }
             />
 
-            <Route path='moh'>
+            <Route path="moh">
               <Route
-                path='dashboard'
+                path="dashboard"
                 element={
                   <PrivateRoute
                     allowedRoles={["superadmin", "policymakerfmohsw"]}
@@ -333,7 +344,7 @@ const App = () => {
                 }
               />
               <Route
-                path='samples'
+                path="samples"
                 element={
                   <PrivateRoute
                     allowedRoles={["superadmin", "policymakerfmohsw"]}
@@ -343,7 +354,7 @@ const App = () => {
                 }
               />
               <Route
-                path='verification'
+                path="verification"
                 element={
                   <PrivateRoute
                     allowedRoles={["superadmin", "policymakerfmohsw"]}
@@ -353,7 +364,7 @@ const App = () => {
                 }
               />
               <Route
-                path='contamination'
+                path="contamination"
                 element={
                   <PrivateRoute
                     allowedRoles={["superadmin", "policymakerfmohsw"]}
@@ -363,7 +374,7 @@ const App = () => {
                 }
               />
               <Route
-                path='reports'
+                path="reports"
                 element={
                   <PrivateRoute
                     allowedRoles={["superadmin", "policymakerfmohsw"]}
