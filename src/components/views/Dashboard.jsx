@@ -213,31 +213,6 @@ const Dashboard = () => {
               ))}
             </select>
           </div>
-
-          {/* <select
-            value={filterProduct}
-            onChange={(e) => setFilterProduct(e.target.value)}
-            className={`w-full px-3 py-2 sm:px-4 text-sm sm:text-base border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
-          >
-            <option value='all'>All Products</option>
-            {enums?.productCategories?.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.displayName || v.name || "Unknown"}
-              </option>
-            ))}
-          </select> */}
-
-          {/* <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className={`w-full px-3 py-2 sm:px-4 text-sm sm:text-base border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500 sm:col-span-2 lg:col-span-1`}
-          >
-            <option value='all'>All Status</option>
-            <option value='safe'>Safe</option>
-            <option value='moderate'>Moderate</option>
-            <option value='contaminated'>Contaminated</option>
-            <option value='pending'>Pending</option>
-          </select> */}
         </div>
       </div>
       {/* Stats Cards (server-side stats when available, else client analytics) */}
@@ -246,14 +221,14 @@ const Dashboard = () => {
       </h1>
       <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4'>
         <StatCard
-          icon={Package}
+          icon={<Package />}
           label='Total Samples'
           value={analytics.total ?? "--"}
           color='bg-blue-600'
           theme={theme}
         />
         <StatCard
-          icon={AlertTriangle}
+          icon={<AlertTriangle />}
           label='Contaminated'
           value={analytics?.contaminated ?? "--"}
           color='bg-red-600'
@@ -264,7 +239,7 @@ const Dashboard = () => {
           theme={theme}
         />
         <StatCard
-          icon={CheckCircle}
+          icon={<CheckCircle />}
           label='Safe'
           value={analytics.safe ?? "--"}
           color='bg-green-600'
@@ -275,7 +250,7 @@ const Dashboard = () => {
           theme={theme}
         />
         <StatCard
-          icon={Clock}
+          icon={<Clock />}
           label='Pending'
           value={analytics?.pending ?? "--"}
           color='bg-yellow-500'
@@ -535,7 +510,7 @@ const Dashboard = () => {
                   width={50}
                   tick={{ fontSize: 10 }}
                 />
-                <RechartsTooltip />
+                <RechartsTooltip content={<CustomTooltip theme={theme} />} />
                 <Bar
                   dataKey='value'
                   fill='#4F46E5'
