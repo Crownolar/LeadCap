@@ -22,50 +22,19 @@ import {
   Radar,
 } from "recharts";
 import { Package, AlertTriangle, CheckCircle, Clock } from "lucide-react";
-import StatCard from "../common/StatCard";
-import { COLORS } from "../../utils/constants";
+import StatCard from "../components/common/StatCard";
+import { COLORS } from "../utils/constants";
 
 import {
   aggregateByMonth,
   deriveLocationData,
   deriveDetectionMetrics,
   getContaminationStatus,
-} from "../../utils/chartDataHelpers";
-import { useTheme } from "../../context/ThemeContext";
-import api from "../../utils/api";
-import { useEnums } from "../../context/EnumsContext";
-
-const CustomTooltip = ({ active, payload, label, theme }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div
-        className={`${
-          theme?.card || "bg-white"
-        } p-2 sm:p-3 md:p-4 rounded-lg shadow-lg border ${
-          theme?.border || "border-gray-200"
-        }`}
-      >
-        <p
-          className={`font-semibold text-xs sm:text-sm ${
-            theme?.text || "text-gray-800"
-          } mb-1 sm:mb-2`}
-        >
-          {label}
-        </p>
-        {payload.map((entry, index) => (
-          <p
-            key={index}
-            className='text-xs sm:text-sm'
-            style={{ color: entry.color }}
-          >
-            {entry.name}: {entry.value}
-          </p>
-        ))}
-      </div>
-    );
-  }
-  return null;
-};
+} from "../utils/chartDataHelpers";
+import { useTheme } from "../context/ThemeContext";
+import api from "../utils/api";
+import { useEnums } from "../context/EnumsContext";
+import { CustomTooltip, calculateAnalytics } from "../utils/DashboardUtils";
 
 const Dashboard = () => {
   const [filterState, setFilterState] = useState("all");
@@ -81,7 +50,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchStates = async () => {
       try {
-        const api = await import("../../utils/api").then((m) => m.default);
+        const api = await import("../utils/api").then((m) => m.default);
         const response = await api.get("/management/states", {
           params: { activeOnly: "true" },
         });
@@ -110,81 +79,7 @@ const Dashboard = () => {
       .finally(() => setLoadingStats(false));
   }, []);
 
-  const calculateAnalytics = () => {
-    let total;
-    let contaminated;
-    let safe;
-    let pending;
-    if (filterState == "all") {
-      total = stats?.totalSamples;
-      contaminated = stats?.contaminated;
-      safe = stats?.safe;
-      pending = stats?.pending;
-    } else {
-      const stateStats = stats?.byState?.filter((s) => s.state == filterState);
-      if (stateStats.length > 0) {
-        total = stateStats[0]?.count;
-        contaminated = stateStats[0]?.contaminated;
-        safe = stateStats[0]?.safe;
-        pending = stateStats[0]?.pending;
-      } else {
-        total = 0;
-        contaminated = 0;
-        safe = 0;
-        pending = 0;
-      }
-    }
-
-    const byState = stats?.byState?.map((s) => ({
-      name: s?.state,
-      value: s?.count,
-    }));
-
-    const productTypeStats =
-      stats?.byProductVariant?.reduce((acc, s) => {
-        const type = s?.productCategoryName || "Unknown";
-        acc[type] = (acc[type] || 0) + (s?.count || 0);
-        return acc;
-      }, {}) || {};
-
-    const byProductType = Object.entries(productTypeStats).map(
-      ([name, value]) => ({
-        name,
-        value,
-      }),
-    );
-
-    const byProduct = stats?.byProductVariant?.map((s) => ({
-      name: s?.productVariantName || "Unknown",
-      value: s?.count,
-    }));
-
-    const registeredVsUnregistered = [
-      {
-        name: "Registered",
-        total: stats?.total,
-        contaminated: stats?.contaminated,
-      },
-      {
-        name: "Unregistered",
-        total: 0,
-        contaminated: 0,
-      },
-    ];
-
-    return {
-      total,
-      contaminated,
-      safe,
-      pending,
-      byState,
-      byProductType,
-      byProduct,
-      registeredVsUnregistered,
-    };
-  };
-
-  const analytics = calculateAnalytics();
+  const analytics = calculateAnalytics(filterState, stats);
   const exposureData = aggregateByMonth(stats);
   const locationData = deriveLocationData(stats);
   const detectionMetrics = deriveDetectionMetrics(stats);

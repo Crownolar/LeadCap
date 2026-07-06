@@ -2,13 +2,14 @@ import { useAuth } from "../hooks/useAuth";
 import { useSamples } from "../hooks/useSamples";
 import { useTheme } from "../hooks/useTheme";
 import AuthModal from "../components/auth/AuthModal";
-import Dashboard from "../components/views/Dashboard";
+
 import Database from "../components/views/DatabaseView";
 import MapView from "../components/views/MapView";
 import Reports from "../components/views/Reports";
 import SampleFormModal from "../components/modals/SampleFormModal";
 import SampleDetailModal from "../components/modals/SampleDetailModal";
 import { useRef, useState, useMemo } from "react";
+import Dashboard from "./Dashboard";
 
 const Home = () => {
   const {
