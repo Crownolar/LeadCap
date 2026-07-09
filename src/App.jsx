@@ -15,35 +15,35 @@ import HeavyMetalFormModalNew from "./components/modals/lab-result_modal/HeavyMe
 import {
   DataCollectorDashboard,
   DataCollectorWelcome,
-} from "./modules/data-collector";
+} from "./roles/data-collector";
 import ThresholdManagement from "./components/views/ThresholdManagement";
 import InviteCodeManagement from "./components/views/InviteCodeManagement";
 import {
   SupervisorDashboard,
   CollectorManagement,
   SampleReview,
-} from "./modules/supervisor";
+} from "./roles/supervisor";
 import {
   LabAnalystDashboard,
   LabConfirmationForm,
   LabWorkloadAnalytics,
-} from "./modules/lab-analyst";
+} from "./roles/lab-analyst";
 import { EnumsProvider } from "./context/EnumsContext";
 import { Toaster } from "react-hot-toast";
-import UsersGovernance from "./modules/nafdac/pages/UsersGovernance";
-import RiskIntelligence from "./modules/nafdac/pages/RiskIntelligence";
-import VerificationLogs from "./modules/nafdac/pages/VerificationLogs";
-import ProductSearch from "./modules/nafdac/pages/ProductSearch";
-import RegistryHistory from "./modules/nafdac/pages/RegistryHistory";
-import RegistryUpload from "./modules/nafdac/pages/RegistryUpload";
-import MohDashboard from "./modules/modulesMoh/pages/dashboard/MohDashboard";
-import MohSamples from "./modules/modulesMoh/pages/MohSamples";
-import MohReports from "./modules/modulesMoh/pages/reports/MohReports";
-import MohVerification from "./modules/modulesMoh/pages/MohVerification";
-import MohContamination from "./modules/modulesMoh/pages/MohContamination";
+import UsersGovernance from "./roles/nafdac/pages/UsersGovernance";
+import RiskIntelligence from "./roles/nafdac/pages/RiskIntelligence";
+import VerificationLogs from "./roles/nafdac/pages/VerificationLogs";
+import ProductSearch from "./roles/nafdac/pages/ProductSearch";
+import RegistryHistory from "./roles/nafdac/pages/RegistryHistory";
+import RegistryUpload from "./roles/nafdac/pages/RegistryUpload";
+import MohDashboard from "./roles/moh/pages/dashboard/MohDashboard";
+import MohSamples from "./roles/moh/pages/MohSamples";
+import MohReports from "./roles/moh/pages/reports/MohReports";
+import MohVerification from "./roles/moh/pages/MohVerification";
+import MohContamination from "./roles/moh/pages/MohContamination";
 import { useTheme } from "./context/ThemeContext";
-import { PolicyDashboard } from "./modules/son";
-import { NafdacDashboard } from "./modules/nafdac";
+import { PolicyDashboard } from "./roles/son";
+import { NafdacDashboard } from "./roles/nafdac";
 
 const App = () => {
   const dispatch = useDispatch();

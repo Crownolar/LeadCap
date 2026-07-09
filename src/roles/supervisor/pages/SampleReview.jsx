@@ -41,13 +41,14 @@ import Modal from "../../../components/common/ModalWrapper";
 const SampleReview = () => {
   const { theme } = useTheme();
   const rv = useSampleReview();
+  const screenResponsiveBreakpoint = 1021;
 
   const productPhotoSrc = rv.getProductPhotoSrc(
     rv.selectedSample?.productPhotoUrl,
   );
   const [screenSize, setScreenSize] = useState(window.innerWidth);
   const [openModal, setOpenModal] = useState({
-    status: true,
+    status: false,
     sample: rv?.selectedSample && null,
   });
 
@@ -248,11 +249,6 @@ const SampleReview = () => {
                           >
                             {sample.productName || "Unnamed product"}
                           </p>
-                          <p
-                            className={`mt-1 truncate text-xs ${theme.textMuted}`}
-                          >
-                            {sample.sampleId || "No Sample ID"}
-                          </p>
                         </div>
                         <div className='flex shrink-0 items-center gap-2'>
                           <StatusBadge
@@ -318,7 +314,7 @@ const SampleReview = () => {
         </SurfaceCard>
 
         {/* ── Detail + review panel ── */}
-        {screenSize > 1021 ? (
+        {screenSize > screenResponsiveBreakpoint ? (
           <SampleReviewCard
             rv={rv}
             productPhotoSrc={productPhotoSrc}
