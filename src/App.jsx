@@ -76,7 +76,6 @@ const App = () => {
               </PrivateRoute>
             }
           />
-
           <Route
             element={
               <Layout
