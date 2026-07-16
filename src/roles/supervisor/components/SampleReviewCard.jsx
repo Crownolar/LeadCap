@@ -20,7 +20,7 @@ import {
   STATUS_TAB_META,
   ISSUE_OPTIONS,
   REVIEW_DECISIONS,
-} from "../constants/supervisor.constants";
+} from "../constants/constants";
 import ActionButton from "./ui/ActionButton";
 import EmptyState from "./ui/EmptyState";
 import { getVerificationBadgeType, getReadingStatusType } from "../utils/utils";
@@ -201,7 +201,7 @@ const SampleReviewCard = ({ rv, productPhotoSrc, theme }) => {
                         : "border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800/40"
                     }`}
                   >
-                    {status}
+                    {status.split("_").join(" ")}
                   </button>
                 ))}
               </div>

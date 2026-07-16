@@ -44,6 +44,7 @@ import MohContamination from "./roles/moh/pages/MohContamination";
 import { useTheme } from "./context/ThemeContext";
 import { PolicyDashboard } from "./roles/son";
 import { NafdacDashboard } from "./roles/nafdac";
+import NotFound from "./pages/NotFound";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -384,6 +385,7 @@ const App = () => {
               />
             </Route>
           </Route>
+          <Route path='*' element={<NotFound />} />
         </Routes>
       </div>
     </EnumsProvider>

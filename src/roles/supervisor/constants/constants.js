@@ -1,24 +1,44 @@
-/**
- * supervisor.constants.js
- * ────────────────────────
- * All static config for the Supervisor module.
- * Never hardcode these inline in components or pages.
- */
-
 // ── Review status tabs ───────────────────────────────────────────────────────
 
-export const STATUS_TABS = ["PENDING", "APPROVED", "REJECTED", "FLAGGED"];
+export const STATUS_TABS = [
+  "PENDING",
+  "APPROVED FOR XRF",
+  "XRF COMPLETED",
+  "APPROVED FOR AAS",
+  "AAS COMPLETED",
+  "COMPLETED",
+  "REJECTED",
+  "FLAGGED",
+];
 
 export const STATUS_TAB_META = {
   PENDING: { sub: "Awaiting action" },
-  APPROVED: { sub: "Approved items" },
+  "APPROVED FOR XRF": {
+    sub: "Sample approved for XRF testing",
+  },
+  "XRF COMPLETED": {
+    sub: "XRF testing has been completed",
+  },
+  "APPROVED FOR AAS": {
+    sub: "Sample approved for AAS testing",
+  },
+  "AAS COMPLETED": {
+    sub: "AAS testing has been completed",
+  },
+  COMPLETED: { sub: "Completed items" },
   REJECTED: { sub: "Returned items" },
   FLAGGED: { sub: "Needs attention" },
 };
 
 // ── Review decision options ──────────────────────────────────────────────────
 
-export const REVIEW_DECISIONS = ["APPROVED", "REJECTED", "FLAGGED"];
+export const REVIEW_DECISIONS = [
+  "APPROVED_FOR_XRF",
+  "APPROVED_FOR_AAS",
+  "REJECTED",
+  "FLAGGED",
+  "COMPLETED",
+];
 
 // ── Issue checklist options (sample review form) ─────────────────────────────
 

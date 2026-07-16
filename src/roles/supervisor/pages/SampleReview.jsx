@@ -20,7 +20,7 @@ import {
   STATUS_TAB_META,
   ISSUE_OPTIONS,
   REVIEW_DECISIONS,
-} from "../constants/supervisor.constants";
+} from "../constants/constants";
 
 import SurfaceCard from "../components/ui/SurfaceCard";
 import SectionHeader from "../components/ui/SectionHeader";
@@ -37,6 +37,14 @@ import {
 import Modal from "../../../components/common/ModalWrapper";
 
 // ── Component ─────────────────────────────────────────────────────────────────
+
+const ACTION_STATUS = [
+  "APPROVED_FOR_XRF",
+  "APPROVED_FOR_AAS",
+  "REJECTED",
+  "FLAGGED",
+  "COMPLETED",
+];
 
 const SampleReview = () => {
   const { theme } = useTheme();
@@ -107,7 +115,7 @@ const SampleReview = () => {
           </div>
 
           {/* Status tab cards */}
-          <div className='grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[420px]'>
+          <div className='grid grid-cols-1 gap-3 sm:grid-cols-4 lg:min-w-[420px]'>
             {STATUS_TABS.map((status) => {
               const count = rv.statusCounts[status] ?? 0;
               const isActive = rv.filterStatus === status;
@@ -122,7 +130,7 @@ const SampleReview = () => {
                   </p>
                   <p className='mt-2 text-2xl font-bold'>{count}</p>
                   <p className='mt-1 text-[11px] opacity-80'>
-                    {STATUS_TAB_META[status].sub}
+                    {STATUS_TAB_META[status]?.sub}
                   </p>
                 </button>
               );
@@ -155,21 +163,24 @@ const SampleReview = () => {
             </div>
           </div>
           <div className='flex w-full flex-wrap gap-2 lg:w-auto'>
-            <ActionButton
-              onClick={() => rv.handleBulkAction("APPROVED")}
-              disabled={rv.bulkProcessing}
-              className='flex-1 lg:flex-none'
-            >
-              Approve
-            </ActionButton>
-            <ActionButton
+            {ACTION_STATUS.map((action) => (
+              <ActionButton
+                onClick={() => rv.handleBulkAction(action)}
+                disabled={rv.bulkProcessing}
+                className='flex-1 lg:flex-none  bg-amber-600 border-amber-600  hover:bg-amber-700'
+              >
+                {action.split("_").join(" ")}
+              </ActionButton>
+            ))}
+
+            {/* <ActionButton
               onClick={() => rv.handleBulkAction("FLAGGED")}
               disabled={rv.bulkProcessing}
               variant='secondary'
               className='flex-1 lg:flex-none bg-amber-600 border-amber-600  hover:bg-amber-700'
             >
               Flag
-            </ActionButton>
+            </ActionButton> */}
             <ActionButton
               onClick={rv.clearBulkSelection}
               disabled={rv.bulkProcessing}
