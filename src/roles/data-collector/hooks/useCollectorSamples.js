@@ -1,14 +1,3 @@
-/**
- * useCollectorSamples.js
- * ──────────────────────
- * Owns all data-fetching logic for the collector's sample list:
- *   • initial load keyed to the logged-in collector
- *   • debounced search (500 ms)
- *   • cursor-based "load more" pagination
- *
- * Returns a stable API object; components never call api.get directly.
- */
-
 import { useState, useEffect, useCallback } from "react";
 import { useSelector } from "react-redux";
 import api from "../../../utils/api";
@@ -16,6 +5,7 @@ import { DEFAULT_PAGE_SIZE } from "../constants/collector.constants";
 
 export const useCollectorSamples = () => {
   const { currentUser } = useSelector((state) => state.auth);
+  console.log(currentUser);
 
   const [allSamples, setAllSamples] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -25,7 +15,6 @@ export const useCollectorSamples = () => {
   const [skip, setSkip] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
 
-  // ── Debounce search input ────────────────────────────────────────────────
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(searchQuery), 500);
     return () => clearTimeout(timer);
@@ -64,7 +53,6 @@ export const useCollectorSamples = () => {
     fetchSamples();
   }, [fetchSamples]);
 
-  // ── Load more (cursor pagination) ────────────────────────────────────────
   const canLoadMore = skip + DEFAULT_PAGE_SIZE < totalItems;
 
   const loadMore = async () => {

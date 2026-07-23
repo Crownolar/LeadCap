@@ -1,10 +1,3 @@
-/**
- * collector.constants.js
- * ──────────────────────
- * All static config for the Data Collector module.
- * Import from here; never hardcode these inline in components.
- */
-
 // ── Filter select options ────────────────────────────────────────────────────
 
 export const STATUS_FILTER_OPTIONS = [

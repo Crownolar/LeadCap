@@ -15,7 +15,7 @@ export const useAuth = () => {
   const handleLogin = (e) => {
     e.preventDefault();
     const user = users.find(
-      (u) => u.email === authForm.email && u.password === authForm.password
+      (u) => u.email === authForm.email && u.password === authForm.password,
     );
     if (user) {
       setCurrentUser(user);

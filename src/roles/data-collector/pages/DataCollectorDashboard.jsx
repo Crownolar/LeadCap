@@ -17,18 +17,15 @@ import React, { useState, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useTheme } from "../../../context/ThemeContext";
 
-// ── Module hooks ─────────────────────────────────────────────────────────────
 import { useCollectorSamples } from "../hooks/useCollectorSamples";
 import { useCollectorStats } from "../hooks/useCollectorStats";
 import { useSupervisor } from "../hooks/useSupervisor";
 
-// ── Module components ────────────────────────────────────────────────────────
 import CollectorHeader from "../components/CollectorHeader";
 import CollectorStats from "../components/CollectorStats";
 import CollectorFilterBar from "../components/CollectorFilterBar";
 import SampleList from "../components/SampleList";
 
-// ── Shared modals (unchanged) ─────────────────────────────────────────────────
 import HeavyMetalFormModalNew from "../../../components/modals/lab-result_modal/HeavyMetalFormModalNew";
 import SampleDetailModal from "../../../components/modals/SampleDetailModal";
 import SampleFormModal from "../../../components/modals/SampleFormModal";
@@ -40,8 +37,7 @@ import api from "../../../utils/api";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const hasReadings = (sample) =>
-  (sample?.heavyMetalReadings ?? []).length > 0;
+const hasReadings = (sample) => (sample?.heavyMetalReadings ?? []).length > 0;
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -80,7 +76,7 @@ const DataCollectorDashboard = () => {
   // ── Derived data ─────────────────────────────────────────────────────────
   const uniqueVariants = useMemo(() => {
     const names = allSamples.map(
-      (s) => s.productVariant?.displayName || s.productVariant?.name
+      (s) => s.productVariant?.displayName || s.productVariant?.name,
     );
     return [...new Set(names.filter(Boolean))];
   }, [allSamples]);
@@ -131,8 +127,7 @@ const DataCollectorDashboard = () => {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className={`min-h-screen ${theme?.bg}`}>
-      <div className="w-full max-w-6xl mx-auto px-3 sm:px-5 lg:px-8 py-4 sm:py-6 lg:py-8">
-
+      <div className='w-full max-w-6xl mx-auto px-3 sm:px-5 lg:px-8 py-4 sm:py-6 lg:py-8'>
         <CollectorHeader
           currentUser={currentUser}
           supervisor={supervisor}
@@ -192,7 +187,7 @@ const DataCollectorDashboard = () => {
         <SampleFormModal
           onClose={() => setEditSample(null)}
           onSubmit={handleEditSubmit}
-          mode="edit"
+          mode='edit'
           initialSample={editSample}
         />
       )}

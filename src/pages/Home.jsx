@@ -1,47 +1,17 @@
 import { useAuth } from "../hooks/useAuth";
 import { useSamples } from "../hooks/useSamples";
 import { useTheme } from "../hooks/useTheme";
-import AuthModal from "../components/auth/AuthModal";
-
-import Database from "../components/views/DatabaseView";
-import MapView from "../components/views/MapView";
-import Reports from "../components/views/Reports";
 import SampleFormModal from "../components/modals/SampleFormModal";
 import SampleDetailModal from "../components/modals/SampleDetailModal";
 import { useRef, useState, useMemo } from "react";
-import Dashboard from "./Dashboard";
+import { Navigate } from "react-router";
+import { useSelector } from "react-redux";
 
 const Home = () => {
-  const {
-    isAuthenticated,
-    setIsAuthenticated,
-    currentUser,
-    setCurrentUser,
-    authForm,
-    setAuthForm,
-    showPassword,
-    setShowPassword,
-    authMode,
-    setAuthMode,
-    handleLogin,
-    handleSignup,
-  } = useAuth();
+  const { isAuthenticated, currentUser } = useSelector((state) => state.auth);
 
   const { theme } = useTheme();
-  const {
-    filteredSamples,
-    addSample,
-    states,
-    loading,
-    searchTerm,
-    setSearchTerm,
-    filterState,
-    setFilterState,
-    filterProduct,
-    setFilterProduct,
-    filterStatus,
-    setFilterStatus,
-  } = useSamples(currentUser);
+  const { filteredSamples, addSample } = useSamples(currentUser);
   const [currentView, setCurrentView] = useState("dashboard");
   const [showForm, setShowForm] = useState(false);
   const [selectedSample, setSelectedSample] = useState(null);
@@ -69,52 +39,15 @@ const Home = () => {
   const handleFormSubmit = (formData) => addSample(formData);
 
   if (!isAuthenticated) {
-    return (
-      <div className={`${theme.bg} min-h-screen`}>
-        <AuthModal
-          theme={theme}
-          authMode={authMode}
-          setAuthMode={setAuthMode}
-          authForm={authForm}
-          setAuthForm={setAuthForm}
-          showPassword={showPassword}
-          setShowPassword={setShowPassword}
-          handleLogin={handleLogin}
-          handleSignup={handleSignup}
-          setCurrentUser={setCurrentUser}
-          setIsAuthenticated={setIsAuthenticated}
-        />
-      </div>
-    );
+    return <Navigate to='auth' replace />;
   }
 
   return (
     <>
-      {currentView === "dashboard" && (
-        <Dashboard samples={filteredSamples} loading={loading} theme={theme} />
-      )}
-      {currentView === "database" && (
-        <Database
-          theme={theme}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          filterState={filterState}
-          setFilterState={setFilterState}
-          filterProduct={filterProduct}
-          setFilterProduct={setFilterProduct}
-          filterStatus={filterStatus}
-          setFilterStatus={setFilterStatus}
-          filteredSamples={filteredSamples}
-          setSelectedSample={setSelectedSample}
-          states={states}
-        />
-      )}
-      {currentView === "map" && (
-        <MapView theme={theme} samples={filteredSamples} />
-      )}
-      {currentView === "reports" && (
-        <Reports theme={theme} samples={filteredSamples} />
-      )}
+      {currentView === "dashboard" && <Navigate to='dashboard' />}
+      {currentView === "database" && <Navigate to='database' />}
+      {currentView === "map" && <Navigate to='map' />}
+      {currentView === "reports" && <Navigate to='reports' />}
       {showForm && (
         <SampleFormModal
           theme={theme}

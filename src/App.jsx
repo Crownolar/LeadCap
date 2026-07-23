@@ -8,7 +8,7 @@ import InviteCodeGenerate from "./pages/InviteCodeGenerate";
 import { useSelector, useDispatch } from "react-redux";
 import { handleLogout } from "./redux/slice/authSlice";
 import MapView from "./components/views/MapView";
-import Reports from "./components/views/Reports";
+import Reports from "./components/other/Reports";
 import Database from "./pages/Database";
 import PolicyWelcome from "./pages/PolicyWelcome";
 import HeavyMetalFormModalNew from "./components/modals/lab-result_modal/HeavyMetalFormModalNew";
@@ -16,8 +16,8 @@ import {
   DataCollectorDashboard,
   DataCollectorWelcome,
 } from "./roles/data-collector";
-import ThresholdManagement from "./components/views/ThresholdManagement";
-import InviteCodeManagement from "./components/views/InviteCodeManagement";
+import ThresholdManagement from "./components/other/ThresholdManagement";
+import InviteCodeManagement from "./components/other/InviteCodeManagement";
 import {
   SupervisorDashboard,
   CollectorManagement,
