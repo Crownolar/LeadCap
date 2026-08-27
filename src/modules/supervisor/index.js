@@ -23,5 +23,6 @@ export { default as CollectorPickerModal } from "./components/CollectorPickerMod
 
 // ── Hooks (available if needed outside the module) ───────────────────────────
 export { useSupervisorDashboard } from "./hooks/useSupervisorDashboard";
+export { useSupervisorScope } from "./hooks/useSupervisorScope";
 export { useCollectorManagement } from "./hooks/useCollectorManagement";
 export { useSampleReview } from "./hooks/useSampleReview";

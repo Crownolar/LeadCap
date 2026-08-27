@@ -1,57 +1,58 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { hasRole } from "../config/permissions";
 
-// Helper function to normalize role for comparison
-const normalizeRole = (role) => {
-  if (!role) return "";
-  return role.toLowerCase().replace(/[\s_.]/g, "");
-};
-
-const PrivateRoute = ({ children, allowedRoles = [] }) => {
-  const { isAuthenticated, currentUser } = useSelector((state) => state.auth);
+/**
+ * Authentication + optional role authorization guard.
+ *
+ * This component is intentionally responsible only for:
+ *
+ * 1. Authentication
+ * 2. Role authorization
+ *
+ * Business-specific redirects belong elsewhere.
+ */
+const PrivateRoute = ({
+  children,
+  allowedRoles = [],
+}) => {
   const location = useLocation();
 
-  if (!isAuthenticated) {
-    return <Navigate to='/auth' replace />;
-  }
-
-  if (!currentUser) return null;
-
-  const normalizedRole = normalizeRole(currentUser?.role);
-
-  console.log("PrivateRoute", {
+  const {
     isAuthenticated,
     currentUser,
-    normalizedRole,
-    location: location.pathname,
-  });
+  } = useSelector((state) => state.auth);
 
-  // POLICYMAKER RESTRICTIONS
+  /* ------------------------------------------------------------------------ */
+  /* Authentication                                                           */
+  /* ------------------------------------------------------------------------ */
+
+  if (!isAuthenticated || !currentUser) {
+    return (
+      <Navigate
+        to="/auth"
+        replace
+        state={{
+          from: location.pathname,
+        }}
+      />
+    );
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Authorization                                                            */
+  /* ------------------------------------------------------------------------ */
+
   if (
-    normalizedRole.startsWith("policymaker") &&
-    normalizedRole !== "policymakerfmohsw"
+    allowedRoles.length > 0 &&
+    !hasRole(currentUser.role, allowedRoles)
   ) {
-    const blockedRoutes = ["/reports", "/database", "/agents"];
-    if (blockedRoutes.includes(location.pathname)) {
-      return <Navigate to='/dashboard' replace />;
-    }
-  }
-
-  // SUPERVISOR RESTRICTIONS
-  if (normalizedRole === "supervisor") {
-    const blockedRoutes = ["/invitecodes", "/reports"];
-    if (blockedRoutes.includes(location.pathname)) {
-      return <Navigate to='/collectors' replace />;
-    }
-  }
-
-  // ROLE ACCESS CHECK
-  if (allowedRoles.length > 0) {
-    const normalizedAllowedRoles = allowedRoles.map(normalizeRole);
-
-    if (!normalizedAllowedRoles.includes(normalizedRole)) {
-      return <Navigate to='/' replace />;
-    }
+    return (
+      <Navigate
+        to="/dashboard"
+        replace
+      />
+    );
   }
 
   return children;

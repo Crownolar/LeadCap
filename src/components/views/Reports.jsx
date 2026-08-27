@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import {
   FileText,
   BarChart3,
@@ -9,22 +10,23 @@ import {
   X,
   Lock,
 } from "lucide-react";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchSamples } from "../../redux/slice/samplesSlice";
 import { useTheme } from "../../context/ThemeContext";
 import api from "../../utils/api";
 import { generateReportPDF } from "../../utils/reportUtils";
 
-const Reports = ({ theme: propTheme, samples: propSamples }) => {
-  const dispatch = useDispatch();
-  const { theme } = useTheme();
-  const { samples: reduxSamples } = useSelector((state) => state.samples);
+const DEFAULT_REPORT_FILTERS = {
+  state: "",
+  states: [],
+  productVariants: [],
+  dateFrom: "",
+  dateTo: "",
+  minLeadLevel: 10,
+};
+
+const Reports = () => {
   const { currentUser } = useSelector((state) => state.auth);
+  const { theme } = useTheme();
 
-  // Use props if provided, otherwise fall back to Redux
-  const samples = propSamples || reduxSamples || [];
-
-  // Role-based access control
   const normalizedRole = currentUser?.role?.toLowerCase().replace(/[\s_]/g, "");
   const allowedRoles = ["superadmin", "headresearcher"];
 
@@ -49,49 +51,57 @@ const Reports = ({ theme: propTheme, samples: propSamples }) => {
     );
   }
 
+    return <ReportsContent />;
+};
+
+const ReportsContent = () => {
+  const { theme } = useTheme();
+
   // State management
   const [loading, setLoading] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
   const [states, setStates] = useState([]);
   const [categories, setCategories] = useState([]);
   const [generationProgress, setGenerationProgress] = useState(0);
-  const [reportFilters, setReportFilters] = useState({
-    state: "",
-    states: [],
-    productVariants: [],
-    dateFrom: "",
-    dateTo: "",
-    minLeadLevel: 10,
-  });
 
-  // Fetch samples, states, and categories on mount if not provided via props
+  // Fetch report filter data on mount.
   useEffect(() => {
-    if (!propSamples) {
-      dispatch(fetchSamples());
-    }
-    fetchStates();
-    fetchCategories();
-  }, [dispatch, propSamples]);
+    let active = true;
 
-  const fetchStates = async () => {
-    try {
-      const response = await api.get("/management/states", { params: { activeOnly: "true" } });
-      setStates(response.data.data || response.data || []);
-    } catch (err) {
-      console.error("Failed to fetch states:", err);
-      setStates([]);
-    }
-  };
+    const loadReportFilters = async () => {
+      const [statesResult, categoriesResult] = await Promise.allSettled([
+        api.get("/management/states", { params: { activeOnly: "true" } }),
+        api.get("/products/categories"),
+      ]);
 
-  const fetchCategories = async () => {
-    try {
-      const response = await api.get("/products/categories");
-      setCategories(response.data.data || response.data || []);
-    } catch (err) {
-      console.error("Failed to fetch categories:", err);
-      setCategories([]);
-    }
-  };
+      if (!active) return;
+
+      if (statesResult.status === "fulfilled") {
+        const response = statesResult.value;
+        setStates(response.data.data || response.data || []);
+      } else {
+        console.error("Failed to fetch states:", statesResult.reason);
+        setStates([]);
+      }
+
+      if (categoriesResult.status === "fulfilled") {
+        const response = categoriesResult.value;
+        setCategories(response.data.data || response.data || []);
+      } else {
+        console.error(
+          "Failed to fetch categories:",
+          categoriesResult.reason,
+        );
+        setCategories([]);
+      }
+    };
+
+    loadReportFilters();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const generateReport = async (reportType, filters) => {
     // Validate required filters before submitting
@@ -130,7 +140,7 @@ const Reports = ({ theme: propTheme, samples: propSamples }) => {
   };
 
   const ReportModal = ({ report, onClose }) => {
-    const [filters, setFilters] = useState(reportFilters);
+    const [filters, setFilters] = useState(DEFAULT_REPORT_FILTERS);
 
     // Check if required fields are filled
     const isFormValid = () => {

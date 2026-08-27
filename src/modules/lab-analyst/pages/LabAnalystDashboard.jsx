@@ -21,7 +21,7 @@ const LabAnalystDashboard = () => {
   const { labStats } = useLabWorkload();
   const {
     samples, loading, isLoadingMore, error,
-    query, setQuery, canLoadMore, loadMore,
+    query, setQuery, canLoadMore, loadMore, totalItems,
   } = useSamplesRequiringConfirmation();
 
   const goToRecordReading = (sample) => navigate(`/record-reading/${sample.sampleId}`);

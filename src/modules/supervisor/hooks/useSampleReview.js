@@ -16,6 +16,7 @@ import { useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import api from "../../../utils/api";
 import { DEFAULT_PAGE_SIZE } from "../constants/supervisor.constants";
+import { useSupervisorScope } from "./useSupervisorScope";
 
 const INITIAL_REVIEW_FORM = {
   status: "APPROVED",
@@ -26,6 +27,8 @@ const INITIAL_REVIEW_FORM = {
 
 export const useSampleReview = () => {
   const { collectorId } = useParams();
+  const { loading: scopeLoading, error: scopeError, hasCollector } = useSupervisorScope();
+  const hasRequestedCollector = !collectorId || hasCollector(collectorId);
 
   // ── Data ─────────────────────────────────────────────────────────────────
   const [samples, setSamples] = useState([]);
@@ -112,6 +115,8 @@ export const useSampleReview = () => {
 
   // ── Fetch samples ─────────────────────────────────────────────────────────
   const fetchSamples = useCallback(async () => {
+    if (scopeLoading || !hasRequestedCollector) return;
+
     try {
       setLoading(true);
       setError(null);
@@ -138,15 +143,28 @@ export const useSampleReview = () => {
     } finally {
       setLoading(false);
     }
-  }, [collectorId, filterStatus, page]);
+  }, [collectorId, filterStatus, page, scopeLoading, hasRequestedCollector]);
 
   const refreshAll = useCallback(async () => {
     await Promise.all([fetchReviewMeta(), fetchSamples()]);
   }, [fetchReviewMeta, fetchSamples]);
 
   // ── Effects ───────────────────────────────────────────────────────────────
-  useEffect(() => { fetchReviewMeta(); }, [fetchReviewMeta]);
+  useEffect(() => {
+    if (!scopeLoading) fetchReviewMeta();
+  }, [fetchReviewMeta, scopeLoading]);
   useEffect(() => { fetchSamples(); }, [fetchSamples]);
+
+  useEffect(() => {
+    if (!scopeLoading && collectorId && !hasRequestedCollector) {
+      setSamples([]);
+      setSelectedSample(null);
+      setBulkSelection(new Set());
+      setError("This Data Collector is not assigned to you. Their samples are outside your review scope.");
+      setTotalCount(0);
+      setTotalPages(1);
+    }
+  }, [collectorId, hasRequestedCollector, scopeLoading]);
 
   useEffect(() => {
     setPage(1);
@@ -211,7 +229,12 @@ export const useSampleReview = () => {
 
   // ── Submit single review ──────────────────────────────────────────────────
   const handleSubmitReview = async () => {
-    if (!selectedSample) return;
+    if (!selectedSample || scopeLoading) return;
+
+    if (collectorId && !hasRequestedCollector) {
+      toast.error("You are not authorized to review samples for this Data Collector.");
+      return;
+    }
 
     if (reviewForm.status === "REJECTED") {
       const hasReason =
@@ -268,6 +291,10 @@ export const useSampleReview = () => {
 
   // ── Bulk submit ───────────────────────────────────────────────────────────
   const handleBulkAction = async (status) => {
+    if (scopeLoading || (collectorId && !hasRequestedCollector)) {
+      toast.error("You are not authorized to process samples outside your assigned collector scope.");
+      return;
+    }
     if (bulkSelection.size === 0) {
       toast.error("Please select at least one sample.");
       return;
@@ -315,7 +342,7 @@ export const useSampleReview = () => {
 
   return {
     samples, stats, selectedSample, normalizedReadings, statusCounts,
-    loading, statsLoading, reviewing, bulkProcessing, error,
+    loading: loading || scopeLoading, statsLoading, reviewing, bulkProcessing, error: error || scopeError,
     filterStatus, setFilterStatus, page, setPage, totalCount, totalPages,
     handleSelectSample, currentSampleIndex, goToNextSample,
     reviewForm, setReviewStatus, setReviewComments, toggleIssue, handleSubmitReview,

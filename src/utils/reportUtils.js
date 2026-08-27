@@ -3,6 +3,9 @@
  * Helpers for creating reports with pdfkit backend integration
  */
 
+// import { getLegacyHeavyMetalStatus } from "./heavyMetalStatus"
+import { getHeavyMetalPublicStatus } from "./heavyMetalStatus";
+
 /**
  * Get contamination status from heavy metal readings
  * Returns: SAFE, MODERATE, CONTAMINATED, or PENDING
@@ -163,8 +166,10 @@ export const generateStateSummaryData = (samples) => {
   return samples.map(s => ({
     sampleId: s.sampleId || 'N/A',
     product: getProductName(s),
-    leadLevel: `${getLeadLevel(s).toFixed(2)} ppm`,
-    status: getContaminationStatus(s),
+    // leadLevel: `${getLeadLevel(s).toFixed(2)} ppm`,
+    // status: getContaminationStatus(s),
+    // status: getLegacyHeavyMetalStatus(s),
+    status: getHeavyMetalPublicStatus(s),
     date: new Date(s.createdAt).toLocaleDateString()
   }))
 }

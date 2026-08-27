@@ -7,6 +7,12 @@ import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { store, persistor } from "./redux/store";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
+import { AUTH_LOGOUT_EVENT } from "./utils/authEvents";
+import { clearAuthState } from "./redux/slice/authSlice";
+
+window.addEventListener(AUTH_LOGOUT_EVENT, () => {
+  store.dispatch(clearAuthState());
+});
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>

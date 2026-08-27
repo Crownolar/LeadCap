@@ -11,6 +11,11 @@ import {
   X,
   Loader2,
   Search,
+  Copy,
+  CheckCircle2,
+  AlertCircle,
+  ArrowLeft,
+  LayoutDashboard,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -26,16 +31,90 @@ import { useEnums } from "../context/EnumsContext";
 import { useTheme } from "../context/ThemeContext";
 import { normalizeRole } from "../hooks/useRoleDataLoader";
 
+/* ------------------------------------------------------------------ */
+/*  Small shared UI primitives — keep this file self-contained but    */
+/*  reduce repeated markup for a cleaner, more consistent surface.    */
+/* ------------------------------------------------------------------ */
+/* The systematic study of human nature */
+
+const formatLabel = (value = "") =>
+  value
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (l) => l.toUpperCase());
+
+const Alert = ({ tone = "success", children, className = "" }) => {
+  const styles =
+    tone === "error"
+      ? "bg-red-500/10 border-red-500/30 text-red-500 dark:text-red-400"
+      : "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400";
+  const Icon = tone === "error" ? AlertCircle : CheckCircle2;
+  return (
+    <div
+      className={`flex items-start gap-2.5 px-4 py-3 rounded-2xl border text-sm font-medium ${styles} ${className}`}
+      role="status"
+    >
+      <Icon size={16} className="mt-0.5 shrink-0" />
+      <span>{children}</span>
+    </div>
+  );
+};
+
+const StatusPill = ({ active, activeLabel = "Active", inactiveLabel = "Inactive" }) => (
+  <span
+    className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full border ${
+      active
+        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+        : "bg-gray-500/10 text-gray-500 dark:text-gray-400 border-gray-500/20"
+    }`}
+  >
+    {active ? <Check size={11} /> : <X size={11} />}
+    {active ? activeLabel : inactiveLabel}
+  </span>
+);
+
+const SectionHeading = ({ icon: Icon, title, description, action }) => (
+  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+    <div>
+      <h2 className="text-lg font-bold flex items-center gap-2">
+        {Icon && <Icon className="text-emerald-500" size={20} />}
+        {title}
+      </h2>
+      {description && (
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{description}</p>
+      )}
+    </div>
+    {action}
+  </div>
+);
+
+const EmptyState = ({ children }) => (
+  <div className="text-center py-12 px-4 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
+    {children}
+  </div>
+);
+
+const FieldLabel = ({ children, required }) => (
+  <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
+    {children} {required && <span className="text-red-500">*</span>}
+  </label>
+);
+
+/* ------------------------------------------------------------------ */
+
 const InviteCodeGenerate = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { theme } = useTheme();
 
   const { users, selectedUser, loading } = useSelector((state) => state.users);
-
   const { currentUser } = useSelector((state) => state.auth);
 
   const allowedRolesForDashboard = ["superadmin"];
+  const isSuperadmin = allowedRolesForDashboard.includes(
+    normalizeRole(currentUser?.role),
+  );
+
   const FALLBACK_USER_ROLES = [
     "SUPER_ADMIN",
     "HEAD_RESEARCHER",
@@ -48,18 +127,6 @@ const InviteCodeGenerate = () => {
     "POLICY_MAKER_RESOLVE",
     "POLICY_MAKER_UNIVERSITY",
   ];
-
-  //   const roles = [
-  //   "HEAD_RESEARCHER",
-  //   "DATA_COLLECTOR",
-  //   "LAB_ANALYST",
-  //   "SUPERVISOR",
-  //   "POLICY_MAKER_SON",
-  //   "POLICY_MAKER_NAFDAC",
-  //   "POLICY_MAKER_RESOLVE",
-  //   "POLICY_MAKER_UNIVERSITY",
-  //   "POLICY_MAKER_FMOHSW",
-  // ];
 
   const roles = [
     { role: "HEAD_RESEARCHER" },
@@ -78,8 +145,10 @@ const InviteCodeGenerate = () => {
 
   const [activeTab, setActiveTab] = useState("invite");
   const [inviteLoading, setInviteLoading] = useState(false);
+  const [generatingRole, setGeneratingRole] = useState(null);
   const [generatedCode, setGeneratedCode] = useState("");
-  const [message, setMessage] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [message, setMessage] = useState(null); // { tone, text }
   const [searchTerm, setSearchTerm] = useState("");
   const [newUser, setNewUser] = useState({
     fullName: "",
@@ -110,9 +179,7 @@ const InviteCodeGenerate = () => {
   const [stateSearch, setStateSearch] = useState("");
 
   useEffect(() => {
-    dispatch(getAllUsers({ page: 1, limit: 50 })).then((res) =>
-      console.log("Fetched Users (dispatch result):", res.payload),
-    );
+    dispatch(getAllUsers({ page: 1, limit: 50 }));
   }, [activeTab, dispatch]);
 
   // Fetch full users (with supervisorStates) and active states for Supervisors tab
@@ -146,8 +213,7 @@ const InviteCodeGenerate = () => {
         setActivationStates(res.data?.data || []);
       } catch (err) {
         setActivationError(
-          "Failed to load states: " +
-            (err.response?.data?.error || err.message),
+          "Failed to load states: " + (err.response?.data?.error || err.message),
         );
         setActivationStates([]);
       } finally {
@@ -169,13 +235,13 @@ const InviteCodeGenerate = () => {
 
   const handleGenerateInviteCode = async (role, organization) => {
     setInviteLoading(true);
+    setGeneratingRole(role);
     setGeneratedCode("");
-    setMessage("");
+    setCopied(false);
+    setMessage(null);
 
     try {
-      // Include organization only if it's defined
       const body = organization ? { role, organization } : { role };
-
       const res = await api.post("/auth/generate-invite", body);
       const data = res.data;
 
@@ -185,51 +251,54 @@ const InviteCodeGenerate = () => {
       const code = data.data?.code || data.code;
       setGeneratedCode(code);
       await navigator.clipboard.writeText(code);
+      setCopied(true);
 
-      setMessage(
-        `✅ Invite code for ${role.replace(/_/g, " ")}${
+      setMessage({
+        tone: "success",
+        text: `Invite code for ${formatLabel(role)}${
           organization ? ` (${organization})` : ""
-        } copied to clipboard!`,
-      );
+        } copied to clipboard.`,
+      });
     } catch (err) {
       console.error(err);
-      const errorMessage =
-        err.response?.data?.error ||
-        err.message ||
-        "❌ Failed to generate invite code.";
-      setMessage(errorMessage);
+      setMessage({
+        tone: "error",
+        text:
+          err.response?.data?.error ||
+          err.message ||
+          "Failed to generate invite code.",
+      });
     } finally {
       setInviteLoading(false);
+      setGeneratingRole(null);
     }
   };
-  const handleCreateUser = () => {
-    setMessage("");
 
-    if (
-      !newUser.fullName.trim() ||
-      !newUser.email.trim() ||
-      !newUser.password.trim()
-    ) {
-      setMessage("❌ Full name, email and password are required.");
+  const handleCopyCode = async () => {
+    if (!generatedCode) return;
+    await navigator.clipboard.writeText(generatedCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCreateUser = () => {
+    setMessage(null);
+
+    if (!newUser.fullName.trim() || !newUser.email.trim() || !newUser.password.trim()) {
+      setMessage({ tone: "error", text: "Full name, email and password are required." });
       return;
     }
 
     dispatch(createUser(newUser)).then((res) => {
-      console.log("CreateUser Dispatch Result:", res);
-
       if (!res.error) {
-        setMessage("✅ User created successfully!");
-        setNewUser({
-          fullName: "",
-          email: "",
-          password: "",
-          role: "HEAD_RESEARCHER",
-        });
+        setMessage({ tone: "success", text: "User created successfully." });
+        setNewUser({ fullName: "", email: "", password: "", role: "HEAD_RESEARCHER" });
         dispatch(getAllUsers({ page: 1, limit: 20 }));
       } else {
-        setMessage(
-          `❌ ${res.payload || res.error?.message || "Failed to create user"}`,
-        );
+        setMessage({
+          tone: "error",
+          text: res.payload || res.error?.message || "Failed to create user",
+        });
       }
     });
   };
@@ -239,26 +308,23 @@ const InviteCodeGenerate = () => {
       if (!res.error) {
         setActiveTab("viewUser");
       } else {
-        setMessage(`❌ ${res.payload || "Failed to fetch user"}`);
+        setMessage({ tone: "error", text: res.payload || "Failed to fetch user" });
       }
     });
   };
 
   const handleDeleteUser = async (userId) => {
-    if (
-      !window.confirm(
-        "Deactivate this user? They will no longer be able to sign in.",
-      )
-    )
+    if (!window.confirm("Deactivate this user? They will no longer be able to sign in."))
       return;
     try {
       await api.delete(`/users/${userId}`);
-      setMessage("User deactivated successfully.");
+      setMessage({ tone: "success", text: "User deactivated successfully." });
       dispatch(getAllUsers({ page: 1, limit: 20 }));
     } catch (err) {
-      setMessage(
-        err.response?.data?.error || err.message || "Failed to deactivate user",
-      );
+      setMessage({
+        tone: "error",
+        text: err.response?.data?.error || err.message || "Failed to deactivate user",
+      });
     }
   };
 
@@ -269,7 +335,7 @@ const InviteCodeGenerate = () => {
 
   const handleSaveUser = () => {
     if (!editableUser) return;
-    setMessage("");
+    setMessage(null);
 
     const updatedData = {
       fullName: editableUser.fullName,
@@ -278,28 +344,23 @@ const InviteCodeGenerate = () => {
     };
 
     dispatch(updateUser({ id: editableUser.id, updatedData })).then((res) => {
-      console.log("UpdateUser Dispatch Result:", res);
       if (!res.error) {
-        setMessage("✅ User updated successfully!");
+        setMessage({ tone: "success", text: "User updated successfully." });
         setIsEditing(false);
         dispatch(getAllUsers({ page: 1, limit: 20 }));
         dispatch(getUserById(editableUser.id));
       } else {
-        setMessage(`❌ ${res.payload || "Failed to update user"}`);
+        setMessage({ tone: "error", text: res.payload || "Failed to update user" });
       }
     });
   };
 
-  const supervisorsList = (adminUsers || []).filter(
-    (u) => u.role === "SUPERVISOR",
-  );
+  const supervisorsList = (adminUsers || []).filter((u) => u.role === "SUPERVISOR");
 
   const openAssignModalForEdit = (supervisor) => {
     setSelectedSupervisor(supervisor.id);
     setSelectedStates(
-      (supervisor.supervisorStates || []).map(
-        (ss) => ss.state?.id ?? ss.stateId,
-      ),
+      (supervisor.supervisorStates || []).map((ss) => ss.state?.id ?? ss.stateId),
     );
     setShowAssignModal(true);
     setAssignError(null);
@@ -328,13 +389,11 @@ const InviteCodeGenerate = () => {
       setShowAssignModal(false);
       setSelectedSupervisor(null);
       setSelectedStates([]);
-      setMessage("States assigned successfully.");
+      setMessage({ tone: "success", text: "States assigned successfully." });
       dispatch(getAllUsers({ page: 1, limit: 20 }));
     } catch (err) {
       setAssignError(
-        err.response?.data?.error ||
-          err.response?.data?.message ||
-          "Failed to assign states",
+        err.response?.data?.error || err.response?.data?.message || "Failed to assign states",
       );
     } finally {
       setAssignLoading(false);
@@ -347,18 +406,16 @@ const InviteCodeGenerate = () => {
       await api.delete(`/supervisor/${supervisorId}/states/${stateId}`);
       const usersRes = await api.get("/users", { params: { limit: 200 } });
       setAdminUsers(usersRes.data?.data || []);
-      setMessage("State unassigned.");
+      setMessage({ tone: "success", text: "State unassigned." });
       dispatch(getAllUsers({ page: 1, limit: 20 }));
     } catch (err) {
-      setMessage(
-        err.response?.data?.error ||
-          err.response?.data?.message ||
-          "Failed to unassign",
-      );
+      setMessage({
+        tone: "error",
+        text: err.response?.data?.error || err.response?.data?.message || "Failed to unassign",
+      });
     }
   };
 
-  // State activation: filter by search
   const filteredActivationStates = stateSearch.trim()
     ? activationStates.filter(
         (s) =>
@@ -378,9 +435,7 @@ const InviteCodeGenerate = () => {
       setSelectedStateIds((prev) => prev.filter((id) => id !== state.id));
       setActivationError(null);
     } catch (err) {
-      setActivationError(
-        "Failed to update: " + (err.response?.data?.error || err.message),
-      );
+      setActivationError("Failed to update: " + (err.response?.data?.error || err.message));
     } finally {
       setActivationBusyId(null);
     }
@@ -398,13 +453,12 @@ const InviteCodeGenerate = () => {
       setActivationStates(res.data?.data || []);
       setSelectedStateIds([]);
       setActivationError(null);
-      setMessage(
-        `${selectedStateIds.length} state(s) ${isActive ? "activated" : "deactivated"}.`,
-      );
+      setMessage({
+        tone: "success",
+        text: `${selectedStateIds.length} state(s) ${isActive ? "activated" : "deactivated"}.`,
+      });
     } catch (err) {
-      setActivationError(
-        "Bulk update failed: " + (err.response?.data?.error || err.message),
-      );
+      setActivationError("Bulk update failed: " + (err.response?.data?.error || err.message));
     } finally {
       setActivationBulkBusy(false);
     }
@@ -424,33 +478,12 @@ const InviteCodeGenerate = () => {
     }
   };
 
-  const getStatusBadge = (status) => {
-    const statusStyles = {
-      active: "bg-emerald-500/20 text-emerald-400 border-emerald-500/50",
-      inactive: "bg-red-500/20 text-red-400 border-red-500/50",
-    };
-    return (
-      <span
-        className={`px-2 py-1 rounded-full text-xs border ${
-          statusStyles[status] || statusStyles.inactive
-        }`}
-      >
-        {status}
-      </span>
-    );
-  };
-
   const tabs = [
-    { id: "invite", label: "Invite Codes", icon: KeyRound },
-    allowedRolesForDashboard.includes(normalizeRole(currentUser?.role))
-      ? { id: "users", label: "Users", icon: Users }
-      : null,
-    { id: "supervisors", label: "Supervisors & States", icon: MapPin },
+    { id: "invite", label: "Invite codes", icon: KeyRound },
+    isSuperadmin ? { id: "users", label: "Users", icon: Users } : null,
+    { id: "supervisors", label: "Supervisors & states", icon: MapPin },
     { id: "stateActivation", label: "State activation", icon: Settings },
-    allowedRolesForDashboard.includes(normalizeRole(currentUser?.role))
-      ? { id: "viewUser", label: "View User", icon: Eye }
-      : null,
-  ];
+  ].filter(Boolean);
 
   const filteredUsers = users?.filter(
     (u) =>
@@ -458,24 +491,35 @@ const InviteCodeGenerate = () => {
       u.email?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
+  const visibleUsers = filteredUsers && filteredUsers.length > 0 ? filteredUsers : users;
+
   return (
-    <div className={`min-h-screen ${theme.bg} ${theme.text} p-6`}>
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent mb-2">
-            Super Admin Dashboard
-          </h1>
-          <p className={theme.textMuted}>
-            Manage users, samples, and system settings
-          </p>
+    <div className={`min-h-screen ${theme.bg} ${theme.text}`}>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Admin console</h1>
+            <p className={`text-sm mt-1 ${theme.textMuted}`}>
+              Manage users, invite codes, and state coverage
+            </p>
+          </div>
+          <button
+            onClick={() => navigate("/dashboard")}
+            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border ${theme.border} text-sm font-medium hover:bg-gray-500/5 transition-colors`}
+          >
+            <LayoutDashboard size={16} />
+            Dashboard
+          </button>
         </div>
 
+        {/* Tabs */}
         <div
           role="tablist"
           aria-label="Dashboard sections"
-          className="flex gap-1 mb-6 overflow-x-auto pb-2 border-b border-gray-700/50 -mx-1 px-1"
+          className={`inline-flex flex-wrap gap-1 p-1 rounded-2xl border ${theme.border} ${theme.card} mb-6`}
         >
-          {tabs.filter(Boolean).map((tab) => {
+          {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
@@ -487,169 +531,155 @@ const InviteCodeGenerate = () => {
                 id={`tab-${tab.id}`}
                 tabIndex={isActive ? 0 : -1}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-3 rounded-t-lg transition-all whitespace-nowrap border-b-2 -mb-px focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
                   isActive
-                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500 font-semibold"
-                    : `border-transparent ${theme.text} ${theme.textMuted} hover:text-gray-200 hover:bg-gray-700/50`
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : `${theme.textMuted} hover:bg-gray-500/10`
                 }`}
               >
-                <Icon size={18} className="flex-shrink-0" />
-                {tab.label}
+                <Icon size={16} className="shrink-0" />
+                <span className="hidden sm:inline">{tab.label}</span>
               </button>
             );
           })}
         </div>
 
+        {/* Panel */}
         <div
           id={`panel-${activeTab}`}
           role="tabpanel"
           aria-labelledby={`tab-${activeTab}`}
-          className={`${theme.card} rounded-2xl shadow-xl border ${theme.border} p-6`}
+          className={`${theme.card} rounded-3xl border ${theme.border} p-6 sm:p-8`}
         >
+          {/* ---------------------------- INVITE CODES ---------------------------- */}
           {activeTab === "invite" && (
             <div>
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <KeyRound className="text-emerald-500" /> Generate Invite Codes
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-                {roles.map(({ role, org }) => (
-                  <button
-                    key={role}
-                    onClick={() => handleGenerateInviteCode(role, org)}
-                    disabled={inviteLoading}
-                    className="group flex flex-col gap-1.5 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-emerald-400 hover:bg-emerald-50/30 dark:hover:bg-emerald-900/10 transition-all text-left disabled:opacity-50 disabled:pointer-events-none"
-                  >
-                    <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-                      {org || "General"}
-                    </span>
-                    <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
-                      {role
-                        .replace(/_/g, " ")
-                        .toLowerCase()
-                        .replace(/\b\w/g, (l) => l.toUpperCase())}
-                    </span>
-                    <span className="flex items-center gap-1 text-xs text-gray-400 group-hover:text-emerald-600 transition-colors mt-1">
-                      <Plus size={12} /> Generate code
-                    </span>
-                  </button>
-                ))}
+              <SectionHeading
+                icon={KeyRound}
+                title="Generate invite codes"
+                description="Select a role to generate a one-time invite code. It's copied to your clipboard automatically."
+              />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+                {roles.map(({ role, org }) => {
+                  const isBusy = inviteLoading && generatingRole === role;
+                  return (
+                    <button
+                      key={role}
+                      onClick={() => handleGenerateInviteCode(role, org)}
+                      disabled={inviteLoading}
+                      className={`group flex flex-col gap-2 p-4 rounded-2xl border ${theme.border} text-left transition-all hover:border-emerald-500 hover:bg-emerald-500/5 disabled:opacity-50 disabled:pointer-events-none`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                          {org || "General"}
+                        </span>
+                        {isBusy ? (
+                          <Loader2 size={14} className="animate-spin text-emerald-500" />
+                        ) : (
+                          <Plus
+                            size={14}
+                            className="text-gray-400 group-hover:text-emerald-500 transition-colors"
+                          />
+                        )}
+                      </div>
+                      <span className="font-semibold text-sm">{formatLabel(role)}</span>
+                    </button>
+                  );
+                })}
               </div>
 
               {generatedCode && (
-                <div className="p-5 bg-gradient-to-br from-emerald-900/40 to-teal-900/30 border border-emerald-500/30 rounded-lg backdrop-blur-sm">
-                  <p className="text-xs font-medium text-emerald-400 mb-3 uppercase tracking-wide">
-                    Generated Invite Code
+                <div className="p-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 mb-4">
+                  <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide mb-3">
+                    Generated invite code
                   </p>
-                  <p className="text-emerald-300 font-mono text-lg text-center p-3 bg-gray-800/50 rounded border border-emerald-500/20 select-all cursor-pointer hover:bg-gray-800 transition-colors duration-200">
-                    {generatedCode}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 font-mono text-base sm:text-lg text-center py-3 rounded-xl bg-white/60 dark:bg-black/20 border border-emerald-500/20">
+                      {generatedCode}
+                    </code>
+                    <button
+                      onClick={handleCopyCode}
+                      className="shrink-0 p-3 rounded-xl border border-emerald-500/30 hover:bg-emerald-500/10 transition-colors"
+                      title="Copy code"
+                    >
+                      {copied ? (
+                        <Check size={18} className="text-emerald-500" />
+                      ) : (
+                        <Copy size={18} className="text-emerald-500" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               )}
 
-              {message && (
-                <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
-                  <p className="text-sm text-center text-emerald-400 font-medium">
-                    {message}
-                  </p>
-                </div>
-              )}
-
-              <button
-                onClick={() => navigate("/dashboard")}
-                className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-8 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 "
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                  />
-                </svg>
-                Go to Dashboard
-              </button>
+              {message && <Alert tone={message.tone}>{message.text}</Alert>}
             </div>
           )}
 
+          {/* ------------------------- SUPERVISORS & STATES ------------------------ */}
           {activeTab === "supervisors" && (
             <div>
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                  <MapPin className="text-emerald-500" /> Supervisor Management
-                </h2>
-                <button
-                  onClick={openAssignModalNew}
-                  className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium transition shadow-md"
-                >
-                  <Plus size={18} />
-                  Assign States
-                </button>
-              </div>
-              {message && (
-                <div className="mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm">
-                  {message}
-                </div>
-              )}
-              <div className="space-y-4">
+              <SectionHeading
+                icon={MapPin}
+                title="Supervisor management"
+                description="Assign the states each supervisor is responsible for."
+                action={
+                  <button
+                    onClick={openAssignModalNew}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors"
+                  >
+                    <Plus size={16} />
+                    Assign states
+                  </button>
+                }
+              />
+
+              {message && <Alert tone={message.tone} className="mb-4">{message.text}</Alert>}
+
+              <div className="space-y-3">
                 {supervisorsList.length === 0 ? (
-                  <p className={theme.textMuted}>
-                    No supervisors found. Create a user with role SUPERVISOR
-                    first.
-                  </p>
+                  <EmptyState>
+                    No supervisors found. Create a user with the supervisor role first.
+                  </EmptyState>
                 ) : (
                   supervisorsList.map((supervisor) => (
                     <div
                       key={supervisor.id}
-                      className={`rounded-xl border ${theme.border} p-4 ${theme.card} hover:shadow-md transition`}
+                      className={`rounded-2xl border ${theme.border} p-4`}
                     >
                       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-lg truncate">
-                            {supervisor.fullName}
-                          </h3>
+                        <div className="min-w-0">
+                          <h3 className="font-semibold truncate">{supervisor.fullName}</h3>
                           <p className={`text-sm truncate ${theme.textMuted}`}>
                             {supervisor.email}
                           </p>
                         </div>
                         <button
                           onClick={() => openAssignModalForEdit(supervisor)}
-                          className="self-end sm:self-auto flex items-center gap-2 px-3 py-2 rounded-lg border border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10 text-sm font-medium transition"
+                          className="self-start sm:self-auto inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 text-sm font-medium transition-colors"
                         >
-                          <Edit size={16} />
+                          <Edit size={14} />
                           Edit states
                         </button>
                       </div>
-                      <div className="mt-3 pt-3 border-t border-gray-700/50">
-                        <p
-                          className={`text-xs font-semibold mb-2 ${theme.textMuted}`}
-                        >
-                          Assigned States (
-                          {supervisor.supervisorStates?.length ?? 0})
+                      <div className={`mt-3 pt-3 border-t ${theme.border}`}>
+                        <p className={`text-xs font-semibold mb-2 ${theme.textMuted}`}>
+                          Assigned states ({supervisor.supervisorStates?.length ?? 0})
                         </p>
-                        {supervisor.supervisorStates &&
-                        supervisor.supervisorStates.length > 0 ? (
+                        {supervisor.supervisorStates && supervisor.supervisorStates.length > 0 ? (
                           <div className="flex flex-wrap gap-2">
                             {supervisor.supervisorStates.map((ss) => (
                               <span
                                 key={ss.stateId}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 text-sm"
+                                className="inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-sm"
                               >
-                                <MapPin size={14} />
+                                <MapPin size={13} />
                                 {ss.state?.name ?? ss.stateId}
                                 <button
                                   type="button"
-                                  onClick={() =>
-                                    handleUnassignState(
-                                      supervisor.id,
-                                      ss.stateId,
-                                    )
-                                  }
-                                  className="ml-1 p-0.5 rounded hover:bg-emerald-500/30 text-emerald-200"
+                                  onClick={() => handleUnassignState(supervisor.id, ss.stateId)}
+                                  className="p-0.5 rounded-full hover:bg-emerald-500/20"
                                   aria-label="Unassign"
                                 >
                                   <Trash2 size={12} />
@@ -658,9 +688,7 @@ const InviteCodeGenerate = () => {
                             ))}
                           </div>
                         ) : (
-                          <p className={`text-sm ${theme.textMuted}`}>
-                            No states assigned
-                          </p>
+                          <p className={`text-sm ${theme.textMuted}`}>No states assigned</p>
                         )}
                       </div>
                     </div>
@@ -670,46 +698,35 @@ const InviteCodeGenerate = () => {
             </div>
           )}
 
+          {/* --------------------------- STATE ACTIVATION -------------------------- */}
           {activeTab === "stateActivation" && (
             <div>
-              <div className="mb-6">
-                <h2 className="text-xl font-bold flex items-center gap-2 mb-1">
-                  <Settings className="text-emerald-500" /> State activation
-                </h2>
-                <p className={`text-sm ${theme.textMuted}`}>
-                  Activate or deactivate states. Only active states appear in
-                  dropdowns (e.g. Add Sample).
-                </p>
-              </div>
+              <SectionHeading
+                icon={Settings}
+                title="State activation"
+                description="Only active states appear in dropdowns, such as Add Sample."
+              />
 
               {activationError && (
-                <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
-                  {activationError}
-                </div>
+                <Alert tone="error" className="mb-4">{activationError}</Alert>
               )}
-              {message && (
-                <div className="mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm">
-                  {message}
-                </div>
-              )}
+              {message && <Alert tone={message.tone} className="mb-4">{message.text}</Alert>}
 
-              {/* Scope bar: selection count + bulk actions (UX: show what will change) */}
               {selectedStateIds.length > 0 && (
-                <div className="mb-4 p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 flex flex-wrap items-center gap-3">
-                  <span className="text-sm font-medium text-emerald-400">
+                <div className="mb-4 p-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mr-1">
                     {selectedStateIds.length} selected
                   </span>
                   <button
                     type="button"
                     disabled={activationBulkBusy}
                     onClick={() => handleActivationBulk(true)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-medium min-h-[44px] min-w-[44px]"
-                    title="Activate selected states"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-medium"
                   >
                     {activationBulkBusy ? (
-                      <Loader2 size={18} className="animate-spin" />
+                      <Loader2 size={15} className="animate-spin" />
                     ) : (
-                      <Check size={18} />
+                      <Check size={15} />
                     )}
                     Activate
                   </button>
@@ -717,142 +734,99 @@ const InviteCodeGenerate = () => {
                     type="button"
                     disabled={activationBulkBusy}
                     onClick={() => handleActivationBulk(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 disabled:opacity-50 text-white text-sm font-medium min-h-[44px] min-w-[44px]"
-                    title="Deactivate selected states"
+                    className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border ${theme.border} disabled:opacity-50 text-sm font-medium hover:bg-gray-500/10`}
                   >
                     {activationBulkBusy ? (
-                      <Loader2 size={18} className="animate-spin" />
+                      <Loader2 size={15} className="animate-spin" />
                     ) : (
-                      <X size={18} />
+                      <X size={15} />
                     )}
                     Deactivate
                   </button>
                   <button
                     type="button"
                     onClick={() => setSelectedStateIds([])}
-                    className="text-sm text-gray-400 hover:text-gray-200"
+                    className={`text-sm ${theme.textMuted} hover:opacity-80 ml-1`}
                   >
-                    Clear selection
+                    Clear
                   </button>
                 </div>
               )}
 
-              {/* Search: filter by name or code */}
-              <div className="mb-4 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <div className="relative mb-4">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search by state name or code..."
+                  placeholder="Search by state name or code"
                   value={stateSearch}
                   onChange={(e) => setStateSearch(e.target.value)}
-                  className={`w-full pl-10 pr-4 py-2.5 rounded-lg border ${theme.input} text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border ${theme.border} bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500`}
                 />
               </div>
 
               {activationLoading ? (
-                <div className="flex items-center gap-2 py-8 text-center">
-                  <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
-                  <span className={theme.textMuted}>Loading states...</span>
+                <div className="flex items-center justify-center gap-2 py-12">
+                  <Loader2 className="w-5 h-5 animate-spin text-emerald-500" />
+                  <span className={theme.textMuted}>Loading states…</span>
                 </div>
               ) : (
-                <div
-                  className={`rounded-xl border ${theme.border} overflow-hidden ${theme.card}`}
-                >
+                <div className={`rounded-2xl border ${theme.border} overflow-hidden`}>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead
-                        className={
-                          theme.bg === "bg-gray-800"
-                            ? "bg-gray-700/80"
-                            : "bg-gray-100"
-                        }
-                      >
+                      <thead className="bg-gray-500/5">
                         <tr>
-                          <th className="px-4 py-3 text-left w-12">
+                          <th className="px-4 py-3 text-left w-10">
                             <input
                               type="checkbox"
                               checked={
                                 filteredActivationStates.length > 0 &&
-                                selectedStateIds.length ===
-                                  filteredActivationStates.length
+                                selectedStateIds.length === filteredActivationStates.length
                               }
                               onChange={toggleActivationSelectAll}
-                              className="rounded border-gray-400 w-5 h-5 min-w-[24px] min-h-[24px]"
+                              className="rounded border-gray-400 w-4 h-4 accent-emerald-600"
                               aria-label="Select all"
                             />
                           </th>
-                          <th
-                            className={`px-4 py-3 text-left font-semibold ${theme.textMuted}`}
-                          >
+                          <th className={`px-4 py-3 text-left font-semibold ${theme.textMuted}`}>
                             Name
                           </th>
-                          <th
-                            className={`px-4 py-3 text-left font-semibold ${theme.textMuted}`}
-                          >
+                          <th className={`px-4 py-3 text-left font-semibold ${theme.textMuted}`}>
                             Code
                           </th>
-                          <th
-                            className={`px-4 py-3 text-left font-semibold ${theme.textMuted}`}
-                          >
+                          <th className={`px-4 py-3 text-left font-semibold ${theme.textMuted}`}>
                             Status
                           </th>
-                          <th
-                            className={`px-4 py-3 text-left font-semibold ${theme.textMuted}`}
-                          >
+                          <th className={`px-4 py-3 text-right font-semibold ${theme.textMuted}`}>
                             Action
                           </th>
                         </tr>
                       </thead>
                       <tbody className={`divide-y ${theme.border}`}>
                         {filteredActivationStates.map((state) => (
-                          <tr
-                            key={state.id}
-                            className={`${theme.hover || "hover:bg-gray-700/30"}`}
-                          >
+                          <tr key={state.id} className="hover:bg-gray-500/5 transition-colors">
                             <td className="px-4 py-3">
                               <input
                                 type="checkbox"
                                 checked={selectedStateIds.includes(state.id)}
-                                onChange={() =>
-                                  toggleActivationSelect(state.id)
-                                }
-                                className="rounded border-gray-400 w-5 h-5 min-w-[24px] min-h-[24px]"
+                                onChange={() => toggleActivationSelect(state.id)}
+                                className="rounded border-gray-400 w-4 h-4 accent-emerald-600"
                                 aria-label={`Select ${state.name}`}
                               />
                             </td>
-                            <td
-                              className={`px-4 py-3 font-medium ${theme.text}`}
-                            >
-                              {state.name}
-                            </td>
-                            <td className={`px-4 py-3 ${theme.textMuted}`}>
-                              {state.code}
-                            </td>
+                            <td className="px-4 py-3 font-medium">{state.name}</td>
+                            <td className={`px-4 py-3 ${theme.textMuted}`}>{state.code}</td>
                             <td className="px-4 py-3">
-                              <span
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full border ${
-                                  state.isActive
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                    : "bg-gray-100 dark:bg-gray-700 text-gray-500 border-gray-200 dark:border-gray-600"
-                                }`}
-                              >
-                                {state.isActive ? (
-                                  <Check size={11} />
-                                ) : (
-                                  <X size={11} />
-                                )}
-                                {state.isActive ? "Active" : "Inactive"}
-                              </span>
+                              <StatusPill active={state.isActive} />
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-4 py-3 text-right">
                               <button
                                 type="button"
                                 disabled={activationBusyId === state.id}
                                 onClick={() => handleActivationToggleOne(state)}
-                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition disabled:opacity-50 min-h-[36px] ${
+                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition disabled:opacity-50 ${
                                   state.isActive
-                                    ? "text-amber-700 border-amber-200 hover:bg-amber-50"
-                                    : "text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                                    ? "text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10"
+                                    : "text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
                                 }`}
                               >
                                 {activationBusyId === state.id ? (
@@ -870,10 +844,8 @@ const InviteCodeGenerate = () => {
                     </table>
                   </div>
                   {filteredActivationStates.length === 0 && (
-                    <div className={`px-4 py-8 text-center ${theme.textMuted}`}>
-                      {stateSearch.trim()
-                        ? "No states match your search."
-                        : "No states found."}
+                    <div className={`px-4 py-10 text-center ${theme.textMuted}`}>
+                      {stateSearch.trim() ? "No states match your search." : "No states found."}
                     </div>
                   )}
                 </div>
@@ -881,684 +853,334 @@ const InviteCodeGenerate = () => {
             </div>
           )}
 
+          {/* --------------------------------- USERS -------------------------------- */}
           {activeTab === "users" && (
             <div>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                  <Users className="text-emerald-500" /> User Management
-                </h2>
-                <div className="relative">
+              <SectionHeading
+                icon={Users}
+                title="User management"
+                description="Create accounts and manage existing users."
+              />
+
+              {/* Create user */}
+              <div className={`rounded-2xl border ${theme.border} p-5 sm:p-6 mb-8`}>
+                <h3 className="font-semibold mb-4">Create a new user</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <FieldLabel required>Full name</FieldLabel>
+                    <input
+                      type="text"
+                      placeholder="Jane Doe"
+                      value={newUser.fullName}
+                      onChange={(e) => setNewUser({ ...newUser, fullName: e.target.value })}
+                      className={`w-full px-3.5 py-2.5 rounded-xl border ${theme.border} bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel required>Email address</FieldLabel>
+                    <input
+                      type="email"
+                      placeholder="jane@example.com"
+                      value={newUser.email}
+                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                      className={`w-full px-3.5 py-2.5 rounded-xl border ${theme.border} bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel required>Password</FieldLabel>
+                    <input
+                      type="password"
+                      placeholder="Temporary password"
+                      value={newUser.password}
+                      onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                      className={`w-full px-3.5 py-2.5 rounded-xl border ${theme.border} bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel required>System role</FieldLabel>
+                    <select
+                      value={newUser.role}
+                      onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                      className={`w-full px-3.5 py-2.5 rounded-xl border ${theme.border} bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                    >
+                      {(userRoles?.length ? userRoles : FALLBACK_USER_ROLES).map((role) => (
+                        <option key={role} value={role}>
+                          {userRoleLabels[role] || formatLabel(role)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <p className={`text-xs mt-4 ${theme.textMuted}`}>
+                  The new user will need to change their password on first login.
+                </p>
+
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-5">
+                  <button
+                    onClick={handleCreateUser}
+                    disabled={loading}
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-semibold transition-colors"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Creating…
+                      </>
+                    ) : (
+                      <>
+                        <Plus size={16} />
+                        Create user
+                      </>
+                    )}
+                  </button>
+                  {message && (
+                    <Alert tone={message.tone} className="sm:flex-1">
+                      {message.text}
+                    </Alert>
+                  )}
+                </div>
+              </div>
+
+              {/* User list */}
+              <div className="flex items-center justify-between mb-3 gap-3">
+                <h3 className="font-semibold">All users</h3>
+                <div className="relative w-full max-w-xs">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search users..."
+                    placeholder="Search users…"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 bg-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                  <Eye
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                    size={18}
+                    className={`w-full pl-9 pr-3 py-2 rounded-xl border ${theme.border} bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500`}
                   />
                 </div>
               </div>
 
-              <div
-                className={`${theme.card} rounded-lg shadow-xl ${theme.border}overflow-hidden`}
-              >
-                <div className=" bg-gradient-to-r from-emerald-400 to-teal-500 px-8 py-6 border-b border-teal-700">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm">
-                      <svg
-                        className={`w-6 h-6 ${theme.text}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
-                        />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className={`text-2xl font-bold`}>
-                        Register New User
-                      </h3>
-                      <p className={`${theme.text} text-sm mt-1`}>
-                        LeadCap Agents.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-8">
-                  <div className="mb-8">
-                    <h4
-                      className={`text-lg font-bold ${theme.text} mb-4 pb-2 border-b-2 border-emerald-600`}
-                    >
-                      User Credentials
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label
-                          className={`block text-sm font-semibold ${theme.textMuted} uppercase tracking-wide`}
-                        >
-                          Full Name <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Enter full name"
-                          value={newUser.fullName}
-                          onChange={(e) =>
-                            setNewUser({
-                              ...newUser,
-                              fullName: e.target.value,
-                            })
-                          }
-                          className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-blue-600 focus:outline-none bg-white text-gray-800 placeholder-gray-400 font-medium transition"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label
-                          className={`block text-sm font-semibold ${theme.textMuted} uppercase tracking-wide`}
-                        >
-                          Email Address <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="email"
-                          placeholder="user@example.com"
-                          value={newUser.email}
-                          onChange={(e) =>
-                            setNewUser({ ...newUser, email: e.target.value })
-                          }
-                          className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-blue-600 focus:outline-none bg-white text-gray-800 placeholder-gray-400 font-medium transition"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label
-                          className={`block text-sm font-semibold ${theme.textMuted} uppercase tracking-wide`}
-                        >
-                          Password <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="password"
-                          placeholder="Enter secure password"
-                          value={newUser.password}
-                          onChange={(e) =>
-                            setNewUser({
-                              ...newUser,
-                              password: e.target.value,
-                            })
-                          }
-                          className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-blue-600 focus:outline-none bg-white text-gray-800 placeholder-gray-400 font-medium transition"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label
-                          className={`block text-sm font-semibold ${theme.textMuted} uppercase tracking-wide`}
-                        >
-                          System Role <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                          value={newUser.role}
-                          onChange={(e) =>
-                            setNewUser({ ...newUser, role: e.target.value })
-                          }
-                          className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-blue-600 focus:outline-none bg-white text-gray-800 font-medium transition"
-                        >
-                          {(userRoles?.length
-                            ? userRoles
-                            : FALLBACK_USER_ROLES
-                          ).map((role) => (
-                            <option key={role} value={role}>
-                              {userRoleLabels[role] || role.replace(/_/g, " ")}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="mt-6 bg-blue-50 border-l-4 border-emerald-600 p-4 rounded-r-lg">
-                      <div className="flex items-start gap-3">
-                        <svg
-                          className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                        <div>
-                          <p className="text-sm font-semibold text-emerald-800 mb-1">
-                            Important Information
-                          </p>
-                          <p className="text-sm text-emerald-700">
-                            Please ensure all information is accurate. The user
-                            will receive credentials via email and must change
-                            their password on first login.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-6 border-t border-gray-200">
-                    <div className="flex gap-3">
-                      <button
-                        onClick={handleCreateUser}
-                        disabled={loading}
-                        className={`${
-                          loading
-                            ? "bg-gray-400 cursor-not-allowed"
-                            : "bg-emerald-600 hover:bg-emerald-700 hover:shadow-lg"
-                        } text-white font-semibold py-3 px-8 rounded-lg shadow-md transition-all duration-200 flex items-center gap-2`}
-                      >
-                        {loading ? (
-                          <>
-                            <svg
-                              className="animate-spin h-5 w-5 text-white"
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                            >
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                              ></circle>
-                              <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                              ></path>
-                            </svg>
-                            Creating User...
-                          </>
-                        ) : (
-                          <>
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 4v16m8-8H4"
-                              />
-                            </svg>
-                            Create User Account
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    {message && (
-                      <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-2 rounded-lg flex items-center gap-2">
-                        <svg
-                          className="w-5 h-5 text-emerald-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                        <span className="font-medium text-sm">{message}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto rounded-lg border border-gray-700">
-                <table className="w-full">
-                  <thead className="bg-gray-700/50">
-                    <tr className="border-b border-gray-600 pt-24">
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-emerald-400">
-                        Name
-                      </th>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-emerald-400">
-                        Email
-                      </th>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-emerald-400">
-                        Role
-                      </th>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-emerald-400">
-                        Status
-                      </th>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-emerald-400">
-                        Joined
-                      </th>
-                      <th className="text-center py-4 px-6 text-sm font-semibold text-emerald-400">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(filteredUsers && filteredUsers.length > 0
-                      ? filteredUsers
-                      : users
-                    ).map((user) => (
-                      <tr
-                        key={user.id}
-                        className="border-b border-gray-700/50 hover:bg-gray-700/30 transition"
-                      >
-                        <td className="py-3 px-4">{user.fullName}</td>
-                        <td className="py-3 px-4 text-sm text-gray-400">
-                          {user.email}
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className="text-xs px-2 py-1 bg-blue-500/20 text-blue-400 rounded">
-                            {userRoleLabels[user.role] ||
-                              user.role.replace(/_/g, " ")}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          {getStatusBadge(user.status)}
-                        </td>
-                        <td className="py-3 px-4 text-sm text-gray-400">
-                          {user.joinedDate}
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex gap-2 justify-center">
-                            <button
-                              onClick={() => handleViewUser(user.id)}
-                              className="p-1 hover:bg-emerald-500/20 rounded transition"
-                            >
-                              <Eye size={16} className="text-emerald-400" />
-                            </button>
-
-                            <button
-                              onClick={() => handleViewUser(user.id)}
-                              title="View / Edit"
-                              className="p-1 hover:bg-blue-500/20 rounded transition"
-                            >
-                              <Edit size={16} className="text-blue-400" />
-                            </button>
-
-                            <button
-                              onClick={() => handleDeleteUser(user.id)}
-                              title="Deactivate user"
-                              className="p-1 hover:bg-red-500/20 rounded transition"
-                            >
-                              <Trash2 size={16} className="text-red-400" />
-                            </button>
-                          </div>
-                        </td>
+              <div className={`rounded-2xl border ${theme.border} overflow-hidden`}>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-500/5">
+                      <tr>
+                        <th className={`text-left py-3 px-4 font-semibold ${theme.textMuted}`}>
+                          Name
+                        </th>
+                        <th className={`text-left py-3 px-4 font-semibold ${theme.textMuted}`}>
+                          Email
+                        </th>
+                        <th className={`text-left py-3 px-4 font-semibold ${theme.textMuted}`}>
+                          Role
+                        </th>
+                        <th className={`text-left py-3 px-4 font-semibold ${theme.textMuted}`}>
+                          Status
+                        </th>
+                        <th className={`text-left py-3 px-4 font-semibold ${theme.textMuted}`}>
+                          Joined
+                        </th>
+                        <th className={`text-right py-3 px-4 font-semibold ${theme.textMuted}`}>
+                          Actions
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className={`divide-y ${theme.border}`}>
+                      {(visibleUsers || []).map((user) => (
+                        <tr key={user.id} className="hover:bg-gray-500/5 transition-colors">
+                          <td className="py-3 px-4 font-medium">{user.fullName}</td>
+                          <td className={`py-3 px-4 ${theme.textMuted}`}>{user.email}</td>
+                          <td className="py-3 px-4">
+                            <span className="text-xs px-2 py-1 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-medium">
+                              {userRoleLabels[user.role] || formatLabel(user.role)}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <StatusPill active={user.status === "active"} />
+                          </td>
+                          <td className={`py-3 px-4 ${theme.textMuted}`}>{user.joinedDate}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex gap-1 justify-end">
+                              <button
+                                onClick={() => handleViewUser(user.id)}
+                                title="View / edit"
+                                className="p-1.5 rounded-lg hover:bg-emerald-500/10 transition-colors"
+                              >
+                                <Eye size={15} className="text-emerald-500" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteUser(user.id)}
+                                title="Deactivate user"
+                                className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors"
+                              >
+                                <Trash2 size={15} className="text-red-500" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {(!visibleUsers || visibleUsers.length === 0) && (
+                  <div className={`px-4 py-10 text-center ${theme.textMuted}`}>
+                    No users found.
+                  </div>
+                )}
               </div>
             </div>
           )}
 
+          {/* ------------------------------- VIEW / EDIT USER ----------------------------- */}
           {activeTab === "viewUser" && editableUser && (
-            <div
-              className={`${theme.card} rounded-lg shadow-xl border border-gray-200 overflow-hidden`}
-            >
-              <div className="bg-gradient-to-r from-emerald-400 to-teal-500 px-8 py-6 border-b border-teal-700">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm">
-                      <Eye className="text-white w-6 h-6" />
-                    </div>
-                    <div>
-                      <h2 className={`text-2xl font-bold ${theme.text}`}>
-                        User Profile
-                      </h2>
-                      <p className={`text-${theme.textMuted} text-sm mt-1`}>
-                        National Health Information System
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`px-4 py-1.5 rounded-full text-sm font-semibold ${
-                        editableUser.status === "active"
-                          ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/30"
-                          : "bg-red-500/20 text-red-300 border border-red-400/30"
-                      }`}
-                    >
-                      {editableUser.status === "active" ? "Active" : "Inactive"}
-                    </span>
-                  </div>
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <button
+                  onClick={() => setActiveTab("users")}
+                  className={`inline-flex items-center gap-2 text-sm font-medium ${theme.textMuted} hover:text-emerald-500 transition-colors`}
+                >
+                  <ArrowLeft size={16} />
+                  Back to users
+                </button>
+                <StatusPill active={editableUser.status === "active"} />
+              </div>
+
+              <div className="flex items-center gap-3 mb-8">
+                <div className="w-11 h-11 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold">
+                  {editableUser.fullName?.charAt(0)?.toUpperCase() || "?"}
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold">{editableUser.fullName}</h2>
+                  <p className={`text-sm ${theme.textMuted}`}>{editableUser.email}</p>
                 </div>
               </div>
 
-              <div className="p-8">
-                <div className="mb-8">
-                  <h3
-                    className={`text-lg font-bold ${theme.text} mb-4 pb-2 border-b-2 border-teal-600`}
-                  >
-                    Personal Information
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label
-                        className={`block text-sm font-semibold ${theme.text} uppercase tracking-wide`}
-                      >
-                        Full Name
-                      </label>
-                      {isEditing ? (
-                        <input
-                          value={editableUser.fullName}
-                          onChange={(e) =>
-                            setEditableUser({
-                              ...editableUser,
-                              fullName: e.target.value,
-                            })
-                          }
-                          className="w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 focus:border-teal-600 focus:outline-none bg-white text-gray-800 font-medium transition"
-                        />
-                      ) : (
-                        <p
-                          className={`${theme.text} font-medium text-base px-4 py-2.5 ${theme.bg} rounded-lg`}
-                        >
-                          {editableUser.fullName}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <label
-                        className={`block text-sm font-semibold ${theme.text} uppercase tracking-wide`}
-                      >
-                        Email Address
-                      </label>
-                      <p
-                        className={`${theme.text} font-medium text-base px-4 py-2.5 ${theme.bg} rounded-lg`}
-                      >
-                        {editableUser.email}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mb-8">
-                  <h3
-                    className={`text-lg font-bold ${theme.text} mb-4 pb-2 border-b-2 border-teal-600`}
-                  >
-                    Role & Access Level
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label
-                        className={`block text-sm font-semibold ${theme.text} uppercase tracking-wide`}
-                      >
-                        System Role
-                      </label>
-                      {isEditing ? (
-                        <select
-                          value={editableUser.role}
-                          onChange={(e) =>
-                            setEditableUser({
-                              ...editableUser,
-                              role: e.target.value,
-                            })
-                          }
-                          className="w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 focus:border-teal-600 focus:outline-none bg-white text-gray-800 font-medium transition"
-                        >
-                          {(userRoles?.length
-                            ? userRoles
-                            : FALLBACK_USER_ROLES
-                          ).map((role) => (
-                            <option key={role} value={role}>
-                              {userRoleLabels[role] || role.replace(/_/g, " ")}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <p
-                          className={`${theme.text} font-medium text-base px-4 py-2.5 ${theme.bg} rounded-lg`}
-                        >
-                          {editableUser.role
-                            .replace(/_/g, " ")
-                            .replace(/\b\w/g, (l) => l.toUpperCase())}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <label
-                        className={`block text-sm font-semibold ${theme.text} uppercase tracking-wide`}
-                      >
-                        Account Status
-                      </label>
-                      {isEditing ? (
-                        <select
-                          value={editableUser.status}
-                          onChange={(e) =>
-                            setEditableUser({
-                              ...editableUser,
-                              status: e.target.value,
-                            })
-                          }
-                          className="w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 focus:border-teal-600 focus:outline-none bg-white text-gray-800 font-medium transition"
-                        >
-                          <option value="active">Active</option>
-                          <option value="inactive">Inactive</option>
-                        </select>
-                      ) : (
-                        <p
-                          className={`${theme.text} font-medium text-base px-4 py-2.5 ${theme.bg} rounded-lg`}
-                        >
-                          {editableUser.status}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mb-8">
-                  <h3
-                    className={`text-lg font-bold ${theme.text} mb-4 pb-2 border-b-2 border-teal-600`}
-                  >
-                    Account Timeline
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label
-                        className={`block text-sm font-semibold ${theme.text} uppercase tracking-wide`}
-                      >
-                        Date Registered
-                      </label>
-                      <p
-                        className={`${theme.text} font-medium text-base px-4 py-2.5 ${theme.bg} rounded-lg`}
-                      >
-                        {editableUser.joinedDate}
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label
-                        className={`block text-sm font-semibold ${theme.text} uppercase tracking-wide`}
-                      >
-                        Last Updated
-                      </label>
-                      <p
-                        className={`${theme.text} font-medium text-base px-4 py-2.5 ${theme.bg} rounded-lg`}
-                      >
-                        {editableUser.updatedAt}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mb-8">
-                  <h3
-                    className={`text-lg font-bold ${theme.text} mb-4 pb-2 border-b-2 border-teal-600`}
-                  >
-                    Activity Statistics
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border border-blue-200">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-semibold text-teal-700 uppercase tracking-wide mb-1">
-                            Total Samples
-                          </p>
-                          <p className="text-3xl font-bold text-teal-900">
-                            {editableUser.counts?.samples ?? 0}
-                          </p>
-                        </div>
-                        <div className="w-12 h-12 bg-teal-600 rounded-full flex items-center justify-center">
-                          <span className="text-white text-xl font-bold">
-                            {editableUser.counts?.samples ?? 0}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg p-6 border border-emerald-200">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-semibold text-emerald-700 uppercase tracking-wide mb-1">
-                            Total Comments
-                          </p>
-                          <p className="text-3xl font-bold text-emerald-900">
-                            {editableUser.counts?.comments ?? 0}
-                          </p>
-                        </div>
-                        <div className="w-12 h-12 bg-emerald-600 rounded-full flex items-center justify-center">
-                          <span className="text-white text-xl font-bold">
-                            {editableUser.counts?.comments ?? 0}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-6 border-t border-gray-200">
-                  <div className="flex gap-3">
-                    {isEditing ? (
-                      <>
-                        <button
-                          onClick={handleSaveUser}
-                          className="bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2"
-                        >
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                          Save Changes
-                        </button>
-                        <button
-                          onClick={() => {
-                            setIsEditing(false);
-                            setEditableUser({ ...selectedUser });
-                          }}
-                          className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-8 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2"
-                        >
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M6 18L18 6M6 6l12 12"
-                            />
-                          </svg>
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={handleToggleEdit}
-                          className="bg-teal-600 hover:bg-emerald-700 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2"
-                        >
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                            />
-                          </svg>
-                          Edit Profile
-                        </button>
-                        <button
-                          onClick={() => setActiveTab("users")}
-                          className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-8 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2"
-                        >
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M10 19l-7-7m0 0l7-7m-7 7h18"
-                            />
-                          </svg>
-                          Back to Users
-                        </button>
-                      </>
-                    )}
-                  </div>
-
-                  {message && (
-                    <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-2 rounded-lg flex items-center gap-2">
-                      <svg
-                        className="w-5 h-5 text-emerald-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      <span className="font-medium text-sm">{message}</span>
-                    </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div>
+                  <FieldLabel>Full name</FieldLabel>
+                  {isEditing ? (
+                    <input
+                      value={editableUser.fullName}
+                      onChange={(e) =>
+                        setEditableUser({ ...editableUser, fullName: e.target.value })
+                      }
+                      className={`w-full px-3.5 py-2.5 rounded-xl border ${theme.border} bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                    />
+                  ) : (
+                    <p className="text-sm font-medium py-2.5">{editableUser.fullName}</p>
                   )}
                 </div>
+
+                <div>
+                  <FieldLabel>Email address</FieldLabel>
+                  <p className={`text-sm font-medium py-2.5 ${theme.textMuted}`}>
+                    {editableUser.email}
+                  </p>
+                </div>
+
+                <div>
+                  <FieldLabel>System role</FieldLabel>
+                  {isEditing ? (
+                    <select
+                      value={editableUser.role}
+                      onChange={(e) =>
+                        setEditableUser({ ...editableUser, role: e.target.value })
+                      }
+                      className={`w-full px-3.5 py-2.5 rounded-xl border ${theme.border} bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                    >
+                      {(userRoles?.length ? userRoles : FALLBACK_USER_ROLES).map((role) => (
+                        <option key={role} value={role}>
+                          {userRoleLabels[role] || formatLabel(role)}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="text-sm font-medium py-2.5">
+                      {userRoleLabels[editableUser.role] || formatLabel(editableUser.role)}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <FieldLabel>Account status</FieldLabel>
+                  {isEditing ? (
+                    <select
+                      value={editableUser.status}
+                      onChange={(e) =>
+                        setEditableUser({ ...editableUser, status: e.target.value })
+                      }
+                      className={`w-full px-3.5 py-2.5 rounded-xl border ${theme.border} bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                    >
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  ) : (
+                    <p className="text-sm font-medium py-2.5 capitalize">
+                      {editableUser.status}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <FieldLabel>Date registered</FieldLabel>
+                  <p className={`text-sm font-medium py-2.5 ${theme.textMuted}`}>
+                    {editableUser.joinedDate}
+                  </p>
+                </div>
+
+                <div>
+                  <FieldLabel>Last updated</FieldLabel>
+                  <p className={`text-sm font-medium py-2.5 ${theme.textMuted}`}>
+                    {editableUser.updatedAt}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mb-8">
+                <div className={`rounded-2xl border ${theme.border} p-5`}>
+                  <p className={`text-xs font-semibold uppercase tracking-wide mb-1 ${theme.textMuted}`}>
+                    Total samples
+                  </p>
+                  <p className="text-2xl font-bold">{editableUser.counts?.samples ?? 0}</p>
+                </div>
+                <div className={`rounded-2xl border ${theme.border} p-5`}>
+                  <p className={`text-xs font-semibold uppercase tracking-wide mb-1 ${theme.textMuted}`}>
+                    Total comments
+                  </p>
+                  <p className="text-2xl font-bold">{editableUser.counts?.comments ?? 0}</p>
+                </div>
+              </div>
+
+              <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-6 border-t ${theme.border}`}>
+                <div className="flex gap-3">
+                  {isEditing ? (
+                    <>
+                      <button
+                        onClick={handleSaveUser}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors"
+                      >
+                        <Check size={16} />
+                        Save changes
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsEditing(false);
+                          setEditableUser({ ...selectedUser });
+                        }}
+                        className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border ${theme.border} text-sm font-semibold hover:bg-gray-500/10 transition-colors`}
+                      >
+                        <X size={16} />
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={handleToggleEdit}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors"
+                    >
+                      <Edit size={16} />
+                      Edit profile
+                    </button>
+                  )}
+                </div>
+                {message && <Alert tone={message.tone}>{message.text}</Alert>}
               </div>
             </div>
           )}
@@ -1569,17 +1191,12 @@ const InviteCodeGenerate = () => {
       {showAssignModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
           <div
-            className={`${theme.card} rounded-2xl shadow-2xl border ${theme.border} p-6 max-w-md w-full max-h-[90vh] overflow-y-auto`}
+            className={`${theme.card} rounded-3xl border ${theme.border} p-6 max-w-md w-full max-h-[90vh] overflow-y-auto`}
           >
-            <h2 className="text-xl font-bold mb-4">
-              Assign States to Supervisor
-            </h2>
+            <h2 className="text-lg font-bold mb-5">Assign states to supervisor</h2>
+
             <div className="mb-4">
-              <label
-                className={`block text-sm font-semibold mb-2 ${theme.text}`}
-              >
-                Select Supervisor
-              </label>
+              <FieldLabel>Supervisor</FieldLabel>
               <select
                 value={selectedSupervisor ?? ""}
                 onChange={(e) => {
@@ -1588,17 +1205,15 @@ const InviteCodeGenerate = () => {
                   if (id) {
                     const sup = supervisorsList.find((s) => s.id === id);
                     setSelectedStates(
-                      (sup?.supervisorStates || []).map(
-                        (ss) => ss.state?.id ?? ss.stateId,
-                      ),
+                      (sup?.supervisorStates || []).map((ss) => ss.state?.id ?? ss.stateId),
                     );
                   } else {
                     setSelectedStates([]);
                   }
                 }}
-                className={`w-full px-3 py-2 rounded-lg border ${theme.input}`}
+                className={`w-full px-3.5 py-2.5 rounded-xl border ${theme.border} bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500`}
               >
-                <option value="">Choose a supervisor...</option>
+                <option value="">Choose a supervisor…</option>
                 {supervisorsList.map((sup) => (
                   <option key={sup.id} value={sup.id}>
                     {sup.fullName} ({sup.email})
@@ -1606,19 +1221,14 @@ const InviteCodeGenerate = () => {
                 ))}
               </select>
             </div>
-            <div className="mb-6">
-              <label
-                className={`block text-sm font-semibold mb-2 ${theme.text}`}
-              >
-                Select States
-              </label>
-              <div
-                className={`border rounded-lg p-3 max-h-48 overflow-y-auto ${theme.bg}`}
-              >
+
+            <div className="mb-5">
+              <FieldLabel>States</FieldLabel>
+              <div className={`border ${theme.border} rounded-xl p-3 max-h-48 overflow-y-auto`}>
                 {statesList.map((state) => (
                   <label
                     key={state.id}
-                    className="flex items-center gap-2 py-2 cursor-pointer text-sm"
+                    className="flex items-center gap-2.5 py-2 cursor-pointer text-sm"
                   >
                     <input
                       type="checkbox"
@@ -1627,25 +1237,19 @@ const InviteCodeGenerate = () => {
                         if (e.target.checked) {
                           setSelectedStates([...selectedStates, state.id]);
                         } else {
-                          setSelectedStates(
-                            selectedStates.filter((id) => id !== state.id),
-                          );
+                          setSelectedStates(selectedStates.filter((id) => id !== state.id));
                         }
                       }}
-                      className="rounded border-gray-400"
+                      className="rounded border-gray-400 w-4 h-4 accent-emerald-600"
                     />
                     <span>{state.name}</span>
                   </label>
                 ))}
               </div>
             </div>
-            {assignError && (
-              <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
-                {assignError}
-              </div>
-            )}
-            /* this is the correct component chat updated as required using this
-            component. the other one was not in used i will remove it * /
+
+            {assignError && <Alert tone="error" className="mb-4">{assignError}</Alert>}
+
             <div className="flex gap-3">
               <button
                 onClick={() => {
@@ -1654,20 +1258,16 @@ const InviteCodeGenerate = () => {
                   setSelectedStates([]);
                   setAssignError(null);
                 }}
-                className={`flex-1 px-4 py-2 rounded-lg border ${theme.border} ${theme.text} hover:opacity-90 transition`}
+                className={`flex-1 px-4 py-2.5 rounded-xl border ${theme.border} text-sm font-medium hover:bg-gray-500/10 transition-colors`}
               >
                 Cancel
               </button>
               <button
                 onClick={handleAssignStates}
-                disabled={
-                  assignLoading ||
-                  !selectedSupervisor ||
-                  selectedStates.length === 0
-                }
-                className="flex-1 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium transition"
+                disabled={assignLoading || !selectedSupervisor || selectedStates.length === 0}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
               >
-                {assignLoading ? "Assigning..." : "Assign States"}
+                {assignLoading ? "Assigning…" : "Assign states"}
               </button>
             </div>
           </div>

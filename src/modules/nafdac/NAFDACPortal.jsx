@@ -6,7 +6,6 @@ import RegistryHistory from "./pages/RegistryHistory";
 import ProductSearch from "./pages/ProductSearch";
 import VerificationLogs from "./pages/VerificationLogs";
 import RiskIntelligence from "./pages/RiskIntelligence";
-import UsersGovernance from "./pages/UsersGovernance";
 
 export default function NAFDACPortal() {
 
@@ -18,7 +17,6 @@ export default function NAFDACPortal() {
     search: <ProductSearch />,
     verifications: <VerificationLogs />,
     risk: <RiskIntelligence />,
-    users: <UsersGovernance />,
   };
 
   return (

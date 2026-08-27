@@ -4,11 +4,14 @@ import Sidebar from "../components/layout/Sidebar";
 import { useSelector, useDispatch } from "react-redux";
 import { handleLogout } from "../redux/slice/authSlice";
 import { useTheme } from "../context/ThemeContext";
-import { useState } from "react";
 import SampleFormModal from "../components/modals/SampleFormModal";
-import HeavyMetalFormModalNew from "../components/modals/lab-result_modal/HeavyMetalFormModalNew";
+import { lazy, Suspense, useState  } from "react";
+const HeavyMetalFormModalNew = lazy(
+  () => import("../components/modals/lab-result_modal/HeavyMetalFormModalNew"),
+);
 import { createSample } from "../redux/slice/samplesSlice";
 import useRoleDataLoader from "../hooks/useRoleDataLoader";
+import { useSupervisor } from "../modules/data-collector/hooks/useSupervisor";
 
 const Layout = () => {
   const dispatch = useDispatch();
@@ -20,6 +23,19 @@ const Layout = () => {
   const [showForm, setShowForm] = useState(false);
   const [showHeavyMetalModal, setShowHeavyMetalModal] = useState(false);
 
+  // Data Collectors may create samples only after a Supervisor assigns them.
+  // The hook is role-aware and remains inert for all other roles.
+  const {
+    supervisor,
+    loading: loadingSupervisor,
+    error: supervisorError,
+    assignmentChecked,
+    hasSupervisor,
+    isDataCollector,
+  } = useSupervisor();
+
+  const canCreateSample = !isDataCollector || hasSupervisor;
+
   const logout = () => {
     dispatch(handleLogout());
     sessionStorage.removeItem("accessToken");
@@ -27,6 +43,14 @@ const Layout = () => {
   };
 
   const handleFormSubmit = async (formData) => {
+    if (isDataCollector && !hasSupervisor) {
+      const message = supervisorError
+        ? "Your supervisor assignment could not be verified. Please try again later."
+        : "You must be assigned to a Supervisor before creating a sample.";
+
+      throw new Error(message);
+    }
+
     try {
       await dispatch(createSample(formData)).unwrap();
       setShowForm(false);
@@ -57,6 +81,11 @@ const Layout = () => {
               setCurrentView={setCurrentView}
               setShowForm={setShowForm}
               setShowHeavyMetalModal={setShowHeavyMetalModal}
+              supervisor={supervisor}
+              loadingSupervisor={loadingSupervisor}
+              supervisorError={supervisorError}
+              assignmentChecked={assignmentChecked}
+              canCreateSample={canCreateSample}
             />
 
             <main
@@ -89,18 +118,26 @@ const Layout = () => {
           )}
         </div>
 
-        {showForm && (
+        {showForm && canCreateSample && (
           <SampleFormModal
             onClose={() => setShowForm(false)}
             onSubmit={handleFormSubmit}
+            canCreateSample={canCreateSample}
+            creationBlockedReason={
+              supervisorError
+                ? "Your supervisor assignment could not be verified."
+                : "A Supervisor assignment is required before creating a sample."
+            }
           />
         )}
 
         {showHeavyMetalModal && (
-          <HeavyMetalFormModalNew
-            theme={theme}
-            onClose={() => setShowHeavyMetalModal(false)}
-          />
+          <Suspense fallback={null}>
+            <HeavyMetalFormModalNew
+              theme={theme}
+              onClose={() => setShowHeavyMetalModal(false)}
+            />
+          </Suspense>
         )}
       </div>
     </div>

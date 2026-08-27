@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
+
   server: {
     proxy: {
       "/api": {
@@ -13,12 +14,24 @@ export default defineConfig({
     },
   },
 
-   test: {
-    environment: "jsdom",   // simulate browser
-    globals: true,          // so you can use test(), expect() directly
-    setupFiles: "./src/test/setup.js"
+  test: {
+    environment: "jsdom",
+    globals: true,
+    setupFiles: "./src/test/setup.js",
   },
 
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Keep only genuinely independent/heavy libraries separated.
+          "vendor-pdf": ["jspdf"],
+          "vendor-excel": ["xlsx"],
+          "vendor-html2canvas": ["html2canvas"],
+        },
+      },
+    },
+
+    chunkSizeWarningLimit: 700,
+  },
 });
-
-

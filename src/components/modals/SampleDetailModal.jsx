@@ -3,6 +3,14 @@ import { useTheme } from "../../context/ThemeContext";
 import { useState } from "react";
 import ImageWithLoader from "./ImageWithLoader";
 import ImagePreviewModal from "./ImagePreviewModal";
+import { useSelector } from "react-redux";
+import HeavyMetalStatusBadge from "../common/HeavyMetalStatusBadge";
+import {
+  canViewHeavyMetalPpm,
+  getHeavyMetalPublicStatus,
+  // getRestrictedHeavyMetalMessage,
+  normalizeHeavyMetalStatus,
+} from "../../utils/heavyMetalStatus";
 
 const formatVendorType = (vendorType, vendorTypeOther) => {
   if (vendorType === "OTHER" && vendorTypeOther) return vendorTypeOther;
@@ -52,6 +60,10 @@ const SampleDetailModal = ({ sample, onClose, onEditRequest }) => {
   const { theme } = useTheme();
   const contaminationInfo = getContaminationInfo(sample?.heavyMetalReadings);
   const [previewImage, setPreviewImage] = useState(null);
+  const { currentUser } = useSelector((state) => state.auth);
+
+  const publicStatus = getHeavyMetalPublicStatus(sample);
+  const canViewPpm = canViewHeavyMetalPpm(currentUser, sample);
 
   const handleEdit = () => {
     onEditRequest?.(sample);
@@ -181,48 +193,126 @@ const SampleDetailModal = ({ sample, onClose, onEditRequest }) => {
 
           {/* Heavy Metal Table */}
           {contaminationInfo.hasReadings && (
-            <div className="rounded-xl border p-4">
-              <h3 className="text-sm font-semibold text-emerald-500 mb-3">
-                Heavy Metal Analysis
-              </h3>
+            // <div className="rounded-xl border p-4">
+            //   <h3 className="text-sm font-semibold text-emerald-500 mb-3">
+            //     Heavy Metal Analysis
+            //   </h3>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs sm:text-sm">
-                  <thead className={`border-b ${theme.border}`}>
-                    <tr>
-                      <th className="text-left py-2">Metal</th>
-                      <th className="text-left py-2">XRF</th>
-                      <th className="text-left py-2">AAS</th>
-                      <th className="text-left py-2">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {contaminationInfo.readings.map((r, i) => (
-                      <tr key={i} className={`border-b ${theme.border}`}>
-                        <td className="py-2">{r.metal}</td>
-                        <td>{r.xrf ? `${r.xrf} ppm` : "—"}</td>
-                        <td>{r.aas ? `${r.aas} ppm` : "—"}</td>
-                        <td>
-                          <span
-                            className={`px-2.5 py-1 text-[11px] sm:text-xs font-semibold rounded-full inline-flex items-center gap-1 ${
-                              r.status === "SAFE"
-                                ? "bg-green-100 text-green-700"
-                                : r.status === "CONTAMINATED"
-                                  ? "bg-red-100 text-red-700"
-                                  : r.status === "MODERATE"
-                                    ? "bg-orange-100 text-orange-700"
-                                    : "bg-yellow-100 text-yellow-700"
-                            }`}
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                            {r.status || "PENDING"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            //   <div className="overflow-x-auto">
+            //     <table className="w-full text-xs sm:text-sm">
+            //       <thead className={`border-b ${theme.border}`}>
+            //         <tr>
+            //           <th className="text-left py-2">Metal</th>
+            //           <th className="text-left py-2">XRF</th>
+            //           <th className="text-left py-2">AAS</th>
+            //           <th className="text-left py-2">Status</th>
+            //         </tr>
+            //       </thead>
+            //       <tbody>
+            //         {contaminationInfo.readings.map((r, i) => (
+            //           <tr key={i} className={`border-b ${theme.border}`}>
+            //             <td className="py-2">{r.metal}</td>
+            //             <td>{r.xrf ? `${r.xrf} ppm` : "—"}</td>
+            //             <td>{r.aas ? `${r.aas} ppm` : "—"}</td>
+            //             <td>
+            //               <span
+            //                 className={`px-2.5 py-1 text-[11px] sm:text-xs font-semibold rounded-full inline-flex items-center gap-1 ${
+            //                   r.status === "SAFE"
+            //                     ? "bg-green-100 text-green-700"
+            //                     : r.status === "CONTAMINATED"
+            //                       ? "bg-red-100 text-red-700"
+            //                       : r.status === "MODERATE"
+            //                         ? "bg-orange-100 text-orange-700"
+            //                         : "bg-yellow-100 text-yellow-700"
+            //                 }`}
+            //               >
+            //                 <span className="w-1.5 h-1.5 rounded-full bg-current" />
+            //                 {r.status || "PENDING"}
+            //               </span>
+            //             </td>
+            //           </tr>
+            //         ))}
+            //       </tbody>
+            //     </table>
+            //   </div>
+            // </div>
+            <div className="rounded-xl border p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-emerald-500">
+                    Heavy Metal Analysis
+                  </h3>
+                  <p className={`text-xs ${theme.textMuted}`}>
+                    Public result summary for this sample.
+                  </p>
+                </div>
+
+                <HeavyMetalStatusBadge status={publicStatus} size="md" />
               </div>
+
+              {!canViewPpm && (
+                <div className="rounded-lg border border-yellow-200 bg-yellow-50 text-yellow-800 p-3 text-xs sm:text-sm mb-4">
+                  Detailed heavy metal readings are restricted to authorized
+                  personnel.
+                </div>
+              )}
+
+              {contaminationInfo.hasReadings ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs sm:text-sm">
+                    <thead className={`border-b ${theme.border}`}>
+                      <tr>
+                        <th className="text-left py-2">Metal</th>
+
+                        {canViewPpm && (
+                          <>
+                            <th className="text-left py-2">XRF</th>
+                            <th className="text-left py-2">AAS</th>
+                          </>
+                        )}
+
+                        <th className="text-left py-2">Status</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {contaminationInfo.readings.map((reading, index) => {
+                        const readingStatus = normalizeHeavyMetalStatus(
+                          reading.status,
+                        );
+
+                        return (
+                          <tr
+                            key={index}
+                            className={`border-b ${theme.border}`}
+                          >
+                            <td className="py-2">{reading.metal}</td>
+
+                            {canViewPpm && (
+                              <>
+                                <td>
+                                  {reading.xrf ? `${reading.xrf} ppm` : "—"}
+                                </td>
+                                <td>
+                                  {reading.aas ? `${reading.aas} ppm` : "—"}
+                                </td>
+                              </>
+                            )}
+
+                            <td className="py-2">
+                              <HeavyMetalStatusBadge status={readingStatus} />
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className={`text-sm ${theme.textMuted}`}>
+                  No heavy metal result has been recorded for this sample yet.
+                </p>
+              )}
             </div>
           )}
 

@@ -1,44 +1,122 @@
 import axios from "axios";
+import { emitAuthLogout } from "./authEvents";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
-  /*headers: {
-    "Content-Type": "application/json",
-  },*/
   withCredentials: true,
 });
 
-// Attach token (never on login/register/refresh so stale JWT is not sent)
-const AUTH_PATHS = ["/auth/login", "/auth/register", "/auth/refresh-token"];
+const AUTH_PATHS = [
+  "/auth/login",
+  "/auth/register",
+  "/auth/refresh-token",
+  "/auth/logout",
+];
+
+let refreshPromise = null;
+
+const getAccessToken = () => sessionStorage.getItem("accessToken");
+const getRefreshToken = () => sessionStorage.getItem("refreshToken");
+
+const clearLocalSession = () => {
+  sessionStorage.removeItem("accessToken");
+  sessionStorage.removeItem("refreshToken");
+  sessionStorage.removeItem("user");
+};
+
+const refreshAccessToken = async () => {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) return null;
+
+  // One refresh request services all concurrent 401 responses.
+  if (!refreshPromise) {
+    refreshPromise = axios
+      .post(
+        `${import.meta.env.VITE_API_BASE_URL}/auth/refresh-token`,
+        { refreshToken },
+        {
+          withCredentials: true,
+          headers: { Authorization: `Bearer ${refreshToken}` },
+        },
+      )
+      .then((res) => {
+        const data = res.data?.data;
+        const newAccessToken = data?.accessToken;
+        const newRefreshToken = data?.refreshToken;
+
+        if (!res.data?.success || !newAccessToken) {
+          throw new Error("Refresh response did not contain an access token.");
+        }
+
+        sessionStorage.setItem("accessToken", newAccessToken);
+        if (newRefreshToken) {
+          sessionStorage.setItem("refreshToken", newRefreshToken);
+        }
+
+        return newAccessToken;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+
+  return refreshPromise;
+};
+
 api.interceptors.request.use(
   (config) => {
     const url = config.url || "";
     const isAuthEndpoint = AUTH_PATHS.some((path) => url.includes(path));
+
     if (!isAuthEndpoint) {
-      const token = sessionStorage.getItem("accessToken");
+      const token = getAccessToken();
       if (token) {
+        config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
+
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
-// Handle auth errors (lazy import to avoid circular dependency)
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      sessionStorage.clear();
-      import("../redux/store").then(({ store }) => {
-        import("../redux/slice/authSlice").then(({ handleLogout }) => {
-          store.dispatch(handleLogout());
-        });
-      });
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (
+      error.response?.status !== 401 ||
+      !originalRequest ||
+      originalRequest._retry ||
+      AUTH_PATHS.some((path) => (originalRequest.url || "").includes(path))
+    ) {
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
-  }
+
+    originalRequest._retry = true;
+
+    try {
+      const newAccessToken = await refreshAccessToken();
+
+      if (!newAccessToken) {
+        clearLocalSession();
+        emitAuthLogout();
+
+        return Promise.reject(error);
+      }
+
+      originalRequest.headers = originalRequest.headers || {};
+      originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+      return api(originalRequest);
+    } catch (refreshError) {
+      clearLocalSession();
+      emitAuthLogout();
+
+      return Promise.reject(refreshError);
+    }
+  },
 );
 
 export default api;

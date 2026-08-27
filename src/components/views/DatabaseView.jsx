@@ -1,22 +1,22 @@
 import { Search, Download, Lock, Loader } from "lucide-react";
 import api from "../../utils/api";
 
-import { getContaminationStatus } from "../../utils/chartDataHelpers";
 import SampleDetailModal from "../modals/SampleDetailModal";
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import HeavyMetalStatusBadge from "../common/HeavyMetalStatusBadge";
+import { getHeavyMetalPublicStatus } from "../../utils/heavyMetalStatus";
 
-const getMaxReading = (heavyMetalReadings) => {
-  if (!heavyMetalReadings || heavyMetalReadings.length === 0) return null;
+// const getMaxReading = (heavyMetalReadings) => {
+//   if (!heavyMetalReadings || heavyMetalReadings.length === 0) return null;
 
-  let maxReading = 0;
-  heavyMetalReadings.forEach((reading) => {
-    const xrf = reading.xrfReading ? parseFloat(reading.xrfReading) : 0;
-    const aas = reading.aasReading ? parseFloat(reading.aasReading) : 0;
-    maxReading = Math.max(maxReading, xrf, aas);
-  });
-  return maxReading > 0 ? maxReading : null;
-};
+//   let maxReading = 0;
+//   heavyMetalReadings.forEach((reading) => {
+//     const xrf = reading.xrfReading ? parseFloat(reading.xrfReading) : 0;
+//     const aas = reading.aasReading ? parseFloat(reading.aasReading) : 0;
+//     maxReading = Math.max(maxReading, xrf, aas);
+//   });
+//   return maxReading > 0 ? maxReading : null;
+// };
 
 const DatabaseView = ({
   theme,
@@ -39,7 +39,6 @@ const DatabaseView = ({
   fetchSampleError,
   // pagination
   pagination,
-  setPagination,
   // search query
   searchTerm,
   setSearchTerm,
@@ -47,10 +46,12 @@ const DatabaseView = ({
   handleFetchMore,
   loadingMore,
   loadingMoreError,
-  skip,
-  take,
-  totalItems,
 }) => {
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState({
+    isOpen: false,
+    sample: null,
+  });
+
   const isDataCollector =
     currentUser?.role?.toLowerCase().replace(/[\s_]/g, "") === "datacollector";
 
@@ -62,7 +63,7 @@ const DatabaseView = ({
         <div
           className={`${theme?.card} rounded-lg border ${theme?.border} shadow-md p-8 text-center max-w-md`}
         >
-          <Lock className='w-16 h-16 mx-auto mb-4 text-yellow-600' />
+          <Lock className="w-16 h-16 mx-auto mb-4 text-yellow-600" />
           <h2 className={`${theme?.text} text-2xl font-bold mb-2`}>
             Access Restricted
           </h2>
@@ -104,11 +105,6 @@ const DatabaseView = ({
       alert("Failed to export samples. Please try again.");
     }
   };
-  const [deleteConfirmModal, setDeleteConfirmModal] = useState({
-    isOpen: false,
-    sample: null,
-  });
-  const navigate = useNavigate();
   const handleDeleteSample = (sample) => {
     console.log(sample);
     api
@@ -134,23 +130,23 @@ const DatabaseView = ({
     if (!show) return null;
 
     return (
-      <div className='fixed inset-0 bg-black/60 flex items-center justify-center z-50'>
+      <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
         <div
           className={`${theme?.card} border ${theme?.border} ${theme?.text} rounded-xl p-6 shadow-xl max-w-sm w-full`}
         >
-          <h2 className='text-lg font-semibold mb-3 text-center'>
+          <h2 className="text-lg font-semibold mb-3 text-center">
             {`Are you sure you want to ${action}`}?
           </h2>
-          <div className='flex justify-center gap-3 mt-4'>
+          <div className="flex justify-center gap-3 mt-4">
             <button
               onClick={onConfirm}
-              className='bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg'
+              className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg"
             >
               {`Yes, ${action}`}
             </button>
             <button
               onClick={onCancel}
-              className='bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded-lg'
+              className="bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded-lg"
             >
               Cancel
             </button>
@@ -165,29 +161,29 @@ const DatabaseView = ({
       <div
         className={`${theme?.card} rounded-lg shadow-md border ${theme?.border} p-4`}
       >
-        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4'>
-          <div className='relative'>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="relative">
             <Search
               className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${theme?.textMuted}`}
             />
             <input
-              type='text'
+              type="text"
               disabled={loading || fetchSampleError}
-              placeholder='Search samples...'
+              placeholder="Search samples..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className={`w-full pl-10 pr-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
             />
           </div>
 
-          <div className='w-full max-w-full sm:max-w-[100%]'>
+          <div className="w-full max-w-full sm:max-w-[100%]">
             <select
               value={filterState}
               disabled={loading}
               onChange={(e) => setFilterState(e.target.value)}
               className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm sm:text-base`}
             >
-              <option value='all'>All States</option>
+              <option value="all">All States</option>
               {states &&
                 states.length > 0 &&
                 states.map((state) => (
@@ -204,7 +200,7 @@ const DatabaseView = ({
             onChange={(e) => setFilterCategory(e.target.value)}
             className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
           >
-            <option value='all'>All Categories</option>
+            <option value="all">All Categories</option>
             {[
               ...new Set(
                 samples && samples.length > 0
@@ -231,7 +227,7 @@ const DatabaseView = ({
             onChange={(e) => setFilterProductVariant(e.target.value)}
             className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
           >
-            <option value='all'>All Products</option>
+            <option value="all">All Products</option>
             {[
               ...new Set(
                 samples && samples.length > 0
@@ -258,26 +254,26 @@ const DatabaseView = ({
             onChange={(e) => setFilterStatus(e.target.value)}
             className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
           >
-            <option value='all'>All Status</option>
-            <option value='safe'>Safe</option>
-            <option value='moderate'>Moderate</option>
-            <option value='contaminated'>Contaminated</option>
-            <option value='pending'>Pending</option>
+            <option value="all">All Status</option>
+            <option value="safe">Safe</option>
+            <option value="moderate">Moderate</option>
+            <option value="contaminated">Contaminated</option>
+            <option value="pending">Pending</option>
           </select>
         </div>
 
-        <div className='flex justify-end mt-4'>
+        <div className="flex justify-end mt-4">
           <button
             onClick={() => handleExcelExportClick()}
             disabled={loading}
-            className='flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors'
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors"
           >
-            <Download className='w-4 h-4' />
+            <Download className="w-4 h-4" />
             Export Excel
           </button>
         </div>
         {fetchStateError && (
-          <p className='text-sm mt-1 text-red-600'>
+          <p className="text-sm mt-1 text-red-600">
             Error occurred while fetching states. Check connection and refresh
           </p>
         )}
@@ -300,16 +296,17 @@ const DatabaseView = ({
           <div
             className={`${theme?.card} rounded-lg shadow-md border ${theme?.border}`}
           >
-            <div className='hidden sm:block overflow-x-auto'>
-              <table className='w-full min-w-[800px] text-sm'>
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full min-w-[800px] text-sm">
                 <thead className={theme?.card}>
                   <tr>
                     {[
                       "Product",
                       "Location",
                       ...(canSeeCollector ? ["Collector"] : []),
-                      "Max Reading (ppm)",
-                      "Status",
+                      // "Max Reading (ppm)",
+                      // "Status",
+                      "Heavy Metal Result",
                       "Date",
                       "Actions",
                     ].map((header) => (
@@ -323,19 +320,20 @@ const DatabaseView = ({
                   </tr>
                 </thead>
                 {/* desktop view */}
-                <tbody className='divide-y divide-gray-200 dark:divide-gray-700'>
-                  {filteredSamples?.map((sample, i) => {
-                    const maxReading = getMaxReading(
-                      sample?.heavyMetalReadings,
-                    );
-                    const sampleStatus =
-                      getContaminationStatus(sample).toLowerCase();
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {filteredSamples?.map((sample) => {
+                    // const maxReading = getMaxReading(
+                    //   sample?.heavyMetalReadings,
+                    // );
+                    // const sampleStatus =
+                    //   getContaminationStatus(sample).toLowerCase();
+                    const heavyMetalStatus = getHeavyMetalPublicStatus(sample);
 
                     return (
                       <tr key={sample?.id} className={theme?.hover}>
-                        <td className='px-4 py-3 whitespace-nowrap'>
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <div>
-                            <div className='font-medium'>
+                            <div className="font-medium">
                               {sample?.productName}
                             </div>
                             <div className={`text-xs ${theme?.textMuted}`}>
@@ -343,7 +341,7 @@ const DatabaseView = ({
                             </div>
                           </div>
                         </td>
-                        <td className='px-4 py-3 whitespace-nowrap'>
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <div>
                             <div>
                               {sample?.lga?.name}, {sample?.state?.name}
@@ -354,8 +352,8 @@ const DatabaseView = ({
                           </div>
                         </td>
                         {canSeeCollector && (
-                          <td className='px-4 py-3 whitespace-nowrap'>
-                            <div className='font-medium text-sm'>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="font-medium text-sm">
                               {sample?.creator?.fullName ||
                                 sample?.creator?.email ||
                                 "Unknown"}
@@ -366,7 +364,7 @@ const DatabaseView = ({
                             </div>
                           </td>
                         )}
-                        <td className='px-4 py-3 whitespace-nowrap font-semibold'>
+                        {/* <td className='px-4 py-3 whitespace-nowrap font-semibold'>
                           {maxReading !== null ? (
                             <span
                               className={
@@ -398,22 +396,25 @@ const DatabaseView = ({
                           >
                             {sampleStatus?.toUpperCase() || "PENDING"}
                           </span>
+                        </td> */}
+                        <td className="px-4 py-3">
+                          <HeavyMetalStatusBadge status={heavyMetalStatus} />
                         </td>
-                        <td className='px-4 py-3 whitespace-nowrap'>
+                        <td className="px-4 py-3 whitespace-nowrap">
                           {sample?.createdAt
                             ? new Date(sample?.createdAt).toLocaleDateString()
                             : "N/A"}
                         </td>
-                        <td className='px-4 py-3 whitespace-nowrap'>
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <button
                             onClick={() => setSelectedSample(sample)}
-                            className='text-emerald-400 hover:text-emerald-300 font-medium'
+                            className="text-emerald-400 hover:text-emerald-300 font-medium"
                           >
                             View
                           </button>
                         </td>
                         {/* delete */}
-                        <td className='px-4 py-3 whitespace-nowrap'>
+                        <td className="px-4 py-3 whitespace-nowrap">
                           {isSuperAdmin && (
                             <button
                               onClick={() =>
@@ -422,7 +423,7 @@ const DatabaseView = ({
                                   sample: sample,
                                 })
                               }
-                              className='mt-2 text-red-400 hover:text-red-300 text-sm font-medium'
+                              className="mt-2 text-red-400 hover:text-red-300 text-sm font-medium"
                             >
                               Delete
                             </button>
@@ -435,8 +436,8 @@ const DatabaseView = ({
               </table>
 
               {fetchSampleError && (
-                <div className='py-3 flex justify-center'>
-                  <p className='text-sm mt-1 text-red-600'>
+                <div className="py-3 flex justify-center">
+                  <p className="text-sm mt-1 text-red-600">
                     Error occurred while fetching more samples. Check connection
                     and refresh
                   </p>
@@ -445,12 +446,13 @@ const DatabaseView = ({
             </div>
 
             {/* mobile view */}
-            <div className='block sm:hidden space-y-4 p-2'>
+            <div className="block sm:hidden space-y-4 p-2">
               {filteredSamples.length > 0 &&
                 filteredSamples.map((sample) => {
-                  const maxReading = getMaxReading(sample?.heavyMetalReadings);
-                  const sampleStatus =
-                    getContaminationStatus(sample).toLowerCase();
+                  // const maxReading = getMaxReading(sample?.heavyMetalReadings);
+                  // const sampleStatus =
+                  //   getContaminationStatus(sample).toLowerCase();
+                  const heavyMetalStatus = getHeavyMetalPublicStatus(sample);
 
                   return (
                     <div
@@ -458,29 +460,17 @@ const DatabaseView = ({
                       className={`${theme?.card} border ${theme?.border} rounded-xl p-4 shadow-md space-y-3`}
                     >
                       {/* HEADER */}
-                      <div className='flex justify-between items-center'>
-                        <span className='text-xs text-gray-500 font-medium'>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500 font-medium">
                           #{sample?.sampleId}
                         </span>
 
-                        <span
-                          className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            sampleStatus === "safe"
-                              ? "bg-green-100 text-green-800"
-                              : sampleStatus === "moderate"
-                                ? "bg-amber-100 text-amber-800"
-                                : sampleStatus === "contaminated"
-                                  ? "bg-red-100 text-red-800"
-                                  : "bg-yellow-100 text-yellow-800"
-                          }`}
-                        >
-                          {sampleStatus?.toUpperCase() || "PENDING"}
-                        </span>
+                        <HeavyMetalStatusBadge status={heavyMetalStatus} />
                       </div>
 
                       {/* PRODUCT */}
                       <div>
-                        <p className='font-semibold text-sm'>
+                        <p className="font-semibold text-sm">
                           {sample?.productName}
                         </p>
                         <p className={`text-xs ${theme?.textMuted}`}>
@@ -489,8 +479,8 @@ const DatabaseView = ({
                       </div>
 
                       {/* LOCATION */}
-                      <div className='text-sm'>
-                        <span className='font-medium'>📍 </span>
+                      <div className="text-sm">
+                        <span className="font-medium">📍 </span>
                         {sample?.lga?.name}, {sample?.state?.name}
                         <p className={`text-xs ${theme?.textMuted}`}>
                           {sample?.marketName || sample?.market?.name || "N/A"}
@@ -499,8 +489,8 @@ const DatabaseView = ({
 
                       {/* COLLECTOR */}
                       {canSeeCollector && (
-                        <div className='text-sm'>
-                          <span className='font-medium'>👤 </span>
+                        <div className="text-sm">
+                          <span className="font-medium">👤 </span>
                           {sample?.creator?.fullName ||
                             sample?.creator?.email ||
                             "Unknown"}
@@ -511,9 +501,9 @@ const DatabaseView = ({
                       )}
 
                       {/* METRICS */}
-                      <div className='flex justify-between text-sm'>
-                        <div>
-                          <p className='text-xs text-gray-500'>Max Reading</p>
+                      <div className="flex justify-between text-sm">
+                        {/* <div>
+                          <p className="text-xs text-gray-500">Max Reading</p>
                           {maxReading !== null ? (
                             <span
                               className={`font-semibold ${
@@ -527,15 +517,23 @@ const DatabaseView = ({
                               {maxReading.toLocaleString()} ppm
                             </span>
                           ) : (
-                            <span className='text-gray-400 text-xs'>
+                            <span className="text-gray-400 text-xs">
                               No readings
                             </span>
                           )}
+                        </div> */}
+                        <div>
+                          <p className="text-xs text-gray-500">
+                            Heavy Metal Result
+                          </p>
+                          <div className="mt-1">
+                            <HeavyMetalStatusBadge status={heavyMetalStatus} />
+                          </div>
                         </div>
 
-                        <div className='text-right'>
-                          <p className='text-xs text-gray-500'>Date</p>
-                          <span className='text-xs'>
+                        <div className="text-right">
+                          <p className="text-xs text-gray-500">Date</p>
+                          <span className="text-xs">
                             {sample?.createdAt
                               ? new Date(sample?.createdAt).toLocaleDateString()
                               : "N/A"}
@@ -544,10 +542,10 @@ const DatabaseView = ({
                       </div>
 
                       {/* ACTIONS */}
-                      <div className='flex gap-2 pt-2 border-t border-gray-200 dark:border-gray-700'>
+                      <div className="flex gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
                         <button
                           onClick={() => setSelectedSample(sample)}
-                          className='flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-2 rounded-lg text-sm font-medium'
+                          className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-2 rounded-lg text-sm font-medium"
                         >
                           View Details
                         </button>
@@ -560,7 +558,7 @@ const DatabaseView = ({
                                 sample: sample,
                               })
                             }
-                            className='flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg text-sm font-medium'
+                            className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg text-sm font-medium"
                           >
                             Delete
                           </button>
@@ -578,21 +576,21 @@ const DatabaseView = ({
               </div>
             )} */}
             {fetchSampleError && (
-              <div className='py-3 flex justify-center'>
-                <p className='text-sm mt-1 text-red-600'>
+              <div className="py-3 flex justify-center">
+                <p className="text-sm mt-1 text-red-600">
                   Error occurred while fetching more samples. Check connection
                   and refresh
                 </p>
               </div>
             )}
             {loadingMore && (
-              <div className='flex items-center justify-center h-48'>
-                <Loader className='animate-spin mr-2  size-10' />
+              <div className="flex items-center justify-center h-48">
+                <Loader className="animate-spin mr-2  size-10" />
               </div>
             )}
             {loadingMoreError && (
-              <div className='py-3 flex justify-center'>
-                <p className='text-sm mt-1 text-red-600'>
+              <div className="py-3 flex justify-center">
+                <p className="text-sm mt-1 text-red-600">
                   Error occurred while fetching more samples. Check connection
                   and refresh
                 </p>
@@ -613,7 +611,7 @@ const DatabaseView = ({
             )}
           </div>
           {filteredSamples?.length === 0 && !loading && (
-            <h2 className='text-center text-gray-500'>
+            <h2 className="text-center text-gray-500">
               No samples found matching the criteria.
             </h2>
           )}
@@ -621,8 +619,8 @@ const DatabaseView = ({
       )}
 
       {loading && (
-        <div className='flex items-center justify-center h-48'>
-          <Loader className='animate-spin mr-2  size-10' />
+        <div className="flex items-center justify-center h-48">
+          <Loader className="animate-spin mr-2  size-10" />
         </div>
       )}
       {fetchSampleError && (

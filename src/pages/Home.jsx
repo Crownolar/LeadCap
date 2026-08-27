@@ -4,11 +4,11 @@ import { useTheme } from "../hooks/useTheme";
 import AuthModal from "../components/auth/AuthModal";
 import Dashboard from "../components/views/Dashboard";
 import Database from "../components/views/DatabaseView";
-import MapView from "../components/views/MapView";
 import Reports from "../components/views/Reports";
 import SampleFormModal from "../components/modals/SampleFormModal";
 import SampleDetailModal from "../components/modals/SampleDetailModal";
-import { useRef, useState, useMemo } from "react";
+import { lazy, Suspense, useRef, useState, useMemo } from "react";
+const MapView = lazy(() => import("../components/views/MapView"));
 
 const Home = () => {
   const {
@@ -109,7 +109,15 @@ const Home = () => {
         />
       )}
       {currentView === "map" && (
-        <MapView theme={theme} samples={filteredSamples} />
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center min-h-[300px]">
+              Loading map...
+            </div>
+          }
+        >
+          <MapView theme={theme} samples={filteredSamples} />
+        </Suspense>
       )}
       {currentView === "reports" && (
         <Reports theme={theme} samples={filteredSamples} />
