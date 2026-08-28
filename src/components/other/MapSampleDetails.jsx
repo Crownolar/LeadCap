@@ -1,197 +1,695 @@
-import { MapPin, Building2 } from "lucide-react";
+import {
+  MapPin,
+  Building2,
+  MessageCircle,
+  ShieldCheck,
+  ShieldAlert,
+  Package,
+  CalendarDays,
+  Store,
+  Tag,
+  Hash,
+  CheckCircle2,
+  AlertTriangle,
+  Clock3,
+} from "lucide-react";
+
 import { useTheme } from "../../context/ThemeContext";
 
-const STATUS_STYLES = {
+/* -------------------------------------------------------------------------- */
+/* Status                                                                      */
+/* -------------------------------------------------------------------------- */
+
+const STATUS_CONFIG = {
   CONTAMINATED: {
-    bar: "bg-red-700 border-b-2 border-red-400",
-    text: "text-red-100",
-    dot: "bg-red-300",
-    id: "text-red-200/70",
+    label: "Contaminated",
+    dot: "bg-red-500",
+    badge:
+      "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-900/50",
+    rail: "bg-red-500",
+    icon: ShieldAlert,
   },
+
   SAFE: {
-    bar: "bg-emerald-700 border-b-2 border-emerald-400",
-    text: "text-emerald-100",
-    dot: "bg-emerald-300",
-    id: "text-emerald-200/70",
+    label: "Safe",
+    dot: "bg-emerald-500",
+    badge:
+      "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-900/50",
+    rail: "bg-emerald-500",
+    icon: ShieldCheck,
   },
+
   MODERATE: {
-    bar: "bg-amber-700 border-b-2 border-amber-400",
-    text: "text-amber-100",
-    dot: "bg-amber-300",
-    id: "text-amber-200/70",
+    label: "Moderate",
+    dot: "bg-amber-500",
+    badge:
+      "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-900/50",
+    rail: "bg-amber-500",
+    icon: AlertTriangle,
   },
+
   PENDING: {
-    bar: "bg-sky-700 border-b-2 border-sky-400",
-    text: "text-sky-100",
-    dot: "bg-sky-300",
-    id: "text-sky-200/70",
+    label: "Pending",
+    dot: "bg-slate-400",
+    badge:
+      "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
+    rail: "bg-slate-400",
+    icon: Clock3,
   },
 };
 
-const getStatus = (level) => STATUS_STYLES[level] || STATUS_STYLES.PENDING;
+const getStatusConfig = (status) =>
+  STATUS_CONFIG[status] || STATUS_CONFIG.PENDING;
 
-export default function MapSampleDetails({ samples, setCommentSectionView }) {
+/* -------------------------------------------------------------------------- */
+/* Helpers                                                                     */
+/* -------------------------------------------------------------------------- */
+
+const formatValue = (value) => {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return "N/A";
+  }
+
+  return value;
+};
+
+const formatDate = (value) => {
+  if (!value) return "N/A";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "N/A";
+  }
+
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+};
+
+const formatVendorType = (value) => {
+  if (!value) return "N/A";
+
+  return String(value)
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (letter) =>
+      letter.toUpperCase()
+    );
+};
+
+/* -------------------------------------------------------------------------- */
+/* Component helpers                                                           */
+/* -------------------------------------------------------------------------- */
+
+const Label = ({ children, theme }) => (
+  <span
+    className={`
+      block text-[9px] font-semibold uppercase
+      tracking-[0.1em]
+      ${theme.textMuted}
+    `}
+  >
+    {children}
+  </span>
+);
+
+const Value = ({
+  children,
+  theme,
+  className = "",
+}) => (
+  <span
+    className={`
+      block truncate text-[12px] font-semibold
+      ${theme.text}
+      ${className}
+    `}
+  >
+    {children}
+  </span>
+);
+
+const DetailRow = ({
+  icon: Icon,
+  label,
+  children,
+  theme,
+}) => (
+  <div className="flex min-w-0 items-start gap-2.5">
+    <div
+      className={`
+        mt-0.5 flex h-7 w-7 shrink-0 items-center
+        justify-center rounded-lg
+        ${theme.bg}
+        ${theme.border}
+        border
+      `}
+    >
+      <Icon
+        size={13}
+        className={theme.emeraldText}
+      />
+    </div>
+
+    <div className="min-w-0 flex-1">
+      <Label theme={theme}>{label}</Label>
+      <Value theme={theme}>{children}</Value>
+    </div>
+  </div>
+);
+
+const MetaItem = ({
+  icon: Icon,
+  label,
+  value,
+  theme,
+}) => (
+  <div
+    className={`
+      min-w-0 rounded-xl border
+      p-3
+      ${theme.border}
+      ${theme.bg}
+    `}
+  >
+    <div className="mb-1.5 flex items-center gap-1.5">
+      <Icon
+        size={12}
+        className={theme.textMuted}
+      />
+
+      <Label theme={theme}>{label}</Label>
+    </div>
+
+    <Value theme={theme}>{value}</Value>
+  </div>
+);
+
+/* -------------------------------------------------------------------------- */
+/* Main component                                                              */
+/* -------------------------------------------------------------------------- */
+
+export default function MapSampleDetails({
+  samples = [],
+  setCommentSectionView,
+}) {
   const { theme } = useTheme();
 
-  const Label = ({ children }) => (
-    <span className={`block text-[9px] uppercase tracking-[0.1em] mb-0.5 font-mono ${theme.textMuted}`}>
-      {children}
-    </span>
-  );
+  if (!Array.isArray(samples) || samples.length === 0) {
+    return (
+      <div
+        className={`
+          flex min-h-[180px]
+          items-center justify-center
+          p-6
+          ${theme.bg}
+        `}
+      >
+        <div className="text-center">
+          <MapPin
+            size={22}
+            className={`mx-auto mb-2 ${theme.textMuted}`}
+          />
 
-  const Value = ({ children }) => (
-    <span className={`block text-[12px] font-medium truncate ${theme.text}`}>
-      {children}
-    </span>
-  );
+          <p
+            className={`text-sm font-semibold ${theme.text}`}
+          >
+            No sample details available
+          </p>
+
+          <p
+            className={`mt-1 text-xs ${theme.textMuted}`}
+          >
+            There are no records associated with this location.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className={`p-4 grid grid-cols-1 lg:grid-cols-2 gap-3.5 ${theme.bg}`}>
-      {samples.map((s) => {
-        const st = getStatus(s.status);
+    <div
+      className={`
+        grid grid-cols-1 gap-3.5
+        p-4
+        sm:p-5
+        lg:grid-cols-2
+        ${theme.bg}
+      `}
+    >
+      {samples.map((sample) => {
+        const status = getStatusConfig(
+          sample?.status
+        );
+
+        const StatusIcon = status.icon;
+
+        const verification =
+          sample?.verificationStatus;
+
+        const isOriginal =
+          verification ===
+          "VERIFIED_ORIGINAL";
+
+        const isCounterfeit =
+          verification ===
+          "VERIFIED_FAKE";
 
         return (
-          <div
-            key={s.id}
-            className={`rounded-xl overflow-hidden border ${theme.border} ${theme.card}`}
+          <article
+            key={
+              sample?.id ||
+              sample?.code ||
+              `${sample?.productName}-${sample?.createdAt}`
+            }
+            className={`
+              relative overflow-hidden
+              rounded-2xl
+              border
+              ${theme.border}
+              ${theme.card}
+              shadow-sm
+              transition-shadow
+              hover:shadow-md
+            `}
           >
-            {/* Status bar */}
-            <div className={`flex items-center justify-between px-3.5 py-2 ${st.bar}`}>
-              <span className={`flex items-center gap-1.5 text-[10px] uppercase tracking-[0.08em] font-medium font-mono ${st.text}`}>
-                <span className={`w-1.5 h-1.5 rounded-full inline-block flex-shrink-0 ${st.dot}`} />
-                {s.status || "PENDING"}
-              </span>
-              <span className={`text-[10px] font-mono ${st.id}`}>
-                {s.code}
-              </span>
+            {/* ---------------------------------------------------------- */}
+            {/* Status rail                                                 */}
+            {/* ---------------------------------------------------------- */}
+
+            <div
+              className={`
+                absolute inset-y-0 left-0 w-1
+                ${status.rail}
+              `}
+            />
+
+            {/* ---------------------------------------------------------- */}
+            {/* Header                                                      */}
+            {/* ---------------------------------------------------------- */}
+
+            <div
+              className={`
+                border-b px-4 py-3.5
+                ${theme.border}
+              `}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="mb-1.5 flex items-center gap-2">
+                    <span
+                      className={`
+                        h-2 w-2 shrink-0 rounded-full
+                        ${status.dot}
+                      `}
+                    />
+
+                    <span
+                      className={`
+                        text-[10px] font-bold uppercase
+                        tracking-[0.09em]
+                        ${theme.textMuted}
+                      `}
+                    >
+                      Sample status
+                    </span>
+                  </div>
+
+                  <h3
+                    className={`
+                      truncate text-[15px]
+                      font-bold tracking-tight
+                      ${theme.text}
+                    `}
+                  >
+                    {formatValue(
+                      sample?.productName
+                    )}
+                  </h3>
+                </div>
+
+                <span
+                  className={`
+                    inline-flex shrink-0
+                    items-center gap-1.5
+                    rounded-full border
+                    px-2.5 py-1
+                    text-[9px] font-bold uppercase
+                    tracking-wide
+                    ${status.badge}
+                  `}
+                >
+                  <StatusIcon size={11} />
+
+                  {status.label}
+                </span>
+              </div>
+
+              {/* Sample identifier */}
+
+              <div className="mt-2.5 flex items-center gap-1.5">
+                <Hash
+                  size={11}
+                  className={theme.textMuted}
+                />
+
+                <span
+                  className={`
+                    truncate font-mono text-[10px]
+                    ${theme.textMuted}
+                  `}
+                >
+                  {formatValue(sample?.code)}
+                </span>
+              </div>
             </div>
 
-            <div className="p-3.5">
-              {/* Product name */}
-              <p className={`text-[14px] font-semibold mb-2 truncate ${theme.text}`}>
-                {s.productName}
-              </p>
+            {/* ---------------------------------------------------------- */}
+            {/* Body                                                        */}
+            {/* ---------------------------------------------------------- */}
 
-              {/* Pills */}
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {(s.productVariant?.displayName || s.productVariant?.name) && (
-                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded font-mono ${theme.info}`}>
-                    {s.productVariant?.displayName || s.productVariant?.name}
+            <div className="space-y-4 p-4">
+              {/* Product tags */}
+
+              <div className="flex flex-wrap gap-1.5">
+                {(sample?.productVariant?.displayName ||
+                  sample?.productVariant?.name) && (
+                  <span
+                    className={`
+                      inline-flex items-center gap-1
+                      rounded-md border px-2 py-1
+                      text-[9px] font-semibold
+                      ${theme.border}
+                      ${theme.info}
+                    `}
+                  >
+                    <Tag size={10} />
+
+                    {sample.productVariant
+                      ?.displayName ||
+                      sample.productVariant?.name}
                   </span>
                 )}
-                {s.isRegistered && (
-                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded font-mono ${theme.emerald}`}>
+
+                {sample?.isRegistered && (
+                  <span
+                    className={`
+                      inline-flex items-center gap-1
+                      rounded-md border px-2 py-1
+                      text-[9px] font-semibold
+                      ${theme.emeraldBorder}
+                      ${theme.emerald}
+                    `}
+                  >
+                    <CheckCircle2 size={10} />
+
                     Registered
                   </span>
                 )}
-                {s.productOrigin === "IMPORTED" && (
-                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded font-mono ${theme.moderate}`}>
+
+                {sample?.productOrigin ===
+                  "IMPORTED" && (
+                  <span
+                    className={`
+                      rounded-md border px-2 py-1
+                      text-[9px] font-semibold
+                      ${theme.border}
+                      ${theme.bg}
+                      ${theme.textMuted}
+                    `}
+                  >
                     Imported
                   </span>
                 )}
               </div>
 
-              <hr className={`border-t ${theme.border} my-2.5`} />
+              {/* ------------------------------------------------------ */}
+              {/* Location                                                 */}
+              {/* ------------------------------------------------------ */}
 
-              {/* Location rows */}
-              <div className="flex items-start gap-2 mb-2">
-                <MapPin size={14} className={`flex-shrink-0 mt-0.5 ${theme.emeraldText}`} />
-                <div className="min-w-0 flex-1">
-                  <Label>Market</Label>
-                  <Value>{s.market?.name || "N/A"}</Value>
+              <div
+                className={`
+                  rounded-xl border p-3
+                  ${theme.border}
+                `}
+              >
+                <div className="mb-3 flex items-center gap-2">
+                  <MapPin
+                    size={14}
+                    className={theme.emeraldText}
+                  />
+
+                  <span
+                    className={`
+                      text-[10px] font-bold uppercase
+                      tracking-[0.1em]
+                      ${theme.text}
+                    `}
+                  >
+                    Collection location
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <DetailRow
+                    icon={Store}
+                    label="Market"
+                    theme={theme}
+                  >
+                    {formatValue(
+                      sample?.market?.name
+                    )}
+                  </DetailRow>
+
+                  <DetailRow
+                    icon={Building2}
+                    label="Location"
+                    theme={theme}
+                  >
+                    {sample?.lga?.name ||
+                      "N/A"}
+                    {sample?.state?.name
+                      ? `, ${sample.state.name}`
+                      : ""}
+                  </DetailRow>
                 </div>
               </div>
-              <div className="flex items-start gap-2 mb-3">
-                <Building2 size={14} className={`flex-shrink-0 mt-0.5 ${theme.emeraldText}`} />
-                <div className="min-w-0 flex-1">
-                  <Label>Location</Label>
-                  <Value>
-                    {s.lga?.name || "N/A"}, {s.state?.name || "N/A"}
-                  </Value>
-                </div>
-              </div>
 
-              {/* Info grid */}
-              <div className={`grid grid-cols-2 gap-2 p-2.5 rounded-lg mb-3 border ${theme.border} ${theme.bg}`}>
-                <div>
-                  <Label>Vendor type</Label>
-                  <Value>{s.vendorType?.replace(/_/g, " ") || "N/A"}</Value>
-                </div>
-                <div>
-                  <Label>Price</Label>
-                  <Value>
-                    ₦{typeof s.price === "number" ? s.price.toLocaleString() : s.price}
-                  </Value>
-                </div>
-                {s.brandName && (
-                  <div>
-                    <Label>Brand</Label>
-                    <Value>{s.brandName}</Value>
-                  </div>
+              {/* ------------------------------------------------------ */}
+              {/* Product metadata                                         */}
+              {/* ------------------------------------------------------ */}
+
+              <div className="grid grid-cols-2 gap-2">
+                <MetaItem
+                  icon={Store}
+                  label="Vendor"
+                  value={formatVendorType(
+                    sample?.vendorType
+                  )}
+                  theme={theme}
+                />
+
+                <MetaItem
+                  icon={Package}
+                  label="Price"
+                  value={
+                    typeof sample?.price ===
+                    "number"
+                      ? `₦${sample.price.toLocaleString()}`
+                      : formatValue(
+                          sample?.price
+                        )
+                  }
+                  theme={theme}
+                />
+
+                {sample?.brandName && (
+                  <MetaItem
+                    icon={Tag}
+                    label="Brand"
+                    value={sample.brandName}
+                    theme={theme}
+                  />
                 )}
-                {s.batchNumber && (
-                  <div>
-                    <Label>Batch</Label>
-                    <Value>{s.batchNumber}</Value>
-                  </div>
+
+                {sample?.batchNumber && (
+                  <MetaItem
+                    icon={Hash}
+                    label="Batch"
+                    value={sample.batchNumber}
+                    theme={theme}
+                  />
                 )}
               </div>
 
-              {/* Date */}
-              <p className={`text-[11px] pb-3 mb-3 font-mono border-b ${theme.border} ${theme.textMuted}`}>
-                Collected{" "}
-                <span className={theme.text}>
-                  {new Date(s.createdAt).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </span>
-              </p>
+              {/* ------------------------------------------------------ */}
+              {/* Collection date                                          */}
+              {/* ------------------------------------------------------ */}
 
-              {/* Verification block */}
-              {s.verificationStatus && s.verificationStatus !== "UNVERIFIED" && (
-                <div
-                  className={`rounded-lg p-2.5 mb-3 border-l-2 ${
-                    s.verificationStatus === "VERIFIED_ORIGINAL"
-                      ? `${theme.safe} border-emerald-500`
-                      : `${theme.danger} border-red-500`
-                  }`}
+              <div
+                className={`
+                  flex items-center justify-between
+                  gap-3 border-y py-2.5
+                  ${theme.border}
+                `}
+              >
+                <div className="flex items-center gap-2">
+                  <CalendarDays
+                    size={13}
+                    className={theme.textMuted}
+                  />
+
+                  <span
+                    className={`text-[10px] ${theme.textMuted}`}
+                  >
+                    Collected
+                  </span>
+                </div>
+
+                <span
+                  className={`
+                    text-[11px] font-semibold
+                    ${theme.text}
+                  `}
                 >
-                  <p className={`text-[9px] uppercase tracking-[0.1em] mb-1 font-mono ${theme.textMuted}`}>
-                    Verification status
-                  </p>
-                  <p className={`text-[12px] font-semibold ${
-                    s.verificationStatus === "VERIFIED_ORIGINAL"
-                      ? theme.safeText
-                      : theme.dangerText
-                  }`}>
-                    {s.verificationStatus === "VERIFIED_ORIGINAL"
-                      ? "✓ Original product"
-                      : "✗ Counterfeit detected"}
-                  </p>
-                  {s.nafdacNumber && (
-                    <p className={`text-[10px] mt-1 truncate font-mono ${theme.textMuted}`}>
-                      NAFDAC: {s.nafdacNumber}
-                    </p>
+                  {formatDate(
+                    sample?.createdAt
                   )}
-                  {s.sonNumber && (
-                    <p className={`text-[10px] truncate font-mono ${theme.textMuted}`}>
-                      SON: {s.sonNumber}
-                    </p>
-                  )}
+                </span>
+              </div>
+
+              {/* ------------------------------------------------------ */}
+              {/* Verification                                             */}
+              {/* ------------------------------------------------------ */}
+
+              {(isOriginal || isCounterfeit) && (
+                <div
+                  className={`
+                    rounded-xl border p-3
+                    ${
+                      isOriginal
+                        ? "border-emerald-200 bg-emerald-50/70 dark:border-emerald-900/50 dark:bg-emerald-950/20"
+                        : "border-red-200 bg-red-50/70 dark:border-red-900/50 dark:bg-red-950/20"
+                    }
+                  `}
+                >
+                  <div className="flex items-start gap-2.5">
+                    {isOriginal ? (
+                      <ShieldCheck
+                        size={16}
+                        className="mt-0.5 shrink-0 text-emerald-600"
+                      />
+                    ) : (
+                      <ShieldAlert
+                        size={16}
+                        className="mt-0.5 shrink-0 text-red-600"
+                      />
+                    )}
+
+                    <div className="min-w-0">
+                      <p
+                        className={`
+                          text-[9px] font-bold
+                          uppercase tracking-[0.1em]
+                          ${
+                            isOriginal
+                              ? "text-emerald-700 dark:text-emerald-300"
+                              : "text-red-700 dark:text-red-300"
+                          }
+                        `}
+                      >
+                        Verification
+                      </p>
+
+                      <p
+                        className={`
+                          mt-1 text-[12px] font-bold
+                          ${
+                            isOriginal
+                              ? "text-emerald-800 dark:text-emerald-200"
+                              : "text-red-800 dark:text-red-200"
+                          }
+                        `}
+                      >
+                        {isOriginal
+                          ? "Original product"
+                          : "Counterfeit detected"}
+                      </p>
+
+                      <div className="mt-2 space-y-0.5">
+                        {sample?.nafdacNumber && (
+                          <p
+                            className={`
+                              truncate font-mono
+                              text-[9px]
+                              ${theme.textMuted}
+                            `}
+                          >
+                            NAFDAC:{" "}
+                            {
+                              sample.nafdacNumber
+                            }
+                          </p>
+                        )}
+
+                        {sample?.sonNumber && (
+                          <p
+                            className={`
+                              truncate font-mono
+                              text-[9px]
+                              ${theme.textMuted}
+                            `}
+                          >
+                            SON:{" "}
+                            {sample.sonNumber}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {/* CTA */}
+              {/* ------------------------------------------------------ */}
+              {/* Comments CTA                                             */}
+              {/* ------------------------------------------------------ */}
+
               <button
-                onClick={() => setCommentSectionView({ isOpen: true, sample: s })}
-                className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg text-[12px] font-medium transition-colors border ${theme.border} ${theme.card} ${theme.hover} ${theme.emeraldText}`}
+                type="button"
+                onClick={() =>
+                  setCommentSectionView({
+                    isOpen: true,
+                    sample,
+                  })
+                }
+                className={`
+                  group flex w-full items-center
+                  justify-center gap-2
+                  rounded-xl border
+                  px-3 py-2.5
+                  text-[11px] font-semibold
+                  transition-all
+                  ${theme.border}
+                  ${theme.card}
+                  ${theme.hover}
+                  ${theme.emeraldText}
+                `}
               >
-                <span className="text-[13px]">💬</span> View comments
+                <MessageCircle
+                  size={14}
+                  className="transition-transform group-hover:scale-110"
+                />
+
+                View sample comments
               </button>
             </div>
-          </div>
+          </article>
         );
       })}
     </div>

@@ -1,166 +1,370 @@
 import { useEffect, useState } from "react";
 import {
-  ArrowLeft, MessageSquare, Send, Loader, Lock,
-  MapPin, Hash, Calendar, Tag, ShoppingBag, Beaker,
-  AlertTriangle, CheckCircle, Clock, ChevronRight,
-  Thermometer, FlaskConical, Info
+  ArrowLeft,
+  MessageSquare,
+  Send,
+  Loader,
+  Lock,
+  MapPin,
+  Hash,
+  Calendar,
+  Tag,
+  ShoppingBag,
+  Beaker,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Thermometer,
+  FlaskConical,
+  Info,
+  ShieldCheck,
+  ShieldAlert,
 } from "lucide-react";
+
 import { Toaster, toast } from "react-hot-toast";
 import Comments from "./Comments";
 import api from "../../utils/api";
 import { useSelector } from "react-redux";
-import { useTheme } from "../../context/ThemeContext";   // ← import theme hook
+import { useTheme } from "../../context/ThemeContext";
 
-/* ─── status tiny helpers ─────────────────────────────────────────── */
-const fmt = (val, decimals = 6) =>
-  val !== null && val !== undefined ? parseFloat(val).toFixed(decimals) : "—";
+/* -------------------------------------------------------------------------- */
+/* Helpers                                                                    */
+/* -------------------------------------------------------------------------- */
+
+const fmt = (value, decimals = 6) =>
+  value !== null && value !== undefined && value !== ""
+    ? Number(value).toFixed(decimals)
+    : "—";
 
 const REVIEW_CONFIG = {
-  PENDING:  { label: "Pending Review",  color: "amber",   Icon: Clock         },
-  APPROVED: { label: "Approved",        color: "emerald", Icon: CheckCircle   },
-  REJECTED: { label: "Rejected",        color: "red",     Icon: AlertTriangle },
+  PENDING: {
+    label: "Pending review",
+    tone: "pending",
+    Icon: Clock,
+  },
+  APPROVED: {
+    label: "Approved",
+    tone: "safe",
+    Icon: CheckCircle,
+  },
+  REJECTED: {
+    label: "Rejected",
+    tone: "danger",
+    Icon: AlertTriangle,
+  },
 };
 
 const CONTAMINATION_CONFIG = {
-  SAFE:        { label: "Safe",        color: "emerald", Icon: CheckCircle   },
-  CONTAMINATED:{ label: "Contaminated",color: "red",     Icon: AlertTriangle },
+  SAFE: {
+    label: "Safe",
+    tone: "safe",
+    Icon: CheckCircle,
+  },
+  CONTAMINATED: {
+    label: "Contaminated",
+    tone: "danger",
+    Icon: AlertTriangle,
+  },
 };
 
-// Static color maps — these reference Tailwind classes directly because
-// StatusBadge colours are semantic (amber/emerald/red) and don't change
-// with the page theme beyond what Tailwind already handles.
-const colorClass = {
-  amber:   { bg: "bg-amber-500/10",   border: "border-amber-500/20",   text: "text-amber-400"   },
-  emerald: { bg: "bg-emerald-500/10", border: "border-emerald-500/20", text: "text-emerald-400" },
-  red:     { bg: "bg-red-500/10",     border: "border-red-500/20",     text: "text-red-400"     },
+const TONE_STYLES = {
+  safe: {
+    badge:
+      "border-emerald-200 bg-emerald-50 text-emerald-700 " +
+      "dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300",
+    dot: "bg-emerald-500",
+  },
+
+  danger: {
+    badge:
+      "border-red-200 bg-red-50 text-red-700 " +
+      "dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300",
+    dot: "bg-red-500",
+  },
+
+  pending: {
+    badge:
+      "border-amber-200 bg-amber-50 text-amber-700 " +
+      "dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300",
+    dot: "bg-amber-500",
+  },
+
+  neutral: {
+    badge:
+      "border-slate-200 bg-slate-50 text-slate-700 " +
+      "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300",
+    dot: "bg-slate-400",
+  },
 };
 
 function StatusBadge({ status, configMap }) {
-  const cfg = configMap[status] ?? { label: status, color: "amber", Icon: Info };
-  const cls = colorClass[cfg.color];
+  const config = configMap?.[status] || {
+    label: status || "Unknown",
+    tone: "neutral",
+    Icon: Info,
+  };
+
+  const styles = TONE_STYLES[config.tone] || TONE_STYLES.neutral;
+
+  const Icon = config.Icon;
+
   return (
-    <span className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-full border ${cls.bg} ${cls.border} ${cls.text}`}>
-      <cfg.Icon className="w-3 h-3" />
-      {cfg.label}
+    <span
+      className={`
+        inline-flex items-center gap-1.5
+        rounded-full border
+        px-2.5 py-1
+        text-[9px] font-bold uppercase
+        tracking-wide
+        ${styles.badge}
+      `}
+    >
+      <Icon className="h-3 w-3" />
+      {config.label}
     </span>
   );
 }
 
-/* ─── heavy-metal mini-bar ──────────────────────────────────── */
+/* -------------------------------------------------------------------------- */
+/* Heavy metal readings                                                       */
+/* -------------------------------------------------------------------------- */
+
 function MetalReadings({ readings }) {
   const { theme } = useTheme();
-  if (!readings?.length) return null;
-  const safe  = readings.filter(r => r.finalStatus === "SAFE").length;
+
+  if (!Array.isArray(readings) || readings.length === 0) {
+    return null;
+  }
+
+  const safeCount = readings.filter(
+    (reading) => reading?.finalStatus === "SAFE",
+  ).length;
+
   const total = readings.length;
-  const pct   = Math.round((safe / total) * 100);
+
+  const percentage = Math.round((safeCount / total) * 100);
+
+  const allSafe = safeCount === total;
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <span className={`text-[10px] font-semibold uppercase tracking-widest ${theme.cs_metalLabel}`}>
-          Heavy Metal Readings
-        </span>
-        <span className={`text-[10px] font-bold ${pct === 100 ? theme.safeText : theme.dangerText}`}>
-          {safe}/{total} safe
+    <div
+      className={`
+        rounded-xl border p-3
+        ${theme.border}
+        ${theme.bg}
+      `}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <FlaskConical size={13} className={theme.emeraldText} />
+
+          <span
+            className={`
+              text-[9px] font-bold uppercase
+              tracking-[0.1em]
+              ${theme.text}
+            `}
+          >
+            Heavy metal readings
+          </span>
+        </div>
+
+        <span
+          className={`
+            text-[10px] font-bold
+            ${
+              allSafe
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-red-600 dark:text-red-400"
+            }
+          `}
+        >
+          {safeCount}/{total} safe
         </span>
       </div>
-      <div className="flex gap-1">
-        {readings.map((r, i) => (
+
+      <div className="mt-3 flex gap-1">
+        {readings.map((reading, index) => (
           <div
-            key={i}
-            title={`Reading ${i + 1}: ${r.finalStatus}`}
-            className={`flex-1 h-1.5 rounded-full transition-all ${
-              r.finalStatus === "SAFE" ? "bg-emerald-500" : "bg-red-500"
-            }`}
+            key={reading?.id || index}
+            title={`Reading ${index + 1}: ${reading?.finalStatus || "Unknown"}`}
+            className={`
+              h-1.5 flex-1 rounded-full
+              ${
+                reading?.finalStatus === "SAFE"
+                  ? "bg-emerald-500"
+                  : "bg-red-500"
+              }
+            `}
           />
         ))}
       </div>
-      <div className="w-full bg-gray-800 rounded-full h-0.5 overflow-hidden">
+
+      <div
+        className={`
+          mt-2 h-1 overflow-hidden rounded-full
+          ${theme.card}
+        `}
+      >
         <div
-          className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-700"
-          style={{ width: `${pct}%` }}
+          className={`
+            h-full rounded-full
+            transition-all duration-700
+            ${allSafe ? "bg-emerald-500" : "bg-red-500"}
+          `}
+          style={{
+            width: `${percentage}%`,
+          }}
         />
       </div>
     </div>
   );
 }
 
-/* ─── single meta field ─────────────────────────────────────── */
-function MetaField({ icon, label, value, mono, children }) {
+/* -------------------------------------------------------------------------- */
+/* Metadata field                                                             */
+/* -------------------------------------------------------------------------- */
+
+function MetaField({ icon, label, value, mono = false }) {
   const { theme } = useTheme();
+
   return (
-    <div className="space-y-1.5">
-      <div className={`flex items-center gap-1.5 ${theme.cs_metaIconColor}`}>
+    <div className="min-w-0">
+      <div
+        className={`
+          mb-1.5 flex items-center gap-1.5
+          ${theme.textMuted}
+        `}
+      >
         {icon}
-        <span className={`text-[10px] font-semibold uppercase tracking-widest ${theme.cs_metaLabel}`}>
+
+        <span
+          className="
+            text-[9px] font-bold uppercase
+            tracking-[0.1em]
+          "
+        >
           {label}
         </span>
       </div>
-      {children ?? (
-        <p className={`text-sm font-medium leading-relaxed break-all ${
-          mono ? theme.cs_metaMono : theme.cs_metaValue
-        }`}>
-          {value ?? "—"}
-        </p>
-      )}
+
+      <p
+        className={`
+          truncate text-[11px] font-semibold
+          ${mono ? "font-mono" : ""}
+          ${theme.text}
+        `}
+      >
+        {value ?? "—"}
+      </p>
     </div>
   );
 }
 
-/* ─── main component ────────────────────────────────────────── */
+/* -------------------------------------------------------------------------- */
+/* Main component                                                             */
+/* -------------------------------------------------------------------------- */
+
 function CommentSection({ commentSectionView, setCommentSectionView }) {
   const { sample } = commentSectionView;
+
   const { currentUser } = useSelector((state) => state.auth);
-  const { theme } = useTheme();   // ← consume theme
+
+  const { theme } = useTheme();
 
   const COMMENT_ROLES = [
-    "SUPER_ADMIN","HEAD_RESEARCHER","SUPERVISOR",
-    "POLICY_MAKER_SON","POLICY_MAKER_NAFDAC",
-    "POLICY_MAKER_RESOLVE","POLICY_MAKER_UNIVERSITY",
+    "SUPER_ADMIN",
+    "HEAD_RESEARCHER",
+    "SUPERVISOR",
+    "POLICY_MAKER_SON",
+    "POLICY_MAKER_NAFDAC",
+    "POLICY_MAKER_RESOLVE",
+    "POLICY_MAKER_UNIVERSITY",
   ];
+
   const canComment = COMMENT_ROLES.includes(currentUser?.role);
 
   const [fetchedComments, setFetchedComments] = useState([]);
-  const [loading, setLoading]                 = useState(false);
-  const [writtenComment, setWrittenComment]   = useState("");
-  const [isFocused, setIsFocused]             = useState(false);
-  const [submitting, setSubmitting]           = useState(false);
 
-  /* ── fetch ── */
+  const [loading, setLoading] = useState(false);
+
+  const [writtenComment, setWrittenComment] = useState("");
+
+  const [isFocused, setIsFocused] = useState(false);
+
+  const [submitting, setSubmitting] = useState(false);
+
+  /* ---------------------------------------------------------------------- */
+  /* Fetch comments                                                        */
+  /* ---------------------------------------------------------------------- */
+
   const fetchComments = async () => {
+    if (!sample?.id) return;
+
     setLoading(true);
+
     try {
       const result = await api.get(`/samples/${sample.id}/comments`);
-      setFetchedComments(result.data.data);
-    } catch {
+
+      setFetchedComments(
+        Array.isArray(result?.data?.data) ? result.data.data : [],
+      );
+    } catch (error) {
+      console.error("Failed to load comments:", error);
+
       toast.error("Failed to load comments. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchComments(); }, []);
+  useEffect(() => {
+    fetchComments();
+  }, [sample?.id]);
 
-  /* ── submit ── */
+  /* ---------------------------------------------------------------------- */
+  /* Submit comment                                                        */
+  /* ---------------------------------------------------------------------- */
+
   const handleSubmitComment = async () => {
-    if (!writtenComment.trim()) return;
+    const trimmed = writtenComment.trim();
+
+    if (!trimmed || submitting) return;
+
     setSubmitting(true);
+
     try {
-      await api.post(`/samples/${sample.id}/comments`, { commentText: writtenComment });
+      await api.post(`/samples/${sample.id}/comments`, {
+        commentText: trimmed,
+      });
+
       setWrittenComment("");
+
       toast.success("Comment posted successfully.");
+
       await fetchComments();
-    } catch {
+    } catch (error) {
+      console.error("Failed to post comment:", error);
+
       toast.error("Failed to post comment. Please try again.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  /* ── derived ── */
+  /* ---------------------------------------------------------------------- */
+  /* Derived information                                                   */
+  /* ---------------------------------------------------------------------- */
+
   const locationStr = sample?.lga?.name
-    ? `${sample.lga.name}, ${sample?.state?.name}`
-    : sample?.state?.name;
+    ? `${sample.lga.name}${sample?.state?.name ? `, ${sample.state.name}` : ""}`
+    : sample?.state?.name || "—";
+
+  const contaminationStatus = sample?.contaminationStatus;
+
+  const reviewStatus = sample?.review?.status;
+
+  const isContaminated = contaminationStatus === "CONTAMINATED";
 
   return (
     <>
@@ -168,171 +372,478 @@ function CommentSection({ commentSectionView, setCommentSectionView }) {
         position="top-right"
         toastOptions={{
           style: {
-            background: "#111827",
-            color: "#f3f4f6",
-            border: "1px solid rgba(255,255,255,0.07)",
             fontSize: "13px",
             borderRadius: "12px",
           },
-          success: { iconTheme: { primary: "#34d399", secondary: "#111827" } },
-          error:   { iconTheme: { primary: "#f87171", secondary: "#111827" } },
         }}
       />
 
       <div
-        className={`min-h-screen ${theme.cs_pageBg} text-white transition-colors duration-300`}
-        style={{ fontFamily: "'DM Sans', sans-serif" }}
+        className={`
+          min-h-screen
+          ${theme.bg}
+          ${theme.text}
+          transition-colors duration-300
+        `}
       >
+        {/* ================================================================= */}
+        {/* Navigation                                                        */}
+        {/* ================================================================= */}
 
-        {/* ── top nav ── */}
-        <div className={`sticky top-0 z-20 ${theme.cs_navBg} backdrop-blur-xl border-b ${theme.cs_navBorder}`}>
-          <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
+        <header
+          className={`
+            sticky top-0 z-30
+            border-b backdrop-blur-xl
+            ${theme.card}
+            ${theme.border}
+          `}
+        >
+          <div
+            className="
+              mx-auto flex h-14 max-w-4xl
+              items-center gap-3
+              px-4 sm:px-6
+            "
+          >
             <button
-              onClick={() => setCommentSectionView({ isOpen: false, sample: null })}
-              className={`flex items-center gap-2 transition-colors group ${theme.cs_navBackIcon}`}
+              type="button"
+              onClick={() =>
+                setCommentSectionView({
+                  isOpen: false,
+                  sample: null,
+                })
+              }
+              className={`
+                group flex items-center gap-2
+                rounded-lg px-1.5 py-1
+                text-sm font-medium
+                transition-colors
+                ${theme.textMuted}
+                hover:${theme.text}
+              `}
             >
-              <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${theme.cs_navBackBtn}`}>
-                <ArrowLeft className="w-3.5 h-3.5" />
-              </div>
-              <span className="text-sm font-medium hidden sm:inline">Back to Samples</span>
+              <span
+                className={`
+                  flex h-7 w-7 items-center
+                  justify-center rounded-lg
+                  border
+                  ${theme.border}
+                  ${theme.bg}
+                `}
+              >
+                <ArrowLeft size={14} />
+              </span>
+
+              <span className="hidden sm:inline">Back to samples</span>
             </button>
 
-            <div className={`h-4 w-px hidden sm:block ${theme.cs_navBorder}`} />
-            <span className={`text-[11px] font-mono hidden sm:block truncate ${theme.cs_navSampleId}`}>
-              {sample.sampleId?.slice(0, 8)}…
+            <div
+              className={`
+                hidden h-5 w-px sm:block
+                ${theme.border}
+              `}
+            />
+
+            <span
+              className={`
+                hidden truncate font-mono
+                text-[10px] sm:block
+                ${theme.textMuted}
+              `}
+            >
+              {sample?.sampleId ? `${sample.sampleId.slice(0, 12)}…` : "Sample"}
             </span>
 
             <div className="ml-auto flex items-center gap-2">
-              <StatusBadge status={sample?.review?.status} configMap={REVIEW_CONFIG} />
+              <StatusBadge status={reviewStatus} configMap={REVIEW_CONFIG} />
             </div>
           </div>
-        </div>
+        </header>
 
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-7 space-y-4">
+        {/* ================================================================= */}
+        {/* Main                                                              */}
+        {/* ================================================================= */}
 
-          {/* ════════ SAMPLE IDENTITY CARD ════════ */}
-          <div className={`rounded-2xl ${theme.cs_cardBg} border ${theme.cs_cardBorder} overflow-hidden`}>
+        <main
+          className="
+            mx-auto max-w-4xl
+            space-y-4
+            px-4 py-6
+            sm:px-6 sm:py-7
+          "
+        >
+          {/* ================================================================= */}
+          {/* Sample overview                                                   */}
+          {/* ================================================================= */}
 
-            {/* card header */}
-            <div className={`px-5 py-4 border-b ${theme.cs_cardHeaderBorder} flex items-center justify-between gap-2`}>
+          <section
+            className={`
+              overflow-hidden rounded-2xl
+              border shadow-sm
+              ${theme.card}
+              ${theme.border}
+            `}
+          >
+            {/* Section heading */}
+
+            <div
+              className={`
+                flex items-center justify-between
+                gap-3 border-b
+                px-5 py-4
+                ${theme.border}
+              `}
+            >
               <div className="flex items-center gap-2.5">
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${theme.cs_iconWellIndigo}`}>
-                  <Beaker className={`w-3.5 h-3.5 ${theme.cs_iconIndigo}`} />
+                <div
+                  className={`
+                    flex h-8 w-8 items-center
+                    justify-center rounded-lg
+                    ${theme.emerald}
+                  `}
+                >
+                  <Beaker size={15} className={theme.emeraldText} />
                 </div>
-                <h2 className={`text-sm font-semibold ${theme.cs_sectionHeading}`}>Sample Overview</h2>
+
+                <div>
+                  <h1
+                    className={`
+                      text-sm font-bold
+                      ${theme.text}
+                    `}
+                  >
+                    Sample overview
+                  </h1>
+
+                  <p
+                    className={`
+                      mt-0.5 text-[10px]
+                      ${theme.textMuted}
+                    `}
+                  >
+                    Field collection record
+                  </p>
+                </div>
               </div>
-              <StatusBadge status={sample?.contaminationStatus} configMap={CONTAMINATION_CONFIG} />
+
+              <StatusBadge
+                status={contaminationStatus}
+                configMap={CONTAMINATION_CONFIG}
+              />
             </div>
 
-            {/* product hero row */}
-            <div className={`px-5 pt-5 pb-4 flex flex-col sm:flex-row sm:items-start gap-4 border-b ${theme.cs_cardHeaderBorder}`}>
-              <div className={`w-11 h-11 rounded-xl border flex items-center justify-center flex-shrink-0 ${theme.cs_heroIconWell}`}>
-                <FlaskConical className={`w-5 h-5 ${theme.cs_heroIcon}`} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className={`text-base font-bold leading-tight ${theme.cs_productName}`}>
-                  {sample.productName ?? "—"}
-                </p>
-                <p className={`text-xs mt-0.5 ${theme.cs_productVariant}`}>
-                  {sample.productVariant?.displayName ?? "—"}
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${theme.cs_marketTypeBadge}`}>
-                    {sample.marketType ?? "—"}
-                  </span>
-                  {sample.marketName && (
-                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md capitalize ${theme.cs_marketNameBadge}`}>
-                      {sample.marketName}
-                    </span>
+            {/* Product identity */}
+
+            <div
+              className={`
+                border-b px-5 py-5
+                ${theme.border}
+              `}
+            >
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                <div
+                  className={`
+                    flex h-11 w-11 shrink-0
+                    items-center justify-center
+                    rounded-xl border
+                    ${theme.border}
+                    ${theme.bg}
+                  `}
+                >
+                  {isContaminated ? (
+                    <ShieldAlert size={20} className="text-red-500" />
+                  ) : (
+                    <ShieldCheck size={20} className={theme.emeraldText} />
                   )}
                 </div>
-              </div>
-              <div className="sm:text-right flex-shrink-0">
-                <p className={`text-[10px] uppercase tracking-widest mb-1 ${theme.cs_priceLabel}`}>Price</p>
-                <p className={`text-sm font-semibold ${theme.cs_priceValue}`}>
-                  {sample.price !== null && sample.price !== undefined ? `₦${sample.price}` : "—"}
-                </p>
+
+                <div className="min-w-0 flex-1">
+                  <h2
+                    className={`
+                      text-base font-bold
+                      leading-tight
+                      ${theme.text}
+                    `}
+                  >
+                    {sample?.productName || "Unnamed product"}
+                  </h2>
+
+                  <p
+                    className={`
+                      mt-1 text-xs
+                      ${theme.textMuted}
+                    `}
+                  >
+                    {sample?.productVariant?.displayName ||
+                      sample?.productVariant?.name ||
+                      "Product variant not specified"}
+                  </p>
+
+                  <div className="mt-2.5 flex flex-wrap gap-1.5">
+                    {sample?.marketType && (
+                      <span
+                        className={`
+                          rounded-md border
+                          px-2 py-1
+                          text-[9px] font-semibold
+                          ${theme.border}
+                          ${theme.bg}
+                          ${theme.textMuted}
+                        `}
+                      >
+                        {sample.marketType}
+                      </span>
+                    )}
+
+                    {sample?.marketName && (
+                      <span
+                        className={`
+                          rounded-md border
+                          px-2 py-1
+                          text-[9px] font-semibold
+                          ${theme.border}
+                          ${theme.bg}
+                          ${theme.textMuted}
+                        `}
+                      >
+                        {sample.marketName}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div
+                  className="
+                    shrink-0
+                    sm:min-w-[90px]
+                    sm:text-right
+                  "
+                >
+                  <p
+                    className={`
+                      text-[9px] font-bold
+                      uppercase tracking-[0.1em]
+                      ${theme.textMuted}
+                    `}
+                  >
+                    Price
+                  </p>
+
+                  <p
+                    className={`
+                      mt-1 text-sm font-bold
+                      ${theme.text}
+                    `}
+                  >
+                    {sample?.price !== null && sample?.price !== undefined
+                      ? `₦${Number(sample.price).toLocaleString()}`
+                      : "—"}
+                  </p>
+                </div>
               </div>
             </div>
 
-            {/* fields grid */}
-            <div className="p-5 grid grid-cols-2 gap-x-6 gap-y-5">
-              <MetaField icon={<Hash className="w-3.5 h-3.5" />}    label="Sample ID"       value={sample.sampleId}  mono />
-              <MetaField icon={<Tag className="w-3.5 h-3.5" />}     label="Code"            value={sample.code}      mono />
-              <MetaField icon={<MapPin className="w-3.5 h-3.5" />}  label="Location"        value={locationStr} />
+            {/* Metadata */}
+
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5 p-5 sm:grid-cols-3">
               <MetaField
-                icon={<Calendar className="w-3.5 h-3.5" />}
-                label="Collected"
-                value={sample.createdAt
-                  ? new Date(sample.createdAt).toLocaleDateString("en-GB", {
-                      day: "numeric", month: "short", year: "numeric",
-                    })
-                  : "—"}
+                icon={<Hash size={12} />}
+                label="Sample ID"
+                value={sample?.sampleId}
+                mono
               />
+
               <MetaField
-                icon={<MapPin className="w-3.5 h-3.5" />}
-                label="GPS Coordinates"
+                icon={<Tag size={12} />}
+                label="Code"
+                value={sample?.code}
+                mono
+              />
+
+              <MetaField
+                icon={<MapPin size={12} />}
+                label="Location"
+                value={locationStr}
+              />
+
+              <MetaField
+                icon={<Calendar size={12} />}
+                label="Collected"
                 value={
-                  sample.gpsLatitude && sample.gpsLongitude
+                  sample?.createdAt
+                    ? new Date(sample.createdAt).toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })
+                    : "—"
+                }
+              />
+
+              <MetaField
+                icon={<MapPin size={12} />}
+                label="GPS"
+                value={
+                  sample?.gpsLatitude && sample?.gpsLongitude
                     ? `${fmt(sample.gpsLatitude)}, ${fmt(sample.gpsLongitude)}`
                     : "—"
                 }
                 mono
               />
+
               <MetaField
-                icon={<ShoppingBag className="w-3.5 h-3.5" />}
-                label="Lead Level"
-                value={sample.leadLevel !== null && sample.leadLevel !== undefined
-                  ? `${sample.leadLevel} µg/dL`
-                  : "—"}
+                icon={<Thermometer size={12} />}
+                label="Lead level"
+                value={
+                  sample?.leadLevel !== null && sample?.leadLevel !== undefined
+                    ? `${sample.leadLevel} µg/dL`
+                    : "—"
+                }
                 mono
               />
-              <div className="col-span-2">
-                <MetalReadings readings={sample.heavyMetalReadings} />
+
+              <div className="col-span-2 sm:col-span-3">
+                <MetalReadings readings={sample?.heavyMetalReadings} />
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* ════════ COMMENTS CARD ════════ */}
-          <div className={`rounded-2xl ${theme.cs_cardBg} border ${theme.cs_cardBorder} overflow-hidden`}>
+          {/* ================================================================= */}
+          {/* Comments                                                          */}
+          {/* ================================================================= */}
 
-            {/* card header */}
-            <div className={`px-5 py-4 border-b ${theme.cs_cardHeaderBorder} flex items-center justify-between`}>
+          <section
+            className={`
+              overflow-hidden rounded-2xl
+              border shadow-sm
+              ${theme.card}
+              ${theme.border}
+            `}
+          >
+            {/* Header */}
+
+            <div
+              className={`
+                flex items-center justify-between
+                border-b px-5 py-4
+                ${theme.border}
+              `}
+            >
               <div className="flex items-center gap-2.5">
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${theme.cs_iconWellEmerald}`}>
-                  <MessageSquare className={`w-3.5 h-3.5 ${theme.cs_iconEmerald}`} />
+                <div
+                  className={`
+                    flex h-8 w-8 items-center
+                    justify-center rounded-lg
+                    ${theme.emerald}
+                  `}
+                >
+                  <MessageSquare size={15} className={theme.emeraldText} />
                 </div>
-                <h2 className={`text-sm font-semibold ${theme.cs_sectionHeading}`}>
-                  Comments &amp; Remarks
-                </h2>
+
+                <div>
+                  <h2
+                    className={`
+                      text-sm font-bold
+                      ${theme.text}
+                    `}
+                  >
+                    Comments & remarks
+                  </h2>
+
+                  <p
+                    className={`
+                      mt-0.5 text-[10px]
+                      ${theme.textMuted}
+                    `}
+                  >
+                    Review discussion and observations
+                  </p>
+                </div>
               </div>
-              <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border ${theme.cs_commentsBadge}`}>
-                {fetchedComments.length} {fetchedComments.length === 1 ? "comment" : "comments"}
+
+              <span
+                className={`
+                  rounded-full border
+                  px-2.5 py-1
+                  text-[9px] font-bold
+                  ${theme.border}
+                  ${theme.bg}
+                  ${theme.textMuted}
+                `}
+              >
+                {fetchedComments.length}{" "}
+                {fetchedComments.length === 1 ? "comment" : "comments"}
               </span>
             </div>
 
-            {/* list */}
-            <div className="px-5 py-4 min-h-[200px] max-h-[400px] overflow-y-auto space-y-1 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+            {/* Comment list */}
 
+            <div
+              className="
+                max-h-[430px]
+                min-h-[180px]
+                overflow-y-auto
+                px-5 py-4
+              "
+            >
               {loading && (
-                <div className="flex flex-col items-center justify-center py-16 gap-3">
-                  <Loader className={`w-5 h-5 animate-spin ${theme.emeraldText}`} />
-                  <p className={`text-xs ${theme.cs_emptyTitle}`}>Loading comments…</p>
+                <div className="flex flex-col items-center justify-center gap-3 py-14">
+                  <Loader
+                    size={19}
+                    className={`
+                      animate-spin
+                      ${theme.emeraldText}
+                    `}
+                  />
+
+                  <p
+                    className={`
+                      text-xs
+                      ${theme.textMuted}
+                    `}
+                  >
+                    Loading comments…
+                  </p>
                 </div>
               )}
 
               {!loading && fetchedComments.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-16 gap-2">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${theme.cs_emptyIconWell}`}>
-                    <MessageSquare className={`w-5 h-5 ${theme.cs_emptyIcon}`} />
+                <div className="flex flex-col items-center justify-center py-14 text-center">
+                  <div
+                    className={`
+                        flex h-11 w-11
+                        items-center justify-center
+                        rounded-full
+                        ${theme.bg}
+                        border
+                        ${theme.border}
+                      `}
+                  >
+                    <MessageSquare size={18} className={theme.textMuted} />
                   </div>
-                  <p className={`text-sm font-medium ${theme.cs_emptyTitle}`}>No comments yet</p>
-                  <p className={`text-xs ${theme.cs_emptySubtitle}`}>Be the first to leave a remark</p>
+
+                  <p
+                    className={`
+                        mt-3 text-sm font-semibold
+                        ${theme.text}
+                      `}
+                  >
+                    No comments yet
+                  </p>
+
+                  <p
+                    className={`
+                        mt-1 text-xs
+                        ${theme.textMuted}
+                      `}
+                  >
+                    Add the first remark for this sample.
+                  </p>
                 </div>
               )}
 
               {!loading && fetchedComments.length > 0 && (
-                <div className="space-y-2 py-1">
+                <div className="space-y-2">
                   {fetchedComments.map((comment) => (
                     <Comments
                       key={comment.id}
@@ -345,64 +856,146 @@ function CommentSection({ commentSectionView, setCommentSectionView }) {
               )}
             </div>
 
-            {/* compose */}
-            <div className={`px-5 pb-5 pt-3 border-t ${theme.cs_cardHeaderBorder}`}>
+            {/* Composer */}
+
+            <div
+              className={`
+                border-t px-5 pb-5 pt-4
+                ${theme.border}
+              `}
+            >
               {!canComment ? (
-                <div className={`flex items-start gap-3 p-3.5 rounded-xl border ${theme.cs_lockedBg}`}>
-                  <Lock className={`w-4 h-4 flex-shrink-0 mt-0.5 ${theme.cs_lockedIcon}`} />
-                  <p className={`text-xs leading-relaxed ${theme.cs_lockedText}`}>
-                    Only supervisors, researchers, and policy makers can add comments.
-                  </p>
+                <div
+                  className={`
+                    flex items-start gap-3
+                    rounded-xl border
+                    p-3.5
+                    ${theme.border}
+                    ${theme.bg}
+                  `}
+                >
+                  <Lock
+                    size={15}
+                    className={`
+                      mt-0.5 shrink-0
+                      ${theme.textMuted}
+                    `}
+                  />
+
+                  <div>
+                    <p
+                      className={`
+                        text-xs font-semibold
+                        ${theme.text}
+                      `}
+                    >
+                      Comments restricted
+                    </p>
+
+                    <p
+                      className={`
+                        mt-1 text-[10px] leading-relaxed
+                        ${theme.textMuted}
+                      `}
+                    >
+                      Only supervisors, researchers, and policy makers can add
+                      comments.
+                    </p>
+                  </div>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <label className={`block text-[10px] font-semibold uppercase tracking-widest ${theme.cs_composeLabel}`}>
-                    Add Remark
+                <div className="space-y-2.5">
+                  <label
+                    className={`
+                      block text-[9px]
+                      font-bold uppercase
+                      tracking-[0.1em]
+                      ${theme.textMuted}
+                    `}
+                  >
+                    Add remark
                   </label>
+
                   <div
-                    className={`flex items-end gap-2 rounded-xl border transition-colors px-3 py-2 ${
-                      theme.cs_composeTextareaBg
-                    } ${isFocused ? theme.cs_composeTextareaFocused : ""}`}
+                    className={`
+                      flex items-end gap-2
+                      rounded-xl border
+                      p-2.5
+                      transition-all
+                      ${theme.border}
+                      ${theme.bg}
+                      ${isFocused ? "ring-2 ring-emerald-500/20" : ""}
+                    `}
                   >
                     <textarea
                       rows={2}
-                      placeholder="Write your comment or remark…"
-                      className={`flex-1 bg-transparent text-sm resize-none outline-none leading-relaxed ${theme.cs_composePlaceholder} ${theme.cs_composeText}`}
                       value={writtenComment}
-                      onChange={(e) => setWrittenComment(e.target.value)}
+                      placeholder="Write your comment or observation…"
+                      onChange={(event) =>
+                        setWrittenComment(event.target.value)
+                      }
                       onFocus={() => setIsFocused(true)}
                       onBlur={() => setIsFocused(false)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey && writtenComment.trim()) {
-                          e.preventDefault();
+                      onKeyDown={(event) => {
+                        if (
+                          event.key === "Enter" &&
+                          !event.shiftKey &&
+                          writtenComment.trim()
+                        ) {
+                          event.preventDefault();
                           handleSubmitComment();
                         }
                       }}
+                      className={`
+                        min-h-[48px]
+                        flex-1 resize-none
+                        bg-transparent
+                        text-sm
+                        leading-relaxed
+                        outline-none
+                        ${theme.text}
+                        placeholder:${theme.textMuted}
+                      `}
                     />
+
                     <button
+                      type="button"
                       onClick={handleSubmitComment}
                       disabled={!writtenComment.trim() || submitting}
-                      className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all shadow-lg ${
-                        !writtenComment.trim() || submitting
-                          ? theme.cs_composeSendDisabled
-                          : theme.cs_composeSendBtn
-                      }`}
+                      className={`
+                        flex h-9 w-9
+                        shrink-0 items-center
+                        justify-center
+                        rounded-lg
+                        transition-all
+                        ${
+                          !writtenComment.trim() || submitting
+                            ? "cursor-not-allowed bg-slate-200 text-slate-400 dark:bg-slate-800"
+                            : "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700"
+                        }
+                      `}
                     >
-                      {submitting
-                        ? <Loader className="w-3.5 h-3.5 animate-spin" />
-                        : <Send className="w-3.5 h-3.5" />
-                      }
+                      {submitting ? (
+                        <Loader size={14} className="animate-spin" />
+                      ) : (
+                        <Send size={14} />
+                      )}
                     </button>
                   </div>
-                  <p className={`text-[10px] ${theme.cs_composeHint}`}>
-                    Press Enter to submit · Shift+Enter for new line
+
+                  <p
+                    className={`
+                      text-[9px]
+                      ${theme.textMuted}
+                    `}
+                  >
+                    Enter to submit · Shift+Enter for a new line
                   </p>
                 </div>
               )}
             </div>
-          </div>
-
-        </div>
+          </section>
+        </main>
       </div>
     </>
   );
