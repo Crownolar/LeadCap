@@ -1,118 +1,222 @@
-import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
-import markerIcon from "leaflet/dist/images/marker-icon-2x.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
-import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchSamples } from "../../redux/slice/samplesSlice";
-import MapSampleDetailsModal from "../modals/MapSampleDetailsModal";
-import { AlertTriangle, MapPin } from "lucide-react";
-import Map from "../other/Map";
+import { useEffect, useMemo, useState } from "react";
+import { AlertTriangle, Layers3, MapPin, RefreshCw, ShieldAlert, X } from "lucide-react";
+import { useTheme } from "../../context/ThemeContext";
 import api from "../../utils/api";
+import Map from "../other/Map";
 
 const MapView = ({ theme: propTheme, samples: propSamples }) => {
-  const [mapDetails, setMapDetails] = useState({
-    isOpen: false,
-    samples: null,
-  });
-  const [samples, setSamples] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const { theme } = useTheme();
+  const activeTheme = propTheme || theme;
 
-  // Fetch samples on mount if not provided via props
-  useEffect(() => {
+  const [samples, setSamples] = useState(propSamples || []);
+  const [loading, setLoading] = useState(!propSamples);
+  const [error, setError] = useState(false);
+  const [showLegend, setShowLegend] = useState(true);
+
+  const loadSamples = async () => {
     setLoading(true);
     setError(false);
-    api
+    try {
+      const res = await api.get("/samples?fields=minimal&take=5000");
+      setSamples(Array.isArray(res?.data?.data) ? res.data.data : []);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      .get("/samples?fields=minimal&take=5000")
-      .then((res) => {
-        if (res.data.data?.length > 0) {
-          setSamples(res.data.data);
-          setLoading(false);
-        } else {
-          setSamples([]);
-        }
-      })
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  }, []);
+  useEffect(() => {
+    if (propSamples) {
+      setSamples(propSamples);
+      setLoading(false);
+      return;
+    }
+    loadSamples();
+  }, [propSamples]);
 
-  // Filter samples with GPS coordinates
-  const samplesWithCoords =
-    samples?.filter((s) => s.gpsLatitude && s.gpsLongitude) || [];
+  const geoSamples = useMemo(
+    () =>
+      samples.filter(
+        (s) =>
+          s.gpsLatitude !== null &&
+          s.gpsLatitude !== undefined &&
+          s.gpsLongitude !== null &&
+          s.gpsLongitude !== undefined &&
+          Number.isFinite(Number(s.gpsLatitude)) &&
+          Number.isFinite(Number(s.gpsLongitude))
+      ),
+    [samples]
+  );
+
+  const stats = useMemo(() => {
+    const contaminated = geoSamples.filter(
+      (s) =>
+        s.status === "CONTAMINATED" ||
+        s.contaminationStatus === "CONTAMINATED"
+    ).length;
+
+    const safe = geoSamples.filter(
+      (s) => s.status === "SAFE" || s.contaminationStatus === "SAFE"
+    ).length;
+
+    const pending = geoSamples.filter(
+      (s) => !s.status || s.status === "PENDING"
+    ).length;
+
+    return { total: geoSamples.length, contaminated, safe, pending };
+  }, [geoSamples]);
 
   if (loading) {
     return (
-      <p
-        className={`text-center mt-6 sm:mt-10 text-base sm:text-lg animate-pulse  px-4 pt-[30px] pb-[30px] ${propTheme.text}`}
-      >
-        Loading Map...
-      </p>
+      <section className={`rounded-3xl border ${activeTheme.border} ${activeTheme.card} p-8`}>
+        <div className="flex min-h-[420px] flex-col items-center justify-center text-center">
+          <div className="mb-4 h-11 w-11 animate-spin rounded-full border-4 border-emerald-200 border-t-emerald-600" />
+          <h2 className={`text-base font-bold ${activeTheme.text}`}>Loading geographic intelligence</h2>
+          <p className={`mt-1 text-sm ${activeTheme.textMuted}`}>
+            Preparing sample locations for the map.
+          </p>
+        </div>
+      </section>
     );
   }
+
   if (error) {
     return (
-      <div
-        className={`border-l-4 border-red-600 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-3 sm:p-4 rounded shadow max-w-xl w-full`}
-      >
-        <h2 className='font-semibold text-base sm:text-lg flex items-center gap-2'>
-          <>
-            <AlertTriangle size={18} className='sm:w-5 sm:h-5' />
-            Error ocurred. Try refreshing.
-          </>
-        </h2>
-      </div>
+      <section className={`rounded-3xl border ${activeTheme.border} ${activeTheme.card} p-6`}>
+        <div className="flex min-h-[300px] items-center justify-center">
+          <div className="max-w-md text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-300">
+              <AlertTriangle className="h-6 w-6" />
+            </div>
+            <h2 className={`text-lg font-bold ${activeTheme.text}`}>Map data could not be loaded</h2>
+            <p className={`mt-2 text-sm ${activeTheme.textMuted}`}>
+              Refresh the geographic view and try again.
+            </p>
+            <button
+              onClick={loadSamples}
+              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
+            >
+              <RefreshCw className="h-4 w-4" /> Retry
+            </button>
+          </div>
+        </div>
+      </section>
     );
   }
-  if (!error && !loading && !samplesWithCoords.length > 0) {
-    return (
-      <div className='flex items-center gap-2 sm:gap-3 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 shadow-sm flex-shrink-0 self-end sm:self-auto'>
-        <div className='flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/15'>
-          <MapPin className='w-4 h-4 sm:w-5 sm:h-5 text-white' />
-        </div>
 
-        <p className='text-white text-xs sm:text-sm font-medium whitespace-nowrap'>
-          No samples with <span className='opacity-80'>coordinates</span>
-        </p>
-      </div>
+  if (!geoSamples.length) {
+    return (
+      <section className={`rounded-3xl border ${activeTheme.border} ${activeTheme.card} p-6`}>
+        <div className="flex min-h-[300px] items-center justify-center text-center">
+          <div>
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 dark:bg-slate-800">
+              <MapPin className="h-6 w-6" />
+            </div>
+            <h2 className={`text-lg font-bold ${activeTheme.text}`}>No mapped samples yet</h2>
+            <p className={`mt-2 max-w-md text-sm ${activeTheme.textMuted}`}>
+              Samples with valid GPS coordinates will appear here as geographic intelligence.
+            </p>
+          </div>
+        </div>
+      </section>
     );
   }
 
   return (
-    <>
-      <div className='border-0 rounded-lg sm:rounded-xl overflow-hidden shadow-lg sm:shadow-2xl bg-white dark:bg-gray-800'>
-        {/* Map Header */}
-        <div className='bg-gradient-to-r from-emerald-600 via-emerald-500 to-cyan-500 dark:from-emerald-700 dark:via-emerald-600 dark:to-cyan-600 px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3'>
-          <div className='w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm flex-shrink-0'>
-            <svg
-              className='w-5 h-5 sm:w-6 sm:h-6 text-white'
-              fill='none'
-              stroke='currentColor'
-              viewBox='0 0 24 24'
-            >
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.553-.894L9 7m0 13l6.447 3.268A1 1 0 0021 19.382V8.618a1 1 0 00-1.553-.894L15 10m0 13V7m0 0L9.553 3.732A1 1 0 008 4.618v10.764'
-              />
-            </svg>
-          </div>
-          <div className='flex-1 min-w-0'>
-            <h2 className='text-base sm:text-lg md:text-xl font-bold text-white truncate'>
-              Geographic Distribution
+    <section className={`overflow-hidden rounded-3xl border ${activeTheme.border} ${activeTheme.card} shadow-sm`}>
+      <header className="relative overflow-hidden bg-gradient-to-br from-emerald-700 via-emerald-600 to-teal-600 p-5 text-white sm:p-6">
+        <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+        <div className="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+          <div>
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider">
+              <Layers3 className="h-3.5 w-3.5" />
+              Geographic intelligence
+            </div>
+            <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
+              Sample collection map
             </h2>
-            <p className='text-emerald-100 text-xs sm:text-sm truncate'>
-              Interactive map of sample locations
+            <p className="mt-1.5 max-w-2xl text-sm text-emerald-100">
+              Explore where samples were collected and identify geographic concentrations of contamination.
             </p>
           </div>
+
+          <button
+            onClick={() => setShowLegend((v) => !v)}
+            className="inline-flex w-fit items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs font-semibold backdrop-blur hover:bg-white/15"
+          >
+            <Layers3 className="h-4 w-4" />
+            {showLegend ? "Hide legend" : "Show legend"}
+          </button>
         </div>
-        <Map samples={samplesWithCoords} />
+      </header>
+
+      <div className={`grid grid-cols-2 border-b ${activeTheme.border} sm:grid-cols-4`}>
+        <MapStat label="Mapped samples" value={stats.total} icon={MapPin} />
+        <MapStat label="Contaminated" value={stats.contaminated} icon={ShieldAlert} tone="danger" />
+        <MapStat label="Safe" value={stats.safe} icon={ShieldAlert} tone="safe" />
+        <MapStat label="Pending" value={stats.pending} icon={RefreshCw} tone="pending" />
       </div>
-    </>
+
+      <div className="relative">
+        <Map samples={geoSamples} />
+
+        {showLegend && (
+          <div className={`absolute bottom-4 left-4 z-[500] w-[calc(100%-2rem)] max-w-xs rounded-2xl border ${activeTheme.border} ${activeTheme.card} p-3.5 shadow-xl backdrop-blur`}>
+            <div className="flex items-center justify-between">
+              <p className={`text-xs font-bold ${activeTheme.text}`}>Map legend</p>
+              <button
+                onClick={() => setShowLegend(false)}
+                className={`rounded-lg p-1 ${activeTheme.hover}`}
+                aria-label="Close map legend"
+              >
+                <X className={`h-3.5 w-3.5 ${activeTheme.textMuted}`} />
+              </button>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+              <LegendItem dot="bg-red-500" label="Contamination present" />
+              <LegendItem dot="bg-emerald-500" label="Safe / reviewed" />
+              <LegendItem dot="bg-amber-500" label="Pending / unresolved" />
+              <LegendItem dot="bg-slate-400" label="Sample location" />
+            </div>
+            <p className={`mt-3 text-[10px] leading-4 ${activeTheme.textMuted}`}>
+              Click a marker to inspect the samples collected at that location.
+            </p>
+          </div>
+        )}
+      </div>
+    </section>
   );
 };
+
+const MapStat = ({ label, value, icon: Icon, tone = "neutral" }) => {
+  const toneClass =
+    tone === "danger"
+      ? "text-red-600 dark:text-red-300"
+      : tone === "safe"
+      ? "text-emerald-600 dark:text-emerald-300"
+      : tone === "pending"
+      ? "text-amber-600 dark:text-amber-300"
+      : "text-slate-700 dark:text-slate-200";
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-3.5 sm:px-5">
+      <Icon className={`h-4 w-4 shrink-0 ${toneClass}`} />
+      <div className="min-w-0">
+        <p className="text-lg font-bold leading-none">{value}</p>
+        <p className="mt-1 truncate text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          {label}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+const LegendItem = ({ dot, label }) => (
+  <div className="flex items-center gap-2">
+    <span className={`h-2.5 w-2.5 rounded-full ${dot}`} />
+    <span>{label}</span>
+  </div>
+);
 
 export default MapView;
