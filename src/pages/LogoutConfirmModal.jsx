@@ -6,7 +6,7 @@ const LogoutConfirmModal = ({ show, onConfirm, onCancel, theme }) => {
   return (
     <div className='fixed inset-0 bg-black/60 flex items-center justify-center z-[3000]'>
       <div
-        className={`${theme?.card} border ${theme?.border} ${theme?.text} rounded-xl p-6 shadow-xl max-w-sm w-full`}
+        className={`${theme?.card} border ${theme?.border} ${theme?.text} rounded-xl p-6 shadow-xl max-w-sm md:w-full w-4/5`}
       >
         <h2 className='text-lg font-semibold mb-3 text-center'>
           Are you sure you want to logout?
