@@ -15,7 +15,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import api from "../../../utils/api";
-import { DEFAULT_PAGE_SIZE } from "../constants/supervisor.constants";
+import { DEFAULT_PAGE_SIZE } from "../constants/constants";
 import { useSupervisorScope } from "./useSupervisorScope";
 
 const INITIAL_REVIEW_FORM = {
