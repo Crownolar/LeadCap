@@ -1,22 +1,25 @@
-import { Search, Download, Lock, Loader } from "lucide-react";
+import {
+  Search,
+  Download,
+  Lock,
+  Loader,
+  SlidersHorizontal,
+  Database,
+  MapPin,
+  UserRound,
+  CalendarDays,
+  Eye,
+  Trash2,
+  X,
+  RefreshCw,
+  ChevronDown,
+} from "lucide-react";
+
 import api from "../../utils/api";
-
-import { getContaminationStatus } from "../../utils/chartDataHelpers";
 import SampleDetailModal from "../modals/SampleDetailModal";
+import HeavyMetalStatusBadge from "../common/HeavyMetalStatusBadge";
+import { getHeavyMetalPublicStatus } from "../../utils/heavyMetalStatus";
 import { useState } from "react";
-import { useNavigate } from "react-router";
-
-const getMaxReading = (heavyMetalReadings) => {
-  if (!heavyMetalReadings || heavyMetalReadings.length === 0) return null;
-
-  let maxReading = 0;
-  heavyMetalReadings.forEach((reading) => {
-    const xrf = reading.xrfReading ? parseFloat(reading.xrfReading) : 0;
-    const aas = reading.aasReading ? parseFloat(reading.aasReading) : 0;
-    maxReading = Math.max(maxReading, xrf, aas);
-  });
-  return maxReading > 0 ? maxReading : null;
-};
 
 const DatabaseView = ({
   theme,
@@ -37,37 +40,94 @@ const DatabaseView = ({
   setSelectedSample,
   fetchStateError,
   fetchSampleError,
-  // pagination
   pagination,
-  setPagination,
-  // search query
   searchTerm,
   setSearchTerm,
-  // new props for load-more
   handleFetchMore,
   loadingMore,
   loadingMoreError,
-  skip,
-  take,
-  totalItems,
 }) => {
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState({
+    isOpen: false,
+    sample: null,
+  });
+
   const isDataCollector =
-    currentUser?.role?.toLowerCase().replace(/[\s_]/g, "") === "datacollector";
+    currentUser?.role
+      ?.toLowerCase()
+      .replace(/[\s_]/g, "") === "datacollector";
+
+  const normalizedRole =
+    currentUser?.role
+      ?.toLowerCase()
+      .replace(/[\s_]/g, "") ?? "";
+
+  const isHeadResearcher =
+    normalizedRole === "headresearcher";
+
+  const isSuperAdmin =
+    normalizedRole === "superadmin";
+
+  const canSeeCollector =
+    isSuperAdmin || isHeadResearcher;
+
+  /* ---------------------------------------------------------------------- */
+  /* Access restricted                                                      */
+  /* ---------------------------------------------------------------------- */
 
   if (isDataCollector) {
     return (
       <div
-        className={`${theme?.bg} min-h-screen flex items-center justify-center p-4`}
+        className={`
+          flex min-h-[70vh]
+          items-center justify-center
+          p-4 sm:p-6
+          ${theme?.bg}
+        `}
       >
         <div
-          className={`${theme?.card} rounded-lg border ${theme?.border} shadow-md p-8 text-center max-w-md`}
+          className={`
+            w-full max-w-md
+            rounded-2xl
+            border
+            p-7 sm:p-8
+            text-center
+            shadow-sm
+            ${theme?.card}
+            ${theme?.border}
+          `}
         >
-          <Lock className='w-16 h-16 mx-auto mb-4 text-yellow-600' />
-          <h2 className={`${theme?.text} text-2xl font-bold mb-2`}>
-            Access Restricted
+          <div
+            className={`
+              mx-auto mb-5
+              flex h-14 w-14
+              items-center justify-center
+              rounded-2xl
+              ${theme?.moderate}
+            `}
+          >
+            <Lock className="h-6 w-6" />
+          </div>
+
+          <h2
+            className={`
+              text-lg font-bold
+              ${theme?.text}
+            `}
+          >
+            Database access restricted
           </h2>
-          <p className={theme?.textMuted}>
-            Data collectors can only view their own collected samples in the{" "}
+
+          <p
+            className={`
+              mx-auto mt-2
+              max-w-sm
+              text-sm leading-6
+              ${theme?.textMuted}
+            `}
+          >
+            Data collectors can only view their own
+            collected samples from the{" "}
             <strong>My Samples</strong> section.
           </p>
         </div>
@@ -75,84 +135,312 @@ const DatabaseView = ({
     );
   }
 
-  const normalizedRole =
-    currentUser?.role?.toLowerCase().replace(/[\s_]/g, "") ?? "";
-  const isHeadResearcher = normalizedRole === "headresearcher";
-  const isSuperAdmin = normalizedRole === "superadmin";
-  const canSeeCollector = isSuperAdmin || isHeadResearcher;
+  /* ---------------------------------------------------------------------- */
+  /* Export                                                                 */
+  /* ---------------------------------------------------------------------- */
 
   const handleExcelExportClick = async () => {
     try {
-      const response = await api.get("/samples/export/data", {
-        params: { format: "excel" },
-        responseType: "blob",
-      });
+      const response = await api.get(
+        "/samples/export/data",
+        {
+          params: { format: "excel" },
+          responseType: "blob",
+        }
+      );
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
+      const url =
+        window.URL.createObjectURL(
+          new Blob([response.data])
+        );
+
+      const link =
+        document.createElement("a");
+
       link.href = url;
+
       link.setAttribute(
         "download",
-        `samples-export-${new Date().toISOString().split("T")[0]}.xlsx`,
+        `samples-export-${
+          new Date()
+            .toISOString()
+            .split("T")[0]
+        }.xlsx`
       );
+
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);
+
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error("Failed to export samples:", error);
-      alert("Failed to export samples. Please try again.");
+      console.error(
+        "Failed to export samples:",
+        error
+      );
+
+      alert(
+        "Failed to export samples. Please try again."
+      );
     }
   };
-  const [deleteConfirmModal, setDeleteConfirmModal] = useState({
-    isOpen: false,
-    sample: null,
-  });
-  const navigate = useNavigate();
-  const handleDeleteSample = (sample) => {
-    console.log(sample);
-    api
-      .delete(`samples/${sample.id}`)
-      .then((res) => {
-        console.log(res.data);
-        setTimeout(() => {
-          setDeleteConfirmModal({ isOpen: false, sample: null });
-        }, 1000);
-      })
-      .catch((e) => {
-        console.log(e);
+
+  /* ---------------------------------------------------------------------- */
+  /* Delete                                                                 */
+  /* ---------------------------------------------------------------------- */
+
+  const handleDeleteSample = async (
+    sample
+  ) => {
+    try {
+      await api.delete(
+        `/samples/${sample.id}`
+      );
+
+      setDeleteConfirmModal({
+        isOpen: false,
+        sample: null,
       });
+    } catch (error) {
+      console.error(
+        "Failed to delete sample:",
+        error
+      );
+
+      alert(
+        "Failed to delete sample. Please try again."
+      );
+    }
   };
 
-  const DeleteConfirmModalComp = ({
-    show,
-    action,
-    onConfirm,
-    onCancel,
-    theme,
-  }) => {
-    if (!show) return null;
+  /* ---------------------------------------------------------------------- */
+  /* Filter helpers                                                         */
+  /* ---------------------------------------------------------------------- */
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setFilterState("all");
+    setFilterCategory("all");
+    setFilterProductVariant("all");
+    setFilterStatus("all");
+  };
+
+  const hasActiveFilters =
+    Boolean(searchTerm) ||
+    filterState !== "all" ||
+    filterCategory !== "all" ||
+    filterProductVariant !== "all" ||
+    filterStatus !== "all";
+
+  const uniqueCategoryIds = [
+    ...new Set(
+      (samples || [])
+        .map(
+          (sample) =>
+            sample?.productVariant?.categoryId
+        )
+        .filter(Boolean)
+    ),
+  ];
+
+  const uniqueProductIds = [
+    ...new Set(
+      (samples || [])
+        .map(
+          (sample) =>
+            sample?.productVariant?.id
+        )
+        .filter(Boolean)
+    ),
+  ];
+
+  /* ---------------------------------------------------------------------- */
+  /* Reusable filter                                                        */
+  /* ---------------------------------------------------------------------- */
+
+  const FilterSelect = ({
+    value,
+    onChange,
+    children,
+    disabled,
+  }) => (
+    <div className="relative">
+      <select
+        value={value}
+        disabled={disabled}
+        onChange={onChange}
+        className={`
+          h-10 w-full
+          appearance-none
+          rounded-xl
+          border
+          px-3 pr-9
+          text-xs
+          font-medium
+          outline-none
+          transition
+          ${theme?.input}
+          ${theme?.border}
+          focus:border-emerald-500
+          focus:ring-2
+          focus:ring-emerald-500/10
+          disabled:cursor-not-allowed
+          disabled:opacity-50
+        `}
+      >
+        {children}
+      </select>
+
+      <ChevronDown
+        className={`
+          pointer-events-none
+          absolute right-3 top-1/2
+          h-3.5 w-3.5
+          -translate-y-1/2
+          ${theme?.textMuted}
+        `}
+      />
+    </div>
+  );
+
+  /* ---------------------------------------------------------------------- */
+  /* Delete modal                                                           */
+  /* ---------------------------------------------------------------------- */
+
+  const DeleteConfirmModal = () => {
+    if (!deleteConfirmModal.isOpen) {
+      return null;
+    }
+
+    const sample =
+      deleteConfirmModal.sample;
 
     return (
-      <div className='fixed inset-0 bg-black/60 flex items-center justify-center z-50'>
+      <div
+        className="
+          fixed inset-0 z-[100]
+          flex items-center justify-center
+          bg-slate-950/50
+          p-4
+          backdrop-blur-sm
+        "
+      >
         <div
-          className={`${theme?.card} border ${theme?.border} ${theme?.text} rounded-xl p-6 shadow-xl max-w-sm w-full`}
+          className={`
+            w-full max-w-md
+            rounded-2xl
+            border
+            p-5 sm:p-6
+            shadow-2xl
+            ${theme?.card}
+            ${theme?.border}
+          `}
         >
-          <h2 className='text-lg font-semibold mb-3 text-center'>
-            {`Are you sure you want to ${action}`}?
-          </h2>
-          <div className='flex justify-center gap-3 mt-4'>
-            <button
-              onClick={onConfirm}
-              className='bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg'
+          <div className="flex items-start gap-3">
+            <div
+              className="
+                flex h-10 w-10
+                shrink-0
+                items-center justify-center
+                rounded-xl
+                bg-red-50
+                text-red-600
+                dark:bg-red-950/30
+                dark:text-red-400
+              "
             >
-              {`Yes, ${action}`}
-            </button>
+              <Trash2 className="h-4 w-4" />
+            </div>
+
+            <div className="min-w-0">
+              <h3
+                className={`
+                  text-sm font-bold
+                  ${theme?.text}
+                `}
+              >
+                Delete sample?
+              </h3>
+
+              <p
+                className={`
+                  mt-1 text-xs leading-5
+                  ${theme?.textMuted}
+                `}
+              >
+                This action will permanently remove{" "}
+                <strong>
+                  {sample?.sampleId ||
+                    sample?.productName ||
+                    "this sample"}
+                </strong>{" "}
+                from the database.
+              </p>
+            </div>
+
             <button
-              onClick={onCancel}
-              className='bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded-lg'
+              type="button"
+              onClick={() =>
+                setDeleteConfirmModal({
+                  isOpen: false,
+                  sample: null,
+                })
+              }
+              className={`
+                ml-auto rounded-lg p-1.5
+                ${theme?.textMuted}
+                ${theme?.hover}
+              `}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div
+            className="
+              mt-5 flex
+              flex-col-reverse
+              gap-2
+              sm:flex-row sm:justify-end
+            "
+          >
+            <button
+              type="button"
+              onClick={() =>
+                setDeleteConfirmModal({
+                  isOpen: false,
+                  sample: null,
+                })
+              }
+              className={`
+                rounded-xl
+                border
+                px-4 py-2.5
+                text-xs font-semibold
+                ${theme?.border}
+                ${theme?.text}
+                ${theme?.hover}
+              `}
             >
               Cancel
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                handleDeleteSample(sample)
+              }
+              className="
+                rounded-xl
+                bg-red-600
+                px-4 py-2.5
+                text-xs font-semibold
+                text-white
+                transition
+                hover:bg-red-700
+              "
+            >
+              Delete sample
             </button>
           </div>
         </div>
@@ -160,141 +448,186 @@ const DatabaseView = ({
     );
   };
 
-  return (
-    <div className={`space-y-4 ${theme?.text} text-base`}>
-      <div
-        className={`${theme?.card} rounded-lg shadow-md border ${theme?.border} p-4`}
-      >
-        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4'>
-          <div className='relative'>
-            <Search
-              className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${theme?.textMuted}`}
-            />
-            <input
-              type='text'
-              disabled={loading || fetchSampleError}
-              placeholder='Search samples...'
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full pl-10 pr-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
-            />
+  /* ---------------------------------------------------------------------- */
+  /* Error state                                                            */
+  /* ---------------------------------------------------------------------- */
+
+  if (
+    fetchSampleError &&
+    !loading
+  ) {
+    return (
+      <>
+        <div
+          className={`
+            rounded-2xl
+            border
+            p-8
+            text-center
+            ${theme?.card}
+            ${theme?.border}
+          `}
+        >
+          <div
+            className="
+              mx-auto mb-4
+              flex h-12 w-12
+              items-center justify-center
+              rounded-xl
+              bg-red-50
+              text-red-600
+              dark:bg-red-950/30
+              dark:text-red-400
+            "
+          >
+            <Database className="h-5 w-5" />
           </div>
 
-          <div className='w-full max-w-full sm:max-w-[100%]'>
-            <select
-              value={filterState}
-              disabled={loading}
-              onChange={(e) => setFilterState(e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm sm:text-base`}
-            >
-              <option value='all'>All States</option>
-              {states &&
-                states.length > 0 &&
-                states.map((state) => (
-                  <option key={state.id} value={state.id}>
-                    {state.name}
-                  </option>
-                ))}
-            </select>
-          </div>
-
-          <select
-            value={filterCategory}
-            disabled={loading}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
+          <h2
+            className={`
+              text-base font-bold
+              ${theme?.text}
+            `}
           >
-            <option value='all'>All Categories</option>
-            {[
-              ...new Set(
-                samples && samples.length > 0
-                  ? samples.map((s) => s.productVariant?.categoryId)
-                  : [],
-              ),
-            ]
-              .filter(Boolean)
-              .map((categoryId) => {
-                const category = samples.find(
-                  (s) => s.productVariant?.categoryId === categoryId,
-                )?.productVariant?.category;
-                return (
-                  <option key={categoryId} value={categoryId}>
-                    {category?.displayName || "Unknown"}
-                  </option>
-                );
-              })}
-          </select>
+            Unable to load sample database
+          </h2>
 
-          <select
-            value={filterProductVariant}
-            disabled={loading}
-            onChange={(e) => setFilterProductVariant(e.target.value)}
-            className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
+          <p
+            className={`
+              mx-auto mt-2
+              max-w-md
+              text-sm
+              ${theme?.textMuted}
+            `}
           >
-            <option value='all'>All Products</option>
-            {[
-              ...new Set(
-                samples && samples.length > 0
-                  ? samples.map((s) => s.productVariant?.categoryId)
-                  : [],
-              ),
-            ]
-              .filter(Boolean)
-              .map((variantId) => {
-                const variant = samples.find(
-                  (s) => s.productVariant?.id === variantId,
-                )?.productVariant;
-                return (
-                  <option key={variantId} value={variantId}>
-                    {variant?.displayName || variant?.name || "Unknown"}
-                  </option>
-                );
-              })}
-          </select>
-
-          <select
-            value={filterStatus}
-            disabled={loading}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className={`w-full px-4 py-2 border rounded-lg ${theme?.input} focus:ring-2 focus:ring-emerald-500`}
-          >
-            <option value='all'>All Status</option>
-            <option value='safe'>Safe</option>
-            <option value='moderate'>Moderate</option>
-            <option value='contaminated'>Contaminated</option>
-            <option value='pending'>Pending</option>
-          </select>
+            {fetchSampleError}
+          </p>
         </div>
 
-        <div className='flex justify-end mt-4'>
+        <DeleteConfirmModal />
+      </>
+    );
+  }
+
+  /* ---------------------------------------------------------------------- */
+  /* Main                                                                   */
+  /* ---------------------------------------------------------------------- */
+
+  return (
+    <div
+      className={`
+        space-y-5
+        ${theme?.text}
+      `}
+    >
+      {/* ================================================================ */}
+      {/* PAGE HEADER                                                       */}
+      {/* ================================================================ */}
+
+      <div
+        className={`
+          rounded-2xl
+          border
+          p-5 sm:p-6
+          ${theme?.card}
+          ${theme?.border}
+        `}
+      >
+        <div
+          className="
+            flex flex-col
+            gap-5
+            lg:flex-row
+            lg:items-center
+            lg:justify-between
+          "
+        >
+          <div className="flex items-start gap-3">
+            <div
+              className={`
+                flex h-11 w-11
+                shrink-0
+                items-center justify-center
+                rounded-xl
+                ${theme?.emerald}
+                ${theme?.emeraldText}
+              `}
+            >
+              <Database className="h-5 w-5" />
+            </div>
+
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1
+                  className={`
+                    text-lg font-bold
+                    tracking-tight
+                    sm:text-xl
+                    ${theme?.text}
+                  `}
+                >
+                  Sample Database
+                </h1>
+
+                <span
+                  className={`
+                    rounded-full
+                    border
+                    px-2 py-0.5
+                    text-[9px]
+                    font-semibold
+                    uppercase
+                    tracking-wider
+                    ${theme?.border}
+                    ${theme?.textMuted}
+                  `}
+                >
+                  Research records
+                </span>
+              </div>
+
+              <p
+                className={`
+                  mt-1 max-w-2xl
+                  text-xs leading-5
+                  ${theme?.textMuted}
+                `}
+              >
+                Search, filter and inspect collected
+                environmental sample records.
+              </p>
+            </div>
+          </div>
+
           <button
-            onClick={() => handleExcelExportClick()}
+            type="button"
+            onClick={handleExcelExportClick}
             disabled={loading}
-            className='flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors'
+            className="
+              inline-flex
+              h-10
+              items-center
+              justify-center
+              gap-2
+              rounded-xl
+              bg-emerald-600
+              px-4
+              text-xs
+              font-semibold
+              text-white
+              shadow-sm
+              transition
+              hover:bg-emerald-700
+              disabled:cursor-not-allowed
+              disabled:opacity-50
+            "
           >
-            <Download className='w-4 h-4' />
+            <Download className="h-3.5 w-3.5" />
             Export Excel
           </button>
         </div>
-        {fetchStateError && (
-          <p className='text-sm mt-1 text-red-600'>
-            Error occurred while fetching states. Check connection and refresh
-          </p>
-        )}
-      </div>
-      {/* samples */}
-      {deleteConfirmModal.isOpen && (
-        <DeleteConfirmModalComp
-          show={deleteConfirmModal.isOpen}
-          action={"delete"}
-          onConfirm={() => handleDeleteSample(deleteConfirmModal.sample)}
-          onCancel={() =>
-            setDeleteConfirmModal({ isOpen: false, sample: null })
-          }
-          theme={theme}
-        />
-      )}
 
+<<<<<<< HEAD
       {!fetchSampleError && (
         <>
           {!loading && (
@@ -303,9 +636,30 @@ const DatabaseView = ({
             </h1>
           )}
 
+=======
+        {/* ============================================================ */}
+        {/* SEARCH + FILTERS                                              */}
+        {/* ============================================================ */}
+
+        <div
+          className={`
+            mt-5
+            border-t
+            pt-5
+            ${theme?.border}
+          `}
+        >
+>>>>>>> 5154c95bb8a09c1bfa1c070f873e32370179438f
           <div
-            className={`${theme?.card} rounded-lg shadow-md border ${theme?.border}`}
+            className="
+              grid
+              grid-cols-1
+              gap-2.5
+              md:grid-cols-2
+              xl:grid-cols-[minmax(220px,1.5fr)_repeat(4,minmax(140px,1fr))_auto]
+            "
           >
+<<<<<<< HEAD
             <div className='hidden sm:block overflow-x-auto'>
               <table className='w-full min-w-[800px] text-sm'>
                 <thead className={theme?.card}>
@@ -336,244 +690,132 @@ const DatabaseView = ({
                     );
                     const sampleStatus =
                       getContaminationStatus(sample).toLowerCase();
+=======
+            {/* Search */}
+>>>>>>> 5154c95bb8a09c1bfa1c070f873e32370179438f
 
-                    return (
-                      <tr key={sample?.id} className={theme?.hover}>
-                        <td className='px-4 py-3 whitespace-nowrap'>
-                          <div>
-                            <div className='font-medium'>
-                              {sample?.productName}
-                            </div>
-                            <div className={`text-xs ${theme?.textMuted}`}>
-                              {sample?.brandName}
-                            </div>
-                          </div>
-                        </td>
-                        <td className='px-4 py-3 whitespace-nowrap'>
-                          <div>
-                            <div>
-                              {sample?.lga?.name}, {sample?.state?.name}
-                            </div>
-                            <div className={`text-xs ${theme.textMuted}`}>
-                              {sample?.marketName || sample?.market?.name}
-                            </div>
-                          </div>
-                        </td>
-                        {canSeeCollector && (
-                          <td className='px-4 py-3 whitespace-nowrap'>
-                            <div className='font-medium text-sm'>
-                              {sample?.creator?.fullName ||
-                                sample?.creator?.email ||
-                                "Unknown"}
-                            </div>
-                            <div className={`text-xs ${theme?.textMuted}`}>
-                              {sample?.creator?.role?.replace(/_/g, " ") ||
-                                "N/A"}
-                            </div>
-                          </td>
-                        )}
-                        <td className='px-4 py-3 whitespace-nowrap font-semibold'>
-                          {maxReading !== null ? (
-                            <span
-                              className={
-                                sampleStatus === "contaminated"
-                                  ? "text-red-500"
-                                  : sampleStatus === "moderate"
-                                    ? "text-amber-500"
-                                    : "text-green-500"
-                              }
-                            >
-                              {maxReading.toLocaleString()}
-                            </span>
-                          ) : (
-                            <span className='text-gray-400'>—</span>
-                          )}
-                        </td>
+            <div className="relative">
+              <Search
+                className={`
+                  absolute left-3
+                  top-1/2
+                  h-4 w-4
+                  -translate-y-1/2
+                  ${theme?.textMuted}
+                `}
+              />
 
-                        <td className='px-4 py-3'>
-                          <span
-                            className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                              sampleStatus === "safe"
-                                ? "bg-green-100 text-green-800"
-                                : sampleStatus === "moderate"
-                                  ? "bg-amber-100 text-amber-800"
-                                  : sampleStatus === "contaminated"
-                                    ? "bg-red-100 text-red-800"
-                                    : "bg-yellow-100 text-yellow-800"
-                            }`}
-                          >
-                            {sampleStatus?.toUpperCase() || "PENDING"}
-                          </span>
-                        </td>
-                        <td className='px-4 py-3 whitespace-nowrap'>
-                          {sample?.createdAt
-                            ? new Date(sample?.createdAt).toLocaleDateString()
-                            : "N/A"}
-                        </td>
-                        <td className='px-4 py-3 whitespace-nowrap'>
-                          <button
-                            onClick={() => setSelectedSample(sample)}
-                            className='text-emerald-400 hover:text-emerald-300 font-medium'
-                          >
-                            View
-                          </button>
-                        </td>
-                        {/* delete */}
-                        <td className='px-4 py-3 whitespace-nowrap'>
-                          {isSuperAdmin && (
-                            <button
-                              onClick={() =>
-                                setDeleteConfirmModal({
-                                  isOpen: true,
-                                  sample: sample,
-                                })
-                              }
-                              className='mt-2 text-red-400 hover:text-red-300 text-sm font-medium'
-                            >
-                              Delete
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              <input
+                type="text"
+                disabled={
+                  loading ||
+                  Boolean(fetchSampleError)
+                }
+                placeholder="Search sample, product, brand..."
+                value={searchTerm}
+                onChange={(event) =>
+                  setSearchTerm(
+                    event.target.value
+                  )
+                }
+                className={`
+                  h-10 w-full
+                  rounded-xl
+                  border
+                  pl-9 pr-9
+                  text-xs
+                  outline-none
+                  transition
+                  ${theme?.input}
+                  ${theme?.border}
+                  focus:border-emerald-500
+                  focus:ring-2
+                  focus:ring-emerald-500/10
+                `}
+              />
 
-              {fetchSampleError && (
-                <div className='py-3 flex justify-center'>
-                  <p className='text-sm mt-1 text-red-600'>
-                    Error occurred while fetching more samples. Check connection
-                    and refresh
-                  </p>
-                </div>
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSearchTerm("")
+                  }
+                  className={`
+                    absolute right-2.5
+                    top-1/2
+                    -translate-y-1/2
+                    rounded-md
+                    p-1
+                    ${theme?.textMuted}
+                    ${theme?.hover}
+                  `}
+                >
+                  <X className="h-3 w-3" />
+                </button>
               )}
             </div>
 
-            {/* mobile view */}
-            <div className='block sm:hidden space-y-4 p-2'>
-              {filteredSamples.length > 0 &&
-                filteredSamples.map((sample) => {
-                  const maxReading = getMaxReading(sample?.heavyMetalReadings);
-                  const sampleStatus =
-                    getContaminationStatus(sample).toLowerCase();
+            {/* State */}
+
+            <FilterSelect
+              value={filterState}
+              disabled={loading}
+              onChange={(event) =>
+                setFilterState(
+                  event.target.value
+                )
+              }
+            >
+              <option value="all">
+                All states
+              </option>
+
+              {states?.map((state) => (
+                <option
+                  key={state.id}
+                  value={state.id}
+                >
+                  {state.name}
+                </option>
+              ))}
+            </FilterSelect>
+
+            {/* Category */}
+
+            <FilterSelect
+              value={filterCategory}
+              disabled={loading}
+              onChange={(event) =>
+                setFilterCategory(
+                  event.target.value
+                )
+              }
+            >
+              <option value="all">
+                All categories
+              </option>
+
+              {uniqueCategoryIds.map(
+                (categoryId) => {
+                  const category =
+                    samples?.find(
+                      (sample) =>
+                        sample?.productVariant
+                          ?.categoryId ===
+                        categoryId
+                    )?.productVariant
+                      ?.category;
 
                   return (
-                    <div
-                      key={sample?.id}
-                      className={`${theme?.card} border ${theme?.border} rounded-xl p-4 shadow-md space-y-3`}
+                    <option
+                      key={categoryId}
+                      value={categoryId}
                     >
-                      {/* HEADER */}
-                      <div className='flex justify-between items-center'>
-                        <span className='text-xs text-gray-500 font-medium'>
-                          #{sample?.sampleId}
-                        </span>
-
-                        <span
-                          className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            sampleStatus === "safe"
-                              ? "bg-green-100 text-green-800"
-                              : sampleStatus === "moderate"
-                                ? "bg-amber-100 text-amber-800"
-                                : sampleStatus === "contaminated"
-                                  ? "bg-red-100 text-red-800"
-                                  : "bg-yellow-100 text-yellow-800"
-                          }`}
-                        >
-                          {sampleStatus?.toUpperCase() || "PENDING"}
-                        </span>
-                      </div>
-
-                      {/* PRODUCT */}
-                      <div>
-                        <p className='font-semibold text-sm'>
-                          {sample?.productName}
-                        </p>
-                        <p className={`text-xs ${theme?.textMuted}`}>
-                          {sample?.brandName || "N/A"}
-                        </p>
-                      </div>
-
-                      {/* LOCATION */}
-                      <div className='text-sm'>
-                        <span className='font-medium'>📍 </span>
-                        {sample?.lga?.name}, {sample?.state?.name}
-                        <p className={`text-xs ${theme?.textMuted}`}>
-                          {sample?.marketName || sample?.market?.name || "N/A"}
-                        </p>
-                      </div>
-
-                      {/* COLLECTOR */}
-                      {canSeeCollector && (
-                        <div className='text-sm'>
-                          <span className='font-medium'>👤 </span>
-                          {sample?.creator?.fullName ||
-                            sample?.creator?.email ||
-                            "Unknown"}
-                          <p className={`text-xs ${theme?.textMuted}`}>
-                            {sample?.creator?.role?.replace(/_/g, " ") || "N/A"}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* METRICS */}
-                      <div className='flex justify-between text-sm'>
-                        <div>
-                          <p className='text-xs text-gray-500'>Max Reading</p>
-                          {maxReading !== null ? (
-                            <span
-                              className={`font-semibold ${
-                                sampleStatus === "contaminated"
-                                  ? "text-red-500"
-                                  : sampleStatus === "moderate"
-                                    ? "text-amber-500"
-                                    : "text-green-500"
-                              }`}
-                            >
-                              {maxReading.toLocaleString()} ppm
-                            </span>
-                          ) : (
-                            <span className='text-gray-400 text-xs'>
-                              No readings
-                            </span>
-                          )}
-                        </div>
-
-                        <div className='text-right'>
-                          <p className='text-xs text-gray-500'>Date</p>
-                          <span className='text-xs'>
-                            {sample?.createdAt
-                              ? new Date(sample?.createdAt).toLocaleDateString()
-                              : "N/A"}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* ACTIONS */}
-                      <div className='flex gap-2 pt-2 border-t border-gray-200 dark:border-gray-700'>
-                        <button
-                          onClick={() => setSelectedSample(sample)}
-                          className='flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-2 rounded-lg text-sm font-medium'
-                        >
-                          View Details
-                        </button>
-
-                        {isSuperAdmin && (
-                          <button
-                            onClick={() =>
-                              setDeleteConfirmModal({
-                                isOpen: true,
-                                sample: sample,
-                              })
-                            }
-                            className='flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg text-sm font-medium'
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                      {category?.displayName ||
+                        "Unknown"}
+                    </option>
                   );
+<<<<<<< HEAD
                 })}
             </div>
 
@@ -599,50 +841,1110 @@ const DatabaseView = ({
               </div>
             )}
             {!fetchSampleError && !loading && filteredSamples?.length > 0 && (
+=======
+                }
+              )}
+            </FilterSelect>
+
+            {/* Product */}
+
+            <FilterSelect
+              value={filterProductVariant}
+              disabled={loading}
+              onChange={(event) =>
+                setFilterProductVariant(
+                  event.target.value
+                )
+              }
+            >
+              <option value="all">
+                All products
+              </option>
+
+              {uniqueProductIds.map(
+                (variantId) => {
+                  const variant =
+                    samples?.find(
+                      (sample) =>
+                        sample?.productVariant
+                          ?.id === variantId
+                    )?.productVariant;
+
+                  return (
+                    <option
+                      key={variantId}
+                      value={variantId}
+                    >
+                      {variant?.displayName ||
+                        variant?.name ||
+                        "Unknown"}
+                    </option>
+                  );
+                }
+              )}
+            </FilterSelect>
+
+            {/* Status */}
+
+            <FilterSelect
+              value={filterStatus}
+              disabled={loading}
+              onChange={(event) =>
+                setFilterStatus(
+                  event.target.value
+                )
+              }
+            >
+              <option value="all">
+                All results
+              </option>
+              <option value="safe">
+                Safe
+              </option>
+              <option value="moderate">
+                Moderate
+              </option>
+              <option value="contaminated">
+                Contaminated
+              </option>
+              <option value="pending">
+                Pending
+              </option>
+            </FilterSelect>
+
+            {hasActiveFilters && (
+>>>>>>> 5154c95bb8a09c1bfa1c070f873e32370179438f
               <button
-                onClick={handleFetchMore}
-                disabled={!pagination.hasNextPage}
-                className={`px-4 py-2 rounded-lg text-sm my-6  block mx-auto  text-white ${
-                  !pagination.hasNextPage
-                    ? "bg-gray-400 opacity-60 cursor-not-allowed"
-                    : "bg-emerald-600 hover:bg-emerald-700"
-                }`}
+                type="button"
+                onClick={clearFilters}
+                className={`
+                  inline-flex
+                  h-10
+                  items-center
+                  justify-center
+                  gap-1.5
+                  rounded-xl
+                  border
+                  px-3
+                  text-xs
+                  font-semibold
+                  ${theme?.border}
+                  ${theme?.textMuted}
+                  ${theme?.hover}
+                `}
               >
-                {loading ? "Loading ..." : "Load More"}
+                <X className="h-3.5 w-3.5" />
+                Clear
               </button>
             )}
           </div>
-          {filteredSamples?.length === 0 && !loading && (
-            <h2 className='text-center text-gray-500'>
-              No samples found matching the criteria.
-            </h2>
-          )}
-        </>
-      )}
 
-      {loading && (
-        <div className='flex items-center justify-center h-48'>
-          <Loader className='animate-spin mr-2  size-10' />
-        </div>
-      )}
-      {fetchSampleError && (
-        <div
-          className={`${theme?.bg} min-h-screen flex items-center justify-center p-4`}
-        >
+          {/* Filter status line */}
+
           <div
-            className={`${theme?.card} rounded-lg border ${theme?.border} shadow-md p-8 text-center max-w-md`}
+            className="
+              mt-3
+              flex
+              flex-wrap
+              items-center
+              justify-between
+              gap-2
+            "
           >
-            <h2 className={`${theme?.text} text-2xl font-bold mb-2`}>Error</h2>
-            <p className={theme?.textMuted}>{fetchSampleError}</p>
+            <div
+              className={`
+                flex items-center gap-2
+                text-[10px]
+                ${theme?.textMuted}
+              `}
+            >
+              <SlidersHorizontal className="h-3 w-3" />
+
+              {hasActiveFilters
+                ? "Filters applied"
+                : "Showing all available records"}
+            </div>
+
+            {fetchStateError && (
+              <span className="text-[10px] font-medium text-red-600">
+                Unable to load states. Check your
+                connection and refresh.
+              </span>
+            )}
           </div>
         </div>
-      )}
+      </div>
+
+      {/* ================================================================ */}
+      {/* DATABASE CONTENT                                                  */}
+      {/* ================================================================ */}
+
+      <div
+        className={`
+          overflow-hidden
+          rounded-2xl
+          border
+          ${theme?.card}
+          ${theme?.border}
+        `}
+      >
+        {/* Database toolbar */}
+
+        <div
+          className={`
+            flex flex-col
+            gap-3
+            border-b
+            px-4 py-3.5
+            sm:flex-row
+            sm:items-center
+            sm:justify-between
+            sm:px-5
+            ${theme?.border}
+          `}
+        >
+          <div className="flex items-center gap-2">
+            <div
+              className={`
+                flex h-8 w-8
+                items-center justify-center
+                rounded-lg
+                ${theme?.bg}
+              `}
+            >
+              <Database
+                className={`h-3.5 w-3.5 ${theme?.emeraldText}`}
+              />
+            </div>
+
+            <div>
+              <p
+                className={`
+                  text-xs font-bold
+                  ${theme?.text}
+                `}
+              >
+                Sample records
+              </p>
+
+              <p
+                className={`
+                  text-[10px]
+                  ${theme?.textMuted}
+                `}
+              >
+                {filteredSamples?.length || 0}{" "}
+                records currently displayed
+              </p>
+            </div>
+          </div>
+
+          {loading && (
+            <div
+              className={`
+                flex items-center gap-2
+                text-[10px]
+                ${theme?.textMuted}
+              `}
+            >
+              <Loader className="h-3 w-3 animate-spin" />
+              Loading records...
+            </div>
+          )}
+        </div>
+
+        {/* ============================================================ */}
+        {/* DESKTOP TABLE                                                 */}
+        {/* ============================================================ */}
+
+        <div className="hidden overflow-x-auto lg:block">
+          <table className="w-full min-w-[980px] text-xs">
+            <thead>
+              <tr
+                className={`
+                  border-b
+                  ${theme?.border}
+                  ${theme?.bg}
+                `}
+              >
+                <th
+                  className={`
+                    px-5 py-3
+                    text-left
+                    text-[9px]
+                    font-bold
+                    uppercase
+                    tracking-wider
+                    ${theme?.textMuted}
+                  `}
+                >
+                  Product
+                </th>
+
+                <th
+                  className={`
+                    px-4 py-3
+                    text-left
+                    text-[9px]
+                    font-bold
+                    uppercase
+                    tracking-wider
+                    ${theme?.textMuted}
+                  `}
+                >
+                  Location
+                </th>
+
+                {canSeeCollector && (
+                  <th
+                    className={`
+                      px-4 py-3
+                      text-left
+                      text-[9px]
+                      font-bold
+                      uppercase
+                      tracking-wider
+                      ${theme?.textMuted}
+                    `}
+                  >
+                    Collector
+                  </th>
+                )}
+
+                <th
+                  className={`
+                    px-4 py-3
+                    text-left
+                    text-[9px]
+                    font-bold
+                    uppercase
+                    tracking-wider
+                    ${theme?.textMuted}
+                  `}
+                >
+                  Heavy metal result
+                </th>
+
+                <th
+                  className={`
+                    px-4 py-3
+                    text-left
+                    text-[9px]
+                    font-bold
+                    uppercase
+                    tracking-wider
+                    ${theme?.textMuted}
+                  `}
+                >
+                  Date
+                </th>
+
+                <th
+                  className={`
+                    px-5 py-3
+                    text-right
+                    text-[9px]
+                    font-bold
+                    uppercase
+                    tracking-wider
+                    ${theme?.textMuted}
+                  `}
+                >
+                  Actions
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {filteredSamples?.map(
+                (sample) => {
+                  const heavyMetalStatus =
+                    getHeavyMetalPublicStatus(
+                      sample
+                    );
+
+                  return (
+                    <tr
+                      key={sample?.id}
+                      className={`
+                        border-b
+                        last:border-b-0
+                        ${theme?.border}
+                        ${theme?.hover}
+                      `}
+                    >
+                      {/* Product */}
+
+                      <td className="px-5 py-3.5">
+                        <div className="max-w-[220px]">
+                          <p
+                            className={`
+                              truncate
+                              font-semibold
+                              ${theme?.text}
+                            `}
+                          >
+                            {sample?.productName ||
+                              "Unnamed product"}
+                          </p>
+
+                          <div
+                            className={`
+                              mt-1 flex
+                              items-center gap-2
+                              text-[10px]
+                              ${theme?.textMuted}
+                            `}
+                          >
+                            <span>
+                              {sample?.brandName ||
+                                "No brand"}
+                            </span>
+
+                            {sample?.sampleId && (
+                              <>
+                                <span>•</span>
+                                <span>
+                                  {sample.sampleId}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Location */}
+
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-start gap-2">
+                          <MapPin
+                            className={`
+                              mt-0.5
+                              h-3.5 w-3.5
+                              shrink-0
+                              ${theme?.emeraldText}
+                            `}
+                          />
+
+                          <div className="min-w-0">
+                            <p
+                              className={`
+                                max-w-[180px]
+                                truncate
+                                font-medium
+                                ${theme?.text}
+                              `}
+                            >
+                              {sample?.lga?.name ||
+                                "Unknown LGA"}
+                              {sample?.state?.name
+                                ? `, ${sample.state.name}`
+                                : ""}
+                            </p>
+
+                            <p
+                              className={`
+                                mt-0.5
+                                max-w-[180px]
+                                truncate
+                                text-[10px]
+                                ${theme?.textMuted}
+                              `}
+                            >
+                              {sample?.marketName ||
+                                sample?.market?.name ||
+                                "No market recorded"}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Collector */}
+
+                      {canSeeCollector && (
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-start gap-2">
+                            <UserRound
+                              className={`
+                                mt-0.5
+                                h-3.5 w-3.5
+                                shrink-0
+                                ${theme?.textMuted}
+                              `}
+                            />
+
+                            <div className="min-w-0">
+                              <p
+                                className={`
+                                  max-w-[160px]
+                                  truncate
+                                  font-medium
+                                  ${theme?.text}
+                                `}
+                              >
+                                {sample?.creator
+                                  ?.fullName ||
+                                  sample?.creator
+                                    ?.email ||
+                                  "Unknown"}
+                              </p>
+
+                              <p
+                                className={`
+                                  mt-0.5
+                                  text-[10px]
+                                  ${theme?.textMuted}
+                                `}
+                              >
+                                {sample?.creator?.role
+                                  ?.replace(
+                                    /_/g,
+                                    " "
+                                  ) ||
+                                  "N/A"}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                      )}
+
+                      {/* Result */}
+
+                      <td className="px-4 py-3.5">
+                        <HeavyMetalStatusBadge
+                          status={
+                            heavyMetalStatus
+                          }
+                        />
+                      </td>
+
+                      {/* Date */}
+
+                      <td className="px-4 py-3.5">
+                        <div
+                          className={`
+                            flex items-center gap-1.5
+                            whitespace-nowrap
+                            ${theme?.textMuted}
+                          `}
+                        >
+                          <CalendarDays className="h-3.5 w-3.5" />
+
+                          {sample?.createdAt
+                            ? new Date(
+                                sample.createdAt
+                              ).toLocaleDateString(
+                                "en-GB",
+                                {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                }
+                              )
+                            : "N/A"}
+                        </div>
+                      </td>
+
+                      {/* Actions */}
+
+                      <td className="px-5 py-3.5">
+                        <div className="flex justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedSample(
+                                sample
+                              )
+                            }
+                            className={`
+                              inline-flex
+                              items-center gap-1.5
+                              rounded-lg
+                              border
+                              px-2.5 py-1.5
+                              text-[10px]
+                              font-semibold
+                              ${theme?.border}
+                              ${theme?.emeraldText}
+                              ${theme?.hover}
+                            `}
+                          >
+                            <Eye className="h-3 w-3" />
+                            View
+                          </button>
+
+                          {isSuperAdmin && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setDeleteConfirmModal(
+                                  {
+                                    isOpen: true,
+                                    sample,
+                                  }
+                                )
+                              }
+                              className="
+                                inline-flex
+                                h-7 w-7
+                                items-center
+                                justify-center
+                                rounded-lg
+                                text-slate-400
+                                transition
+                                hover:bg-red-50
+                                hover:text-red-600
+                                dark:hover:bg-red-950/30
+                                dark:hover:text-red-400
+                              "
+                              title="Delete sample"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                }
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* ============================================================ */}
+        {/* MOBILE / TABLET CARDS                                        */}
+        {/* ============================================================ */}
+
+        <div className="grid gap-2.5 p-3 lg:hidden">
+          {filteredSamples?.map(
+            (sample) => {
+              const heavyMetalStatus =
+                getHeavyMetalPublicStatus(
+                  sample
+                );
+
+              return (
+                <article
+                  key={sample?.id}
+                  className={`
+                    rounded-xl
+                    border
+                    p-3.5
+                    ${theme?.border}
+                    ${theme?.bg}
+                  `}
+                >
+                  {/* Card header */}
+
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`
+                        flex h-9 w-9
+                        shrink-0
+                        items-center justify-center
+                        rounded-lg
+                        ${theme?.emerald}
+                        ${theme?.emeraldText}
+                      `}
+                    >
+                      <Database className="h-4 w-4" />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p
+                            className={`
+                              truncate
+                              text-xs font-bold
+                              ${theme?.text}
+                            `}
+                          >
+                            {sample?.productName ||
+                              "Unnamed product"}
+                          </p>
+
+                          <p
+                            className={`
+                              mt-0.5 truncate
+                              text-[10px]
+                              ${theme?.textMuted}
+                            `}
+                          >
+                            {sample?.brandName ||
+                              "No brand"}
+                          </p>
+                        </div>
+
+                        <HeavyMetalStatusBadge
+                          status={
+                            heavyMetalStatus
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sample ID */}
+
+                  {sample?.sampleId && (
+                    <div
+                      className={`
+                        mt-3
+                        rounded-lg
+                        border
+                        px-2.5 py-2
+                        ${theme?.border}
+                      `}
+                    >
+                      <p
+                        className={`
+                          text-[8px]
+                          font-semibold
+                          uppercase
+                          tracking-wider
+                          ${theme?.textMuted}
+                        `}
+                      >
+                        Sample ID
+                      </p>
+
+                      <p
+                        className={`
+                          mt-0.5
+                          truncate
+                          text-[10px]
+                          font-medium
+                          ${theme?.text}
+                        `}
+                      >
+                        {sample.sampleId}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Information grid */}
+
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div
+                      className={`
+                        rounded-lg
+                        border
+                        p-2.5
+                        ${theme?.border}
+                      `}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <MapPin
+                          className={`
+                            h-3 w-3
+                            ${theme?.emeraldText}
+                          `}
+                        />
+
+                        <p
+                          className={`
+                            text-[8px]
+                            font-semibold
+                            uppercase
+                            tracking-wider
+                            ${theme?.textMuted}
+                          `}
+                        >
+                          Location
+                        </p>
+                      </div>
+
+                      <p
+                        className={`
+                          mt-1
+                          truncate
+                          text-[10px]
+                          font-semibold
+                          ${theme?.text}
+                        `}
+                      >
+                        {sample?.lga?.name ||
+                          "Unknown"}
+                        {sample?.state?.name
+                          ? `, ${sample.state.name}`
+                          : ""}
+                      </p>
+
+                      <p
+                        className={`
+                          mt-0.5 truncate
+                          text-[9px]
+                          ${theme?.textMuted}
+                        `}
+                      >
+                        {sample?.marketName ||
+                          sample?.market?.name ||
+                          "No market"}
+                      </p>
+                    </div>
+
+                    <div
+                      className={`
+                        rounded-lg
+                        border
+                        p-2.5
+                        ${theme?.border}
+                      `}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <CalendarDays
+                          className={`
+                            h-3 w-3
+                            ${theme?.textMuted}
+                          `}
+                        />
+
+                        <p
+                          className={`
+                            text-[8px]
+                            font-semibold
+                            uppercase
+                            tracking-wider
+                            ${theme?.textMuted}
+                          `}
+                        >
+                          Collected
+                        </p>
+                      </div>
+
+                      <p
+                        className={`
+                          mt-1
+                          text-[10px]
+                          font-semibold
+                          ${theme?.text}
+                        `}
+                      >
+                        {sample?.createdAt
+                          ? new Date(
+                              sample.createdAt
+                            ).toLocaleDateString(
+                              "en-GB",
+                              {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              }
+                            )
+                          : "N/A"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Collector */}
+
+                  {canSeeCollector && (
+                    <div
+                      className={`
+                        mt-2
+                        flex items-center gap-2
+                        rounded-lg
+                        border
+                        px-2.5 py-2
+                        ${theme?.border}
+                      `}
+                    >
+                      <UserRound
+                        className={`
+                          h-3.5 w-3.5
+                          ${theme?.textMuted}
+                        `}
+                      />
+
+                      <div className="min-w-0">
+                        <p
+                          className={`
+                            truncate
+                            text-[10px]
+                            font-semibold
+                            ${theme?.text}
+                          `}
+                        >
+                          {sample?.creator
+                            ?.fullName ||
+                            sample?.creator
+                              ?.email ||
+                            "Unknown"}
+                        </p>
+
+                        <p
+                          className={`
+                            truncate
+                            text-[9px]
+                            ${theme?.textMuted}
+                          `}
+                        >
+                          {sample?.creator?.role
+                            ?.replace(
+                              /_/g,
+                              " "
+                            ) || "N/A"}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+
+                  <div
+                    className={`
+                      mt-3
+                      flex gap-2
+                      border-t
+                      pt-3
+                      ${theme?.border}
+                    `}
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedSample(
+                          sample
+                        )
+                      }
+                      className="
+                        flex flex-1
+                        items-center
+                        justify-center
+                        gap-1.5
+                        rounded-lg
+                        bg-emerald-600
+                        px-3 py-2
+                        text-[10px]
+                        font-semibold
+                        text-white
+                        transition
+                        hover:bg-emerald-700
+                      "
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      View details
+                    </button>
+
+                    {isSuperAdmin && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDeleteConfirmModal(
+                            {
+                              isOpen: true,
+                              sample,
+                            }
+                          )
+                        }
+                        className="
+                          flex h-8 w-9
+                          items-center
+                          justify-center
+                          rounded-lg
+                          border
+                          border-red-200
+                          text-red-600
+                          transition
+                          hover:bg-red-50
+                          dark:border-red-900/40
+                          dark:text-red-400
+                          dark:hover:bg-red-950/30
+                        "
+                        title="Delete sample"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </article>
+              );
+            }
+          )}
+        </div>
+
+        {/* ============================================================ */}
+        {/* EMPTY STATE                                                   */}
+        {/* ============================================================ */}
+
+        {!loading &&
+          !fetchSampleError &&
+          filteredSamples?.length === 0 && (
+            <div className="px-5 py-14 text-center">
+              <div
+                className={`
+                  mx-auto mb-3
+                  flex h-11 w-11
+                  items-center justify-center
+                  rounded-xl
+                  ${theme?.bg}
+                `}
+              >
+                <Search
+                  className={`
+                    h-5 w-5
+                    ${theme?.textMuted}
+                  `}
+                />
+              </div>
+
+              <p
+                className={`
+                  text-sm font-semibold
+                  ${theme?.text}
+                `}
+              >
+                No samples found
+              </p>
+
+              <p
+                className={`
+                  mt-1 text-xs
+                  ${theme?.textMuted}
+                `}
+              >
+                Try adjusting your search or
+                filter criteria.
+              </p>
+
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="
+                    mt-4
+                    inline-flex
+                    items-center gap-1.5
+                    rounded-lg
+                    bg-emerald-600
+                    px-3 py-2
+                    text-[10px]
+                    font-semibold
+                    text-white
+                    hover:bg-emerald-700
+                  "
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  Clear filters
+                </button>
+              )}
+            </div>
+          )}
+
+        {/* ============================================================ */}
+        {/* LOADING MORE                                                  */}
+        {/* ============================================================ */}
+
+        {loadingMore && (
+          <div
+            className={`
+              flex
+              items-center
+              justify-center
+              gap-2
+              border-t
+              py-5
+              text-xs
+              ${theme?.border}
+              ${theme?.textMuted}
+            `}
+          >
+            <Loader className="h-4 w-4 animate-spin" />
+            Loading more samples...
+          </div>
+        )}
+
+        {loadingMoreError && (
+          <div
+            className="
+              border-t
+              border-red-100
+              bg-red-50/50
+              px-5 py-3
+              text-center
+              text-xs
+              text-red-600
+              dark:border-red-900/30
+              dark:bg-red-950/10
+              dark:text-red-400
+            "
+          >
+            Error occurred while fetching more
+            samples. Check your connection and try
+            again.
+          </div>
+        )}
+
+        {/* ============================================================ */}
+        {/* LOAD MORE                                                     */}
+        {/* ============================================================ */}
+
+        {!fetchSampleError &&
+          !loading &&
+          filteredSamples?.length > 0 && (
+            <div
+              className={`
+                border-t
+                px-4 py-4
+                text-center
+                ${theme?.border}
+              `}
+            >
+              <button
+                type="button"
+                onClick={handleFetchMore}
+                disabled={
+                  loadingMore ||
+                  !pagination?.hasNextPage
+                }
+                className={`
+                  inline-flex
+                  items-center
+                  justify-center
+                  gap-2
+                  rounded-xl
+                  border
+                  px-4 py-2
+                  text-xs
+                  font-semibold
+                  transition
+                  ${
+                    !pagination?.hasNextPage
+                      ? `${theme?.border} ${theme?.textMuted} cursor-not-allowed opacity-60`
+                      : `${theme?.border} ${theme?.text} ${theme?.hover}`
+                  }
+                `}
+              >
+                {loadingMore ? (
+                  <>
+                    <Loader className="h-3.5 w-3.5 animate-spin" />
+                    Loading...
+                  </>
+                ) : pagination?.hasNextPage ? (
+                  "Load more samples"
+                ) : (
+                  "All samples loaded"
+                )}
+              </button>
+            </div>
+          )}
+      </div>
+
+      {/* ================================================================ */}
+      {/* MODALS                                                           */}
+      {/* ================================================================ */}
+
+      <DeleteConfirmModal />
 
       {selectedSample && (
         <SampleDetailModal
           theme={theme}
           sample={selectedSample}
-          onClose={() => setSelectedSample(null)}
+          onClose={() =>
+            setSelectedSample(null)
+          }
         />
       )}
     </div>

@@ -95,14 +95,31 @@ export const useLabConfirmationForm = () => {
 
   // ── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
+    if (submitting) return;
+
+    const pendingReadings = readingsToConfirm.map((reading) => formData[reading.id]);
+    const invalidReading = pendingReadings.find(
+      (data) => !data || data.aasReading === "" || !Number.isFinite(Number(data.aasReading)) || Number(data.aasReading) < 0,
+    );
+
+    if (invalidReading) {
+      setError("Enter a valid non-negative AAS result for every pending reading before submitting.");
+      return;
+    }
+
+    if (!pendingReadings.length) {
+      setError("There are no pending AAS readings to submit.");
+      return;
+    }
+
     try {
       setSubmitting(true);
       setError(null);
 
-      const submissions = Object.values(formData).map((data) =>
+      const submissions = pendingReadings.map((data) =>
         api.post("/lab/record-aas-reading", {
           readingId: data.readingId,
-          aasReadingValue: parseFloat(data.aasReading),
+          aasReadingValue: Number(data.aasReading),
           aasNotes: data.aasNotes,
         }),
       );

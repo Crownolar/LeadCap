@@ -1,4 +1,4 @@
-@tailwind base;
+/* @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -9,4 +9,416 @@
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
+} */
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --lc-canvas: #0b1220;
+  --lc-surface: #111a2a;
+  --lc-surface-elevated: #172235;
+  --lc-border: #263449;
+  --lc-border-strong: #334155;
+  --lc-text: #f8fafc;
+  --lc-text-muted: #94a3b8;
+
+  --lc-brand: #10b981;
+  --lc-brand-hover: #059669;
+  --lc-info: #3b82f6;
+  --lc-warning: #f59e0b;
+  --lc-danger: #ef4444;
+  --lc-research: #8b5cf6;
+  --lc-success: #22c55e;
+
+  --lc-radius-sm: 8px;
+  --lc-radius-md: 10px;
+  --lc-radius-lg: 14px;
+  --lc-radius-xl: 18px;
+
+  --lc-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.18);
+  --lc-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--lc-canvas);
+  color: var(--lc-text);
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/* LeadCap Design System — Phase 1                                             */
+/* -------------------------------------------------------------------------- */
+
+.leadcap-surface {
+  box-sizing: border-box;
+  border: 1px solid var(--lc-border);
+  border-radius: var(--lc-radius-lg);
+  background: var(--lc-surface);
+  color: var(--lc-text);
+  box-shadow: var(--lc-shadow-sm);
+}
+
+.leadcap-surface--sm { padding: 12px; }
+.leadcap-surface--md { padding: 18px; }
+.leadcap-surface--lg { padding: 24px; }
+
+.leadcap-surface--interactive {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.leadcap-surface--interactive:hover {
+  border-color: var(--lc-border-strong);
+  background: var(--lc-surface-elevated);
+  box-shadow: var(--lc-shadow-md);
+}
+
+.leadcap-surface--interactive:active {
+  transform: translateY(1px);
+}
+
+.leadcap-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: var(--lc-radius-md);
+  font-weight: 650;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.leadcap-btn:focus-visible {
+  outline: 2px solid var(--lc-brand);
+  outline-offset: 2px;
+}
+
+.leadcap-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.leadcap-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.leadcap-btn--sm {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.leadcap-btn--md {
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+.leadcap-btn--lg {
+  min-height: 46px;
+  padding: 0 18px;
+  font-size: 14px;
+}
+
+.leadcap-btn--primary {
+  background: var(--lc-brand);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.18);
+}
+
+.leadcap-btn--primary:hover {
+  background: var(--lc-brand-hover);
+}
+
+.leadcap-btn--secondary {
+  background: var(--lc-surface-elevated);
+  border-color: var(--lc-border);
+  color: var(--lc-text);
+}
+
+.leadcap-btn--secondary:hover {
+  border-color: var(--lc-border-strong);
+}
+
+.leadcap-btn--ghost {
+  background: transparent;
+  color: var(--lc-text-muted);
+}
+
+.leadcap-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--lc-text);
+}
+
+.leadcap-btn--danger {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.24);
+  color: #fca5a5;
+}
+
+.leadcap-btn--danger:hover {
+  background: rgba(239, 68, 68, 0.18);
+}
+
+.leadcap-btn__icon {
+  width: 16px;
+  height: 16px;
+}
+
+.leadcap-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.leadcap-badge__dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.leadcap-badge--safe,
+.leadcap-badge--pass,
+.leadcap-badge--success,
+.leadcap-badge--verified {
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.leadcap-badge--warning,
+.leadcap-badge--pending {
+  color: #fcd34d;
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.leadcap-badge--danger,
+.leadcap-badge--fail,
+.leadcap-badge--rejected {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.leadcap-badge--review,
+.leadcap-badge--info {
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.leadcap-badge--inconclusive {
+  color: #fdba74;
+  background: rgba(249, 115, 22, 0.1);
+  border-color: rgba(249, 115, 22, 0.2);
+}
+
+.leadcap-badge--not-tested,
+.leadcap-badge--neutral {
+  color: #cbd5e1;
+  background: rgba(148, 163, 184, 0.08);
+  border-color: rgba(148, 163, 184, 0.16);
+}
+
+.leadcap-metric {
+  min-height: 136px;
+}
+
+.leadcap-metric__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.leadcap-metric__label {
+  color: var(--lc-text-muted);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.leadcap-metric__value {
+  margin-top: 10px;
+  color: var(--lc-text);
+  font-size: clamp(24px, 2vw, 32px);
+  font-weight: 750;
+  letter-spacing: -0.03em;
+}
+
+.leadcap-metric__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  color: var(--lc-text-muted);
+  font-size: 11px;
+}
+
+.leadcap-metric__trend {
+  color: #6ee7b7;
+  font-weight: 650;
+}
+
+.leadcap-metric__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border-radius: 11px;
+}
+
+.leadcap-metric__icon--brand {
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.leadcap-metric__icon--info {
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.leadcap-metric__icon--warning {
+  color: #fcd34d;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.leadcap-metric__icon--danger {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.leadcap-metric__icon--research {
+  color: #c4b5fd;
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.leadcap-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.leadcap-page-header__eyebrow {
+  margin-bottom: 6px;
+  color: var(--lc-brand);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.leadcap-page-header__title {
+  margin: 0;
+  color: var(--lc-text);
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 760;
+  letter-spacing: -0.03em;
+}
+
+.leadcap-page-header__description {
+  max-width: 720px;
+  margin: 8px 0 0;
+  color: var(--lc-text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.leadcap-page-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.leadcap-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.leadcap-section-header__title {
+  margin: 0;
+  color: var(--lc-text);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.leadcap-section-header__description {
+  margin: 4px 0 0;
+  color: var(--lc-text-muted);
+  font-size: 12px;
+}
+
+@media (max-width: 700px) {
+  .leadcap-page-header {
+    flex-direction: column;
+  }
+
+  .leadcap-page-header__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }

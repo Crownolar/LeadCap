@@ -1,3 +1,4 @@
+import { useState } from "react";
 /**
  * CollectorPickerModal.jsx
  * ─────────────────────────
@@ -12,38 +13,18 @@
  *   onClose – () => void
  */
 
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { X, Users, Search, ChevronRight, Loader2 } from "lucide-react";
 import { useTheme } from "../../../context/ThemeContext";
-import api from "../../../utils/api";
+import { useSupervisorScope } from "../hooks/useSupervisorScope";
 
 const CollectorPickerModal = ({ onClose }) => {
   const { theme } = useTheme();
   const navigate = useNavigate();
-  const [collectors, setCollectors] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { collectors, loading, error } = useSupervisorScope();
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    const fetchCollectors = async () => {
-      try {
-        const res = await api.get("/supervisor/collectors");
-        const payload = res.data?.data ?? res.data;
-        const list =
-          payload?.collectors ||
-          payload?.items ||
-          payload?.results ||
-          (Array.isArray(payload) ? payload : []);
-        setCollectors(list);
-      } catch (err) {
-        console.error("Failed to fetch collectors:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCollectors();
-  }, []);
+
 
   const filtered = collectors.filter((c) => {
     const name = c.fullName || c.name || "";
@@ -103,6 +84,11 @@ const CollectorPickerModal = ({ onClose }) => {
             <div className="flex items-center justify-center py-10 gap-3">
               <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />
               <p className={`text-sm ${theme.textMuted}`}>Loading collectors...</p>
+            </div>
+          ) : error ? (
+            <div className="py-10 text-center">
+              <p className="text-sm font-medium text-red-600 dark:text-red-400">Unable to verify your collector scope.</p>
+              <p className={`mt-1 text-xs ${theme.textMuted}`}>{error}</p>
             </div>
           ) : filtered.length === 0 ? (
             <div className="py-10 text-center"><p className={`text-sm ${theme.textMuted}`}>No collectors found.</p></div>

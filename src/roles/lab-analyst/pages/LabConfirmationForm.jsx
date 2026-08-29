@@ -22,7 +22,7 @@ const LabConfirmationForm = () => {
 
   const onSubmit = (e) => {
     e.preventDefault();
-    handleSubmit();
+    if (!submitting) handleSubmit();
   };
 
   if (loading) {

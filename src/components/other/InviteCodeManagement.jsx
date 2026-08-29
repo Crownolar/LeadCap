@@ -4,7 +4,7 @@ import api from "../../utils/api";
 import { useSelector } from "react-redux";
 import { useTheme } from "../../context/ThemeContext";
 
-const InviteCodeManagement = () => {
+const InviteCodeManagementContent = () => {
   const [inviteCodes, setInviteCodes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,30 +18,7 @@ const InviteCodeManagement = () => {
     role: "DATA_COLLECTOR",
   });
 
-  const { currentUser } = useSelector((state) => state.auth);
   const { theme } = useTheme();
-
-  const normalizedRole = currentUser?.role?.toLowerCase().replace(/[\s_]/g, "");
-
-  if (normalizedRole !== "superadmin") {
-    return (
-      <div
-        className={`${theme?.bg} min-h-screen flex items-center justify-center p-4`}
-      >
-        <div
-          className={`${theme?.card} rounded-lg border ${theme?.border} shadow-md p-8 text-center max-w-md`}
-        >
-          <Lock className='w-16 h-16 mx-auto mb-4 text-yellow-600' />
-          <h2 className={`${theme?.text} text-2xl font-bold mb-2`}>
-            Access Restricted
-          </h2>
-          <p className={`${theme?.textMuted}`}>
-            Invite code management is only available to Super Administrators.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   const roles = {
     HEAD_RESEARCHER: "Head Researcher",
@@ -320,6 +297,34 @@ const InviteCodeManagement = () => {
       </div>
     </div>
   );
+};
+
+const InviteCodeManagement = () => {
+  const { currentUser } = useSelector((state) => state.auth);
+  const { theme } = useTheme();
+  const normalizedRole = currentUser?.role?.toLowerCase().replace(/[\s_]/g, "");
+
+  if (normalizedRole !== "superadmin") {
+    return (
+      <div
+        className={`${theme?.bg} min-h-screen flex items-center justify-center p-4`}
+      >
+        <div
+          className={`${theme?.card} rounded-lg border ${theme?.border} shadow-md p-8 text-center max-w-md`}
+        >
+          <Lock className="w-16 h-16 mx-auto mb-4 text-yellow-600" />
+          <h2 className={`${theme?.text} text-2xl font-bold mb-2`}>
+            Access Restricted
+          </h2>
+          <p className={`${theme?.textMuted}`}>
+            Invite code management is only available to Super Administrators.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return <InviteCodeManagementContent />;
 };
 
 export default InviteCodeManagement;

@@ -145,24 +145,28 @@ export const deriveVerificationSummary = (samples = []) => {
   ];
 };
 
-// export const deriveRiskCategories = (stats = {}) => {
-//   const grouped = {
-//     category: "Unknown",
-//     registeredProductCount: stats.registeredProductCount,
-//     fakeRecordsCount: stats.fakeRecordsCount,
-//     fakeRecordsRate:
-//       (stats.fakeRecordsCount / stats.registeredProductCount) * 100,
-//     riskLevel:
-//       item.registeredProductCount &&
-//       item.fakeRecordsCount / item.registeredProductCount >= 0.35
-//         ? "High"
-//         : item.registeredProductCount &&
-//             item.fakeRecordsCount / item.registeredProductCount >= 0.15
-//           ? "Medium"
-//           : "Low",
-//   };
-//   return grouped;
-// };
+export const deriveRiskCategories = (stats = {}) => {
+  const registeredProductCount = Number(stats?.registeredProductCount ?? 0);
+  const fakeRecordsCount = Number(stats?.fakeRecordsCount ?? 0);
+  const fakeRecordsRate = registeredProductCount > 0
+    ? (fakeRecordsCount / registeredProductCount) * 100
+    : 0;
+
+  const riskLevel =
+    fakeRecordsRate >= 35
+      ? "High"
+      : fakeRecordsRate >= 15
+        ? "Medium"
+        : "Low";
+
+  return [{
+    category: "Unknown",
+    registeredProductCount,
+    fakeRecordsCount,
+    fakeRecordsRate,
+    riskLevel,
+  }];
+};
 
 export const deriveFlaggedProducts = (samples = []) => {
   return samples

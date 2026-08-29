@@ -1,128 +1,204 @@
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+/**
+ * PDF Generator Utilities
+ *
+ * PDF libraries are loaded dynamically so they do not increase
+ * the initial application bundle size.
+ */
 
 /**
- * Generate PDF from HTML element
+ * Load jsPDF only when needed.
+ */
+const loadJsPDF = async () => {
+  const { default: jsPDF } = await import("jspdf");
+  return jsPDF;
+};
+
+/**
+ * Load jsPDF + html2canvas only when HTML-to-PDF is needed.
+ */
+const loadPDFWithCanvas = async () => {
+  const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+    import("jspdf"),
+    import("html2canvas"),
+  ]);
+
+  return { jsPDF, html2canvas };
+};
+
+/**
+ * Generate PDF from an HTML element.
+ *
  * @param {HTMLElement} element - The HTML element to convert to PDF
  * @param {string} filename - The filename for the PDF
  * @param {object} options - Additional options
  */
-export const generatePDFFromHTML = async (element, filename = 'report.pdf', options = {}) => {
+export const generatePDFFromHTML = async (
+  element,
+  filename = "report.pdf",
+  options = {},
+) => {
   try {
+    const { jsPDF, html2canvas } = await loadPDFWithCanvas();
+
     const {
-      orientation = 'portrait',
-      format = 'a4',
-      quality = 'high',
+      orientation = "portrait",
+      format = "a4",
     } = options;
 
-    // Create canvas from HTML element
     const canvas = await html2canvas(element, {
       scale: 2,
       useCORS: true,
       logging: false,
-      backgroundColor: '#ffffff',
+      backgroundColor: "#ffffff",
     });
 
-    // Create PDF
-    const imgData = canvas.toDataURL('image/png');
+    const imgData = canvas.toDataURL("image/png");
+
     const pdf = new jsPDF({
       orientation,
-      unit: 'mm',
+      unit: "mm",
       format,
     });
 
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
+
     const margin = 10;
+
     const imgWidth = pageWidth - 2 * margin;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
     let heightLeft = imgHeight;
     let position = 0;
 
-    // Add image to PDF with pagination support
-    pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
+    // First page
+    pdf.addImage(
+      imgData,
+      "PNG",
+      margin,
+      margin,
+      imgWidth,
+      imgHeight,
+    );
+
     heightLeft -= pageHeight - 2 * margin;
 
+    // Additional pages
     while (heightLeft > 0) {
       position = heightLeft - imgHeight;
+
       pdf.addPage();
-      pdf.addImage(imgData, 'PNG', margin, position + margin, imgWidth, imgHeight);
+
+      pdf.addImage(
+        imgData,
+        "PNG",
+        margin,
+        position + margin,
+        imgWidth,
+        imgHeight,
+      );
+
       heightLeft -= pageHeight - 2 * margin;
     }
 
-    // Download PDF
     pdf.save(filename);
   } catch (error) {
-    console.error('Error generating PDF:', error);
+    console.error("Error generating PDF:", error);
     throw error;
   }
 };
 
 /**
- * Generate PDF with table data
+ * Generate PDF with table data.
+ *
  * @param {Array} data - Array of data objects
- * @param {Array} columns - Array of column definitions [{key: 'name', label: 'Name'}, ...]
+ * @param {Array} columns - Column definitions
+ *   [{ key: "name", label: "Name" }, ...]
  * @param {string} filename - The filename for the PDF
- * @param {object} options - Additional options including title, subtitle
+ * @param {object} options - Additional options
  */
-export const generateTablePDF = async (data, columns, filename = 'report.pdf', options = {}) => {
+export const generateTablePDF = async (
+  data,
+  columns,
+  filename = "report.pdf",
+  options = {},
+) => {
   try {
+    const jsPDF = await loadJsPDF();
+
     const {
-      title = '',
-      subtitle = '',
-      orientation = 'landscape',
-      format = 'a4',
+      title = "",
+      subtitle = "",
+      orientation = "landscape",
+      format = "a4",
     } = options;
 
     const pdf = new jsPDF({
       orientation,
-      unit: 'mm',
+      unit: "mm",
       format,
     });
 
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
+
     const margin = 15;
     let yPosition = margin;
 
-    // Add title if provided
+    // Title
     if (title) {
       pdf.setFontSize(16);
       pdf.text(title, margin, yPosition);
       yPosition += 10;
     }
 
-    // Add subtitle if provided
+    // Subtitle
     if (subtitle) {
       pdf.setFontSize(11);
       pdf.text(subtitle, margin, yPosition);
       yPosition += 8;
     }
 
-    // Add date
+    // Date
     pdf.setFontSize(10);
-    pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, margin, yPosition);
+    pdf.text(
+      `Generated on: ${new Date().toLocaleDateString()}`,
+      margin,
+      yPosition,
+    );
+
     yPosition += 8;
 
     // Calculate column widths
     const tableWidth = pageWidth - 2 * margin;
     const columnWidth = tableWidth / columns.length;
 
-    // Draw table header
+    // Table header
     pdf.setFontSize(10);
-    pdf.setFillColor(41, 128, 185); // Blue header
-    pdf.setTextColor(255, 255, 255); // White text
+    pdf.setFillColor(41, 128, 185);
+    pdf.setTextColor(255, 255, 255);
 
     columns.forEach((col, index) => {
-      pdf.rect(margin + index * columnWidth, yPosition, columnWidth, 7, 'F');
-      pdf.text(col.label, margin + index * columnWidth + 2, yPosition + 5);
+      pdf.rect(
+        margin + index * columnWidth,
+        yPosition,
+        columnWidth,
+        7,
+        "F",
+      );
+
+      pdf.text(
+        String(col.label ?? ""),
+        margin + index * columnWidth + 2,
+        yPosition + 5,
+      );
     });
 
     yPosition += 8;
-    pdf.setTextColor(0, 0, 0); // Black text for content
 
-    // Draw table rows
+    // Table body
+    pdf.setTextColor(0, 0, 0);
+
     data.forEach((row) => {
       if (yPosition > pageHeight - margin) {
         pdf.addPage();
@@ -130,8 +206,14 @@ export const generateTablePDF = async (data, columns, filename = 'report.pdf', o
       }
 
       columns.forEach((col, index) => {
-        const cellText = String(row[col.key] || '');
-        pdf.text(cellText, margin + index * columnWidth + 2, yPosition + 5);
+        const value = row?.[col.key];
+        const cellText = String(value ?? "");
+
+        pdf.text(
+          cellText,
+          margin + index * columnWidth + 2,
+          yPosition + 5,
+        );
       });
 
       yPosition += 7;
@@ -139,102 +221,146 @@ export const generateTablePDF = async (data, columns, filename = 'report.pdf', o
 
     pdf.save(filename);
   } catch (error) {
-    console.error('Error generating table PDF:', error);
+    console.error("Error generating table PDF:", error);
     throw error;
   }
 };
 
 /**
- * Generate PDF with chart image
- * @param {string} chartImageUrl - URL or base64 of chart image
+ * Generate PDF with chart image.
+ *
+ * @param {string} chartImageUrl - URL or base64 chart image
  * @param {string} filename - The filename for the PDF
- * @param {object} options - Additional options including title, data
+ * @param {object} options - Additional options
  */
-export const generateChartPDF = async (chartImageUrl, filename = 'report.pdf', options = {}) => {
+export const generateChartPDF = async (
+  chartImageUrl,
+  filename = "report.pdf",
+  options = {},
+) => {
   try {
+    const jsPDF = await loadJsPDF();
+
     const {
-      title = '',
-      subtitle = '',
-      orientation = 'portrait',
-      format = 'a4',
+      title = "",
+      subtitle = "",
+      orientation = "portrait",
+      format = "a4",
     } = options;
 
     const pdf = new jsPDF({
       orientation,
-      unit: 'mm',
+      unit: "mm",
       format,
     });
 
     const pageWidth = pdf.internal.pageSize.getWidth();
     const margin = 15;
+
     let yPosition = margin;
 
-    // Add title if provided
+    // Title
     if (title) {
       pdf.setFontSize(16);
       pdf.text(title, margin, yPosition);
       yPosition += 10;
     }
 
-    // Add subtitle if provided
+    // Subtitle
     if (subtitle) {
       pdf.setFontSize(11);
       pdf.text(subtitle, margin, yPosition);
       yPosition += 8;
     }
 
-    // Add date
+    // Date
     pdf.setFontSize(10);
-    pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, margin, yPosition);
+
+    pdf.text(
+      `Generated on: ${new Date().toLocaleDateString()}`,
+      margin,
+      yPosition,
+    );
+
     yPosition += 10;
 
-    // Add chart image
+    // Chart
     const imgWidth = pageWidth - 2 * margin;
-    pdf.addImage(chartImageUrl, 'PNG', margin, yPosition, imgWidth, imgWidth * 0.6);
+    const imgHeight = imgWidth * 0.6;
+
+    pdf.addImage(
+      chartImageUrl,
+      "PNG",
+      margin,
+      yPosition,
+      imgWidth,
+      imgHeight,
+    );
 
     pdf.save(filename);
   } catch (error) {
-    console.error('Error generating chart PDF:', error);
+    console.error("Error generating chart PDF:", error);
     throw error;
   }
 };
 
 /**
- * Export data to CSV
+ * Export data to CSV.
+ *
+ * This function requires no external library.
+ *
  * @param {Array} data - Array of data objects
- * @param {Array} columns - Array of column definitions
+ * @param {Array} columns - Column definitions
  * @param {string} filename - The filename for the CSV
  */
-export const generateCSV = (data, columns, filename = 'report.csv') => {
+export const generateCSV = (
+  data,
+  columns,
+  filename = "report.csv",
+) => {
   try {
-    // Create CSV header
-    const header = columns.map(col => `"${col.label}"`).join(',');
+    // Escape CSV values properly
+    const escapeCSV = (value) => {
+      const stringValue = String(value ?? "");
 
-    // Create CSV rows
-    const rows = data.map(row =>
-      columns.map(col => {
-        const value = row[col.key] || '';
-        return `"${value}"`;
-      }).join(',')
+      return `"${stringValue.replace(/"/g, '""')}"`;
+    };
+
+    // Header
+    const header = columns
+      .map((col) => escapeCSV(col.label))
+      .join(",");
+
+    // Rows
+    const rows = data.map((row) =>
+      columns
+        .map((col) => escapeCSV(row?.[col.key]))
+        .join(","),
     );
 
-    // Combine header and rows
-    const csv = [header, ...rows].join('\n');
+    const csv = [header, ...rows].join("\n");
 
-    // Create blob and download
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
+    // Create download
+    const blob = new Blob(
+      [csv],
+      { type: "text/csv;charset=utf-8;" },
+    );
+
+    const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
 
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
+    link.href = url;
+    link.download = filename;
+    link.style.visibility = "hidden";
 
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    // Release object URL
+    URL.revokeObjectURL(url);
   } catch (error) {
-    console.error('Error generating CSV:', error);
+    console.error("Error generating CSV:", error);
     throw error;
   }
 };

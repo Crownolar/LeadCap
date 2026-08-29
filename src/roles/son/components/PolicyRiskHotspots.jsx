@@ -1,66 +1,77 @@
 import React from "react";
-
-const badgeMap = {
-  High: "bg-red-100 text-red-700",
-  Medium: "bg-orange-100 text-orange-700",
-  Low: "bg-green-100 text-green-700",
+import { MapPin, ArrowUpRight } from "lucide-react";
+const badge = {
+  High: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300",
+  Medium: "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300",
+  Low: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300",
 };
-
-const barMap = {
+const bar = {
   High: "bg-red-500",
-  Medium: "bg-orange-500",
-  Low: "bg-green-500",
+  Medium: "bg-amber-500",
+  Low: "bg-emerald-500",
 };
-
-const PolicyRiskHotspots = ({ theme, hotspots = [] }) => {
-  return (
-    <div className={`${theme.card} border ${theme.border} rounded-xl p-5 shadow-sm`}>
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold">High-Risk Hotspots</h3>
-        <p className={`text-sm ${theme.textMuted}`}>States requiring closer policy attention</p>
+const PolicyRiskHotspots = ({ theme, hotspots = [] }) => (
+  <section
+    className={`${theme.card} ${theme.border} border rounded-2xl p-5 shadow-sm`}
+  >
+    <div className="flex justify-between mb-4">
+      <div>
+        <p className="text-sm font-bold">Risk hotspots</p>
+        <p className={`mt-1 text-xs ${theme.textMuted}`}>
+          States requiring closer policy attention
+        </p>
       </div>
-
-      <div className="space-y-3">
-        {hotspots.length === 0 ? (
-          <p className={`text-sm ${theme.textMuted}`}>No hotspot data available.</p>
-        ) : (
-          hotspots.map((item, index) => (
-            <div key={item.state} className={`border ${theme.border} rounded-xl p-4`}>
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="w-8 h-8 rounded-full bg-emerald-600 text-white text-sm font-semibold flex items-center justify-center shrink-0">
-                    {index + 1}
-                  </span>
-                  <div className="min-w-0">
-                    <h4 className="font-medium truncate">{item.state}</h4>
-                    <p className={`text-sm ${theme.textMuted}`}>
-                      {item.contaminated} contaminated out of {item.total} samples
-                    </p>
-                  </div>
-                </div>
-
-                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${badgeMap[item.riskLevel]}`}>
-                  {item.riskLevel}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between text-sm mb-2">
-                <span className={theme.textMuted}>Contamination Rate</span>
-                <span className="font-semibold">{item.contaminationRate.toFixed(1)}%</span>
-              </div>
-
-              <div className="w-full h-2 rounded-full bg-gray-200 overflow-hidden">
-                <div
-                  className={`h-full rounded-full ${barMap[item.riskLevel]}`}
-                  style={{ width: `${Math.min(item.contaminationRate, 100)}%` }}
-                />
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+      <MapPin className="h-4 w-4 text-emerald-600" />
     </div>
-  );
-};
-
+    <div className="space-y-2.5">
+      {hotspots.length ? (
+        hotspots.map((x, i) => (
+          <div
+            key={x.state}
+            className={`${theme.bg} ${theme.border} border rounded-xl p-3.5`}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <span
+                  className={`h-7 w-7 rounded-lg flex items-center justify-center text-xs font-black ${i === 0 ? "bg-red-500 text-white" : "bg-gray-100 dark:bg-gray-800"}`}
+                >
+                  {i + 1}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold truncate">{x.state}</p>
+                  <p className={`text-[11px] ${theme.textMuted}`}>
+                    {x.contaminated} contaminated / {x.total} samples
+                  </p>
+                </div>
+              </div>
+              <span
+                className={`rounded-full px-2 py-1 text-[10px] font-bold ${badge[x.riskLevel] || badge.Low}`}
+              >
+                {x.riskLevel}
+              </span>
+            </div>
+            <div className="mt-3 flex justify-between text-[11px]">
+              <span className={theme.textMuted}>Contamination rate</span>
+              <b>{Number(x.contaminationRate || 0).toFixed(1)}%</b>
+            </div>
+            <div
+              className={`mt-1.5 h-1.5 rounded-full overflow-hidden ${theme.border} border`}
+            >
+              <div
+                className={`h-full rounded-full ${bar[x.riskLevel] || bar.Low}`}
+                style={{
+                  width: `${Math.min(Number(x.contaminationRate) || 0, 100)}%`,
+                }}
+              />
+            </div>
+          </div>
+        ))
+      ) : (
+        <p className={`py-8 text-sm ${theme.textMuted}`}>
+          No hotspot data available.
+        </p>
+      )}
+    </div>
+  </section>
+);
 export default PolicyRiskHotspots;

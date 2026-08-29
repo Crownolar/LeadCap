@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Beaker,
@@ -14,61 +14,51 @@ import {
   ChevronDown,
   Activity,
 } from "lucide-react";
+
 import api from "../../../utils/api";
 import {
   batchAddXRFReadings,
   getSampleReadings,
   clearHeavyMetalState,
 } from "../../../redux/slice/heavyMetalSlice";
+
 import { useTheme } from "../../../context/ThemeContext";
 import { useEnums } from "../../../context/EnumsContext";
 import { useNavigate } from "react-router";
-
-const AUTHORITIES = {
-  NAFDAC: {
-    label: "NAFDAC",
-    full: "Nat'l Agency for Food & Drug Admin. and Control",
-  },
-  SON: {
-    label: "SON",
-    full: "Standards Organisation of Nigeria",
-  },
-  WHO: {
-    label: "WHO",
-    full: "World Health Organization",
-  },
-};
 
 const STATUS_CONFIG = {
   SAFE: {
     label: "Safe",
     icon: ShieldCheck,
-    row: "bg-emerald-50 dark:bg-emerald-900/10",
-    badge:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
     dot: "bg-emerald-500",
+    badge:
+      "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400",
+    row: "bg-emerald-50/30 dark:bg-emerald-950/10",
   },
+
   MODERATE: {
     label: "Moderate",
     icon: ShieldAlert,
-    row: "bg-amber-50 dark:bg-amber-900/10",
+    dot: "bg-amber-500",
     badge:
-      "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-    dot: "bg-amber-400",
+      "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400",
+    row: "bg-amber-50/30 dark:bg-amber-950/10",
   },
+
   CONTAMINATED: {
     label: "Contaminated",
     icon: ShieldX,
-    row: "bg-red-50 dark:bg-red-900/10",
-    badge: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
     dot: "bg-red-500",
+    badge: "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400",
+    row: "bg-red-50/30 dark:bg-red-950/10",
   },
+
   UNKNOWN: {
     label: "Pending",
     icon: Activity,
+    dot: "bg-slate-400",
+    badge: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
     row: "",
-    badge: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
-    dot: "bg-gray-400",
   },
 };
 
@@ -79,19 +69,25 @@ const HeavyMetalFormModalNew = ({
   sampleData = null,
 }) => {
   const dispatch = useDispatch();
+
   const { loading, error, successMessage } = useSelector(
     (state) => state.heavyMetal,
   );
+
   const navigate = useNavigate();
+  const { theme } = useTheme();
+
+  const { heavyMetals: enumsHeavyMetals, heavyMetalLabels } = useEnums();
 
   const [sample, setSample] = useState(null);
-  const [thresholds, setThresholds] = useState([]);
-  const [loadingSample, setLoadingSample] = useState(true);
-  const [sampleError, setSampleError] = useState(null);
-  const [activeAuthority, setActiveAuthority] = useState("NAFDAC");
 
-  const { theme } = useTheme();
-  const { heavyMetals: enumsHeavyMetals, heavyMetalLabels } = useEnums();
+  const [thresholds, setThresholds] = useState([]);
+
+  const [loadingSample, setLoadingSample] = useState(true);
+
+  const [sampleError, setSampleError] = useState(null);
+
+  const [readings, setReadings] = useState([]);
 
   const heavyMetals = enumsHeavyMetals?.length
     ? enumsHeavyMetals
@@ -108,27 +104,38 @@ const HeavyMetalFormModalNew = ({
         NICKEL: "Nickel (Ni)",
       };
 
-  const [readings, setReadings] = useState([]);
+  /* ---------------------------------------------------------------------- */
+  /* Load sample + thresholds                                               */
+  /* ---------------------------------------------------------------------- */
 
   useEffect(() => {
     const init = async () => {
       try {
         setLoadingSample(true);
         setSampleError(null);
+
         if (sampleData) {
           setSample(sampleData);
         } else {
-          const r = await api.get(`/samples/${sampleId}`);
-          if (r.data.success) setSample(r.data.data);
+          const response = await api.get(`/samples/${sampleId}`);
+
+          if (response.data.success) {
+            setSample(response.data.data);
+          }
         }
-        const tr = await api.get("/thresholds");
-        if (tr.data.success) setThresholds(tr.data.data || []);
+
+        const thresholdResponse = await api.get("/thresholds");
+
+        if (thresholdResponse.data.success) {
+          setThresholds(thresholdResponse.data.data || []);
+        }
+
         if (existingReadings?.length) {
           setReadings(
-            existingReadings.map((r) => ({
-              heavyMetal: r.heavyMetal,
-              xrfReading: r.xrfReading || "",
-              xrfNotes: r.xrfNotes || "",
+            existingReadings.map((reading) => ({
+              heavyMetal: reading.heavyMetal,
+              xrfReading: reading.xrfReading || "",
+              xrfNotes: reading.xrfNotes || "",
             })),
           );
         }
@@ -142,8 +149,13 @@ const HeavyMetalFormModalNew = ({
         setLoadingSample(false);
       }
     };
+
     init();
-  }, [sampleId]);
+  }, [sampleId, sampleData]);
+
+  /* ---------------------------------------------------------------------- */
+  /* Cleanup                                                                */
+  /* ---------------------------------------------------------------------- */
 
   useEffect(() => {
     return () => {
@@ -151,85 +163,156 @@ const HeavyMetalFormModalNew = ({
     };
   }, [dispatch]);
 
+  /* ---------------------------------------------------------------------- */
+  /* Threshold helpers                                                      */
+  /* ---------------------------------------------------------------------- */
+
   const getUnit = () => "ppm";
 
   const getThreshold = (metal) => {
     if (!sample) return null;
+
     return thresholds.find(
-      (t) =>
-        t.heavyMetal === metal &&
-        t.productCategoryId === sample.productVariant?.categoryId,
+      (threshold) =>
+        threshold.heavyMetal === metal &&
+        threshold.productCategoryId === sample.productVariant?.categoryId,
     );
   };
 
   const getStatus = (reading, metal) => {
     const threshold = getThreshold(metal);
-    if (!threshold || !reading) return "UNKNOWN";
-    const v = parseFloat(reading);
-    if (v < threshold.safeLimit) return "SAFE";
-    if (threshold.warningLimit && v < threshold.warningLimit) return "MODERATE";
-    if (v < threshold.dangerLimit) return "MODERATE";
+
+    if (
+      !threshold ||
+      reading === "" ||
+      reading === null ||
+      reading === undefined
+    ) {
+      return "UNKNOWN";
+    }
+
+    const value = parseFloat(reading);
+
+    if (!Number.isFinite(value)) {
+      return "UNKNOWN";
+    }
+
+    if (value < threshold.safeLimit) {
+      return "SAFE";
+    }
+
+    if (threshold.warningLimit && value < threshold.warningLimit) {
+      return "MODERATE";
+    }
+
+    if (value < threshold.dangerLimit) {
+      return "MODERATE";
+    }
+
     return "CONTAMINATED";
   };
 
   const getWorstLevel = () => {
-    if (!readings.length) return "unknown";
-    const s = readings.map((r) => getStatus(r.xrfReading, r.heavyMetal));
-    if (s.includes("CONTAMINATED")) return "dangerous";
-    if (s.includes("MODERATE")) return "elevated";
+    if (!readings.length) {
+      return "unknown";
+    }
+
+    const statuses = readings.map((reading) =>
+      getStatus(reading.xrfReading, reading.heavyMetal),
+    );
+
+    if (statuses.includes("CONTAMINATED")) {
+      return "dangerous";
+    }
+
+    if (statuses.includes("MODERATE")) {
+      return "elevated";
+    }
+
     return "safe";
   };
 
+  /* ---------------------------------------------------------------------- */
+  /* Reading manipulation                                                   */
+  /* ---------------------------------------------------------------------- */
+
   const addReading = () => {
-    const used = readings.map((r) => r.heavyMetal);
-    const next = heavyMetals.find((m) => !used.includes(m));
-    if (next)
+    const usedMetals = readings.map((reading) => reading.heavyMetal);
+
+    const nextMetal = heavyMetals.find((metal) => !usedMetals.includes(metal));
+
+    if (nextMetal) {
       setReadings([
         ...readings,
-        { heavyMetal: next, xrfReading: "", xrfNotes: "" },
+        {
+          heavyMetal: nextMetal,
+          xrfReading: "",
+          xrfNotes: "",
+        },
       ]);
+    }
   };
 
-  const removeReading = (i) =>
-    setReadings(readings.filter((_, idx) => idx !== i));
-
-  const updateReading = (i, field, value) => {
-    const upd = [...readings];
-    upd[i] = { ...upd[i], [field]: value };
-    setReadings(upd);
+  const removeReading = (index) => {
+    setReadings(readings.filter((_, currentIndex) => currentIndex !== index));
   };
 
-  const changeMetal = (i, metal) => {
-    const conflict = readings.some(
-      (r, idx) => idx !== i && r.heavyMetal === metal,
+  const updateReading = (index, field, value) => {
+    const updated = [...readings];
+
+    updated[index] = {
+      ...updated[index],
+      [field]: value,
+    };
+
+    setReadings(updated);
+  };
+
+  const changeMetal = (index, metal) => {
+    const alreadySelected = readings.some(
+      (reading, currentIndex) =>
+        currentIndex !== index && reading.heavyMetal === metal,
     );
-    if (conflict) {
+
+    if (alreadySelected) {
       alert("This metal is already selected");
       return;
     }
-    updateReading(i, "heavyMetal", metal);
+
+    updateReading(index, "heavyMetal", metal);
   };
+
+  /* ---------------------------------------------------------------------- */
+  /* Submit                                                                  */
+  /* ---------------------------------------------------------------------- */
 
   const handleSubmit = async () => {
     if (!readings.length) {
       alert("Please add at least one reading");
       return;
     }
-    if (!readings.every((r) => r.heavyMetal && r.xrfReading)) {
+
+    if (
+      !readings.every(
+        (reading) => reading.heavyMetal && reading.xrfReading !== "",
+      )
+    ) {
       alert("Please fill in all required fields");
       return;
     }
+
     try {
       await dispatch(
         batchAddXRFReadings({
           sampleId,
-          readings: readings.map((r) => ({
-            heavyMetal: r.heavyMetal,
-            xrfReading: r.xrfReading,
-            xrfNotes: r.xrfNotes || "",
+          readings: readings.map((reading) => ({
+            heavyMetal: reading.heavyMetal,
+            xrfReading: reading.xrfReading,
+            xrfNotes: reading.xrfNotes || "",
           })),
         }),
       ).unwrap();
+
       await dispatch(getSampleReadings(sampleId));
 
       setTimeout(() => {
@@ -242,402 +325,782 @@ const HeavyMetalFormModalNew = ({
     }
   };
 
+  /* ---------------------------------------------------------------------- */
+  /* Counts                                                                  */
+  /* ---------------------------------------------------------------------- */
+
   const counts = readings.reduce(
-    (acc, r) => {
-      const s = getStatus(r.xrfReading, r.heavyMetal);
-      if (s === "SAFE") acc.safe++;
-      else if (s === "MODERATE") acc.moderate++;
-      else if (s === "CONTAMINATED") acc.danger++;
-      else acc.pending++;
-      return acc;
+    (accumulator, reading) => {
+      const status = getStatus(reading.xrfReading, reading.heavyMetal);
+
+      if (status === "SAFE") {
+        accumulator.safe++;
+      } else if (status === "MODERATE") {
+        accumulator.moderate++;
+      } else if (status === "CONTAMINATED") {
+        accumulator.danger++;
+      } else {
+        accumulator.pending++;
+      }
+
+      return accumulator;
     },
-    { safe: 0, moderate: 0, danger: 0, pending: 0 },
+    {
+      safe: 0,
+      moderate: 0,
+      danger: 0,
+      pending: 0,
+    },
   );
 
-  const authority = AUTHORITIES[activeAuthority];
   const worst = getWorstLevel();
 
-  const inputCls = `w-full px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg border ${theme?.border} ${theme?.card} ${theme?.text} text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-gray-400 dark:placeholder:text-gray-500 `;
+  /* ---------------------------------------------------------------------- */
+  /* Shared classes                                                          */
+  /* ---------------------------------------------------------------------- */
+
+  const inputClass = `
+    w-full
+    rounded-xl
+    border
+    px-3
+    py-2.5
+    text-xs
+    sm:text-sm
+    outline-none
+    transition
+    ${theme?.border}
+    ${theme?.card}
+    ${theme?.text}
+    focus:ring-2
+    focus:ring-emerald-500/30
+    placeholder:text-slate-400
+    dark:placeholder:text-slate-500
+  `;
+
+  /* ---------------------------------------------------------------------- */
+  /* Loading                                                                 */
+  /* ---------------------------------------------------------------------- */
 
   if (loadingSample) {
     return (
-      <div className='fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[5000] p-4'>
+      <div className="fixed inset-0 z-[5000] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
         <div
-          className={`${theme?.card} rounded-2xl shadow-2xl p-8 text-center w-full max-w-xs`}
+          className={`
+            w-full
+            max-w-xs
+            rounded-2xl
+            border
+            p-7
+            text-center
+            shadow-2xl
+            ${theme?.border}
+            ${theme?.card}
+          `}
         >
-          <div className='w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-4' />
-          <p className={`text-sm ${theme?.textMuted}`}>
-            Loading sample information…
+          <div
+            className="
+              mx-auto
+              flex h-11 w-11
+              items-center justify-center
+              rounded-xl
+              bg-emerald-50
+              dark:bg-emerald-950/30
+            "
+          >
+            <Beaker
+              className="
+                h-5 w-5
+                animate-pulse
+                text-emerald-600
+                dark:text-emerald-400
+              "
+            />
+          </div>
+
+          <p
+            className={`
+              mt-4
+              text-sm
+              font-semibold
+              ${theme?.text}
+            `}
+          >
+            Loading sample
+          </p>
+
+          <p
+            className={`
+              mt-1
+              text-[10px]
+              ${theme?.textMuted}
+            `}
+          >
+            Preparing XRF analysis...
           </p>
         </div>
       </div>
     );
   }
 
+  /* ---------------------------------------------------------------------- */
+  /* Modal                                                                   */
+  /* ---------------------------------------------------------------------- */
+
   return (
-    <div className='fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-[5000] sm:p-4'>
+    <div
+      className="
+        fixed
+        inset-0
+        z-[5000]
+        flex
+        items-end
+        justify-center
+        bg-slate-950/60
+        backdrop-blur-sm
+        sm:items-center
+        sm:p-4
+      "
+    >
       <div
         className={`
-          ${theme?.card} border ${theme?.border} shadow-2xl
-          flex flex-col w-full overflow-hidden
-          rounded-t-2xl sm:rounded-2xl
-          h-[96vh] sm:h-auto sm:max-h-[92vh]
+          flex
+          h-[96vh]
+          w-full
+          flex-col
+          overflow-hidden
+          rounded-t-2xl
+          border
+          shadow-2xl
+          sm:h-auto
+          sm:max-h-[92vh]
           sm:max-w-5xl
+          sm:rounded-2xl
+          ${theme?.card}
+          ${theme?.border}
         `}
       >
-        <div
-          className={`${theme?.card} border-b ${theme?.border} px-4 sm:px-5 py-3 flex-shrink-0 flex items-center justify-between gap-3`}
+        {/* ================================================================ */}
+        {/* Header                                                           */}
+        {/* ================================================================ */}
+
+        <header
+          className={`
+            flex
+            shrink-0
+            items-center
+            justify-between
+            gap-3
+            border-b
+            px-4
+            py-3.5
+            sm:px-5
+            ${theme?.border}
+          `}
         >
-          <div className='flex items-center gap-2.5 min-w-0'>
-            <div className='w-7 h-7 sm:w-8 sm:h-8 bg-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0'>
-              <Beaker className='w-3.5 h-3.5 sm:w-4 sm:h-4 text-white' />
+          <div className="flex min-w-0 items-center gap-3">
+            <div
+              className="
+                flex
+                h-9 w-9
+                shrink-0
+                items-center justify-center
+                rounded-xl
+                bg-emerald-600
+              "
+            >
+              <Beaker className="h-4 w-4 text-white" />
             </div>
-            <div className='min-w-0'>
+
+            <div className="min-w-0">
               <h2
-                className={`text-xs sm:text-sm font-semibold ${theme?.text} leading-none`}
+                className={`
+                  truncate
+                  text-sm
+                  font-bold
+                  ${theme?.text}
+                `}
               >
                 Heavy Metal Analysis
               </h2>
+
               <p
-                className={`text-xs ${theme?.textMuted} mt-0.5 hidden sm:block truncate`}
+                className={`
+                  mt-0.5
+                  truncate
+                  text-[10px]
+                  ${theme?.textMuted}
+                `}
               >
-                XRF Screening · {authority.full}
-              </p>
-              <p className={`text-xs ${theme?.textMuted} mt-0.5 sm:hidden`}>
-                XRF · {activeAuthority}
+                Record XRF screening results for this sample
               </p>
             </div>
           </div>
 
-          <div className='flex items-center gap-1.5 sm:gap-2 flex-shrink-0'>
-            <div
-              className={`flex items-center p-0.5 sm:p-1 rounded-lg border ${theme?.border} bg-gray-50 dark:bg-gray-800/60 gap-0.5 sm:gap-1`}
-            >
-              {Object.keys(AUTHORITIES).map((key) => (
-                <button
-                  key={key}
-                  onClick={() => setActiveAuthority(key)}
-                  className={`px-2 sm:px-3 py-1 rounded-md text-xs font-semibold  ${
-                    activeAuthority === key
-                      ? "bg-emerald-600 text-white shadow-sm"
-                      : `${theme?.textMuted} hover:text-gray-900 dark:hover:text-gray-100`
-                  }`}
-                >
-                  {key}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={onClose}
-              className={`p-1.5 rounded-lg ${theme?.textMuted} hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 `}
-            >
-              <X className='w-4 h-4' />
-            </button>
-          </div>
-        </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className={`
+              flex h-8 w-8
+              shrink-0
+              items-center justify-center
+              rounded-lg
+              ${theme?.textMuted}
+              ${theme?.hover}
+            `}
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </header>
 
-        <div className='flex-1 overflow-y-auto overscroll-contain'>
+        {/* ================================================================ */}
+        {/* Scrollable body                                                   */}
+        {/* ================================================================ */}
+
+        <div className="flex-1 overflow-y-auto overscroll-contain">
+          {/* Alerts */}
+
           {(sampleError || error || successMessage) && (
-            <div className='px-4 sm:px-5 pt-4 space-y-2'>
+            <div className="space-y-2 px-4 pt-4 sm:px-5">
               {(sampleError || error) && (
-                <div className='bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 px-3 py-2.5 rounded-lg text-xs sm:text-sm'>
+                <div
+                  className="
+                    rounded-xl
+                    border
+                    border-red-200
+                    bg-red-50
+                    px-3.5
+                    py-3
+                    text-xs
+                    leading-5
+                    text-red-700
+                    dark:border-red-900/50
+                    dark:bg-red-950/20
+                    dark:text-red-300
+                  "
+                >
                   {sampleError || error}
                 </div>
               )}
+
               {successMessage && (
-                <div className='bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 px-3 py-2.5 rounded-lg text-xs sm:text-sm'>
+                <div
+                  className="
+                    rounded-xl
+                    border
+                    border-emerald-200
+                    bg-emerald-50
+                    px-3.5
+                    py-3
+                    text-xs
+                    leading-5
+                    text-emerald-700
+                    dark:border-emerald-900/50
+                    dark:bg-emerald-950/20
+                    dark:text-emerald-300
+                  "
+                >
                   {successMessage}
                 </div>
               )}
             </div>
           )}
 
-          <div className='p-4 sm:p-5 lg:p-6 space-y-4 sm:space-y-5'>
+          <div className="space-y-5 p-4 sm:p-5 lg:p-6">
+            {/* ============================================================ */}
+            {/* Sample information                                            */}
+            {/* ============================================================ */}
+
             {sample && (
-              <div
-                className={`rounded-xl border ${theme?.border} overflow-hidden`}
+              <section
+                className={`
+                  overflow-hidden
+                  rounded-2xl
+                  border
+                  ${theme?.border}
+                `}
               >
                 <div
-                  className={`px-3 sm:px-4 py-2 ${theme.bg} border-b ${theme?.border} flex items-center gap-2`}
+                  className={`
+                    flex
+                    items-center
+                    gap-2
+                    border-b
+                    px-4
+                    py-3
+                    ${theme?.border}
+                    ${theme?.bg}
+                  `}
                 >
                   <Info
-                    className={`w-3 h-3 ${theme?.textMuted} flex-shrink-0`}
+                    className={`
+                      h-3.5 w-3.5
+                      ${theme?.emeraldText}
+                    `}
                   />
-                  <span
-                    className={`text-xs font-semibold uppercase tracking-wider ${theme?.textMuted}`}
-                  >
-                    Sample Details
-                  </span>
+
+                  <div>
+                    <h3
+                      className={`
+                        text-[10px]
+                        font-bold
+                        uppercase
+                        tracking-wider
+                        ${theme?.text}
+                      `}
+                    >
+                      Sample information
+                    </h3>
+
+                    <p
+                      className={`
+                        mt-0.5
+                        text-[9px]
+                        ${theme?.textMuted}
+                      `}
+                    >
+                      Sample currently under laboratory analysis
+                    </p>
+                  </div>
                 </div>
-                <div className='grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-gray-100 dark:divide-gray-700/60'>
-                  {[
-                    { label: "Sample ID", value: sample?.code, mono: true },
-                    { label: "Product", value: sample?.productName },
-                    {
-                      label: "Type",
-                      value: sample?.productVariant?.category?.displayName,
-                    },
-                    { label: "Unit", value: getUnit(), highlight: true },
-                  ].map(({ label, value, mono, highlight }) => (
-                    <div key={label} className='px-3 sm:px-4 py-2.5'>
-                      <p
-                        className={`text-xs font-medium uppercase tracking-wide ${theme?.textMuted}`}
-                      >
-                        {label}
-                      </p>
-                      <p
-                        className={`mt-0.5 text-xs sm:text-sm font-semibold truncate ${
-                          highlight
-                            ? "text-emerald-600 dark:text-emerald-400"
-                            : theme?.text
-                        } ${mono ? "font-mono" : ""}`}
-                      >
-                        {value}
-                      </p>
-                    </div>
-                  ))}
+
+                <div className="grid grid-cols-2 divide-x divide-y divide-slate-100 dark:divide-slate-800 sm:grid-cols-4 sm:divide-y-0">
+                  <SampleInfo
+                    label="Sample ID"
+                    value={sample?.code || "—"}
+                    mono
+                    theme={theme}
+                  />
+
+                  <SampleInfo
+                    label="Product"
+                    value={sample?.productName || "—"}
+                    theme={theme}
+                  />
+
+                  <SampleInfo
+                    label="Category"
+                    value={sample?.productVariant?.category?.displayName || "—"}
+                    theme={theme}
+                  />
+
+                  <SampleInfo
+                    label="Unit"
+                    value={getUnit()}
+                    highlight
+                    theme={theme}
+                  />
                 </div>
-              </div>
+              </section>
             )}
+
+            {/* ============================================================ */}
+            {/* Status summary                                                 */}
+            {/* ============================================================ */}
 
             {readings.length > 0 && (
-              <div className='flex flex-wrap gap-1.5 sm:gap-2'>
-                {[
-                  {
-                    label: "Safe",
-                    count: counts.safe,
-                    cfg: STATUS_CONFIG.SAFE,
-                  },
-                  {
-                    label: "Moderate",
-                    count: counts.moderate,
-                    cfg: STATUS_CONFIG.MODERATE,
-                  },
-                  {
-                    label: "Contaminated",
-                    count: counts.danger,
-                    cfg: STATUS_CONFIG.CONTAMINATED,
-                  },
-                  {
-                    label: "Pending",
-                    count: counts.pending,
-                    cfg: STATUS_CONFIG.UNKNOWN,
-                  },
-                ].map(({ label, count, cfg }) =>
-                  count > 0 ? (
-                    <span
-                      key={label}
-                      className={`inline-flex items-center gap-1.5 ${cfg.badge} text-xs font-semibold px-2.5 py-1 rounded-full`}
-                    >
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${cfg.dot} flex-shrink-0`}
-                      />
-                      {count} {label}
-                    </span>
-                  ) : null,
-                )}
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusSummary
+                  label="Safe"
+                  count={counts.safe}
+                  config={STATUS_CONFIG.SAFE}
+                />
+
+                <StatusSummary
+                  label="Moderate"
+                  count={counts.moderate}
+                  config={STATUS_CONFIG.MODERATE}
+                />
+
+                <StatusSummary
+                  label="Contaminated"
+                  count={counts.danger}
+                  config={STATUS_CONFIG.CONTAMINATED}
+                />
+
+                <StatusSummary
+                  label="Pending"
+                  count={counts.pending}
+                  config={STATUS_CONFIG.UNKNOWN}
+                />
               </div>
             )}
 
-            <div>
-              <div className='flex items-center justify-between gap-3 mb-3'>
-                <h3
-                  className={`text-xs font-semibold uppercase tracking-wider ${theme?.textMuted}`}
-                >
-                  XRF Readings
-                  {readings.length > 0 && (
-                    <span className={`ml-1.5 font-bold text-sm ${theme?.text}`}>
-                      ({readings.length})
-                    </span>
-                  )}
-                </h3>
+            {/* ============================================================ */}
+            {/* Readings                                                       */}
+            {/* ============================================================ */}
+
+            <section>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <h3
+                    className={`
+                      text-xs
+                      font-bold
+                      ${theme?.text}
+                    `}
+                  >
+                    XRF readings
+                    {readings.length > 0 && (
+                      <span
+                        className={`
+                          ml-1.5
+                          text-[10px]
+                          ${theme?.textMuted}
+                        `}
+                      >
+                        {readings.length}
+                      </span>
+                    )}
+                  </h3>
+
+                  <p
+                    className={`
+                      mt-0.5
+                      text-[9px]
+                      ${theme?.textMuted}
+                    `}
+                  >
+                    Enter measured heavy metal concentrations in ppm.
+                  </p>
+                </div>
+
                 <button
+                  type="button"
                   onClick={addReading}
                   disabled={readings.length >= heavyMetals.length}
-                  className='flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-lg  shadow-sm hover:shadow-md'
+                  className="
+                    inline-flex
+                    shrink-0
+                    items-center
+                    gap-1.5
+                    rounded-xl
+                    bg-emerald-600
+                    px-3
+                    py-2
+                    text-[10px]
+                    font-bold
+                    text-white
+                    shadow-sm
+                    transition
+                    hover:bg-emerald-700
+                    disabled:cursor-not-allowed
+                    disabled:opacity-40
+                  "
                 >
-                  <Plus className='w-3 h-3 sm:w-3.5 sm:h-3.5' />
-                  Add Metal
+                  <Plus className="h-3.5 w-3.5" />
+                  Add metal
                 </button>
               </div>
 
+              {/* Empty state */}
+
               {readings.length === 0 ? (
                 <div
-                  className={`rounded-xl border-2 border-dashed ${theme?.border} py-10 sm:py-12 text-center`}
+                  className={`
+                    rounded-2xl
+                    border
+                    border-dashed
+                    px-5
+                    py-12
+                    text-center
+                    ${theme?.border}
+                  `}
                 >
-                  <div className='w-11 h-11 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center mx-auto mb-3'>
-                    <Beaker className='w-5 h-5 text-gray-400' />
+                  <div
+                    className="
+                      mx-auto
+                      flex h-11 w-11
+                      items-center justify-center
+                      rounded-xl
+                      bg-slate-100
+                      text-slate-500
+                      dark:bg-slate-800
+                      dark:text-slate-400
+                    "
+                  >
+                    <Beaker className="h-5 w-5" />
                   </div>
-                  <p className={`${theme?.text} font-semibold text-sm`}>
-                    No readings added yet
+
+                  <p
+                    className={`
+                      mt-3
+                      text-xs
+                      font-bold
+                      ${theme?.text}
+                    `}
+                  >
+                    No readings yet
                   </p>
-                  <p className={`${theme?.textMuted} text-xs mt-1`}>
-                    Tap "Add Metal" to start recording XRF data
+
+                  <p
+                    className={`
+                      mx-auto
+                      mt-1
+                      max-w-xs
+                      text-[10px]
+                      leading-5
+                      ${theme?.textMuted}
+                    `}
+                  >
+                    Add a heavy metal to begin recording laboratory results.
                   </p>
+
+                  <button
+                    type="button"
+                    onClick={addReading}
+                    className="
+                      mt-4
+                      inline-flex
+                      items-center
+                      gap-1.5
+                      rounded-xl
+                      bg-emerald-600
+                      px-3.5
+                      py-2
+                      text-[10px]
+                      font-bold
+                      text-white
+                      hover:bg-emerald-700
+                    "
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add first metal
+                  </button>
                 </div>
               ) : (
                 <div
-                  className={`rounded-xl border ${theme?.border} overflow-hidden`}
+                  className={`
+                    overflow-hidden
+                    rounded-2xl
+                    border
+                    ${theme?.border}
+                  `}
                 >
-                  <div className='hidden md:block overflow-x-auto'>
-                    <table className='w-full text-sm min-w-[640px]'>
+                  {/* ====================================================== */}
+                  {/* Desktop/tablet                                          */}
+                  {/* ====================================================== */}
+
+                  <div className="hidden overflow-x-auto md:block">
+                    <table className="w-full min-w-[760px]">
                       <thead>
-                        <tr className={`border-b ${theme?.border} ${theme.bg}`}>
-                          {[
-                            "Heavy Metal",
-                            `XRF Reading (${getUnit()})`,
-                            `${activeAuthority} Threshold`,
-                            "Status",
-                            "Notes",
-                            "",
-                          ].map((col) => (
-                            <th
-                              key={col}
-                              className={`px-3 lg:px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider ${theme?.textMuted} whitespace-nowrap`}
-                            >
-                              {col}
-                            </th>
-                          ))}
+                        <tr
+                          className={`
+                            border-b
+                            ${theme?.border}
+                            ${theme?.bg}
+                          `}
+                        >
+                          <TableHeading>Heavy metal</TableHeading>
+
+                          <TableHeading>XRF reading</TableHeading>
+
+                          <TableHeading>Threshold</TableHeading>
+
+                          <TableHeading>Status</TableHeading>
+
+                          <TableHeading>Notes</TableHeading>
+
+                          <TableHeading />
                         </tr>
                       </thead>
-                      <tbody className='divide-y divide-gray-100 dark:divide-gray-700/60'>
+
+                      <tbody>
                         {readings.map((reading, index) => {
                           const threshold = getThreshold(reading.heavyMetal);
+
                           const status = getStatus(
                             reading.xrfReading,
                             reading.heavyMetal,
                           );
-                          const cfg = STATUS_CONFIG[status];
+
+                          const config = STATUS_CONFIG[status];
 
                           return (
                             <tr
                               key={index}
-                              className={`transition-colors ${cfg.row}`}
+                              className={`
+                                  border-b
+                                  last:border-b-0
+                                  ${theme?.border}
+                                  ${config.row}
+                                `}
                             >
-                              <td className='px-3 lg:px-4 py-2.5 w-40 lg:w-44'>
-                                <div className='relative'>
+                              {/* Metal */}
+
+                              <td className="px-4 py-3">
+                                <div className="relative w-40">
                                   <select
                                     value={reading.heavyMetal}
-                                    onChange={(e) =>
-                                      changeMetal(index, e.target.value)
+                                    onChange={(event) =>
+                                      changeMetal(index, event.target.value)
                                     }
-                                    className={`appearance-none w-full pl-2.5 pr-6 py-1.5 rounded-lg border ${theme?.border} ${theme?.card} ${theme?.text} text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer `}
+                                    className={`
+                                        w-full
+                                        appearance-none
+                                        rounded-xl
+                                        border
+                                        px-3
+                                        py-2
+                                        pr-8
+                                        text-xs
+                                        font-semibold
+                                        ${theme?.border}
+                                        ${theme?.card}
+                                        ${theme?.text}
+                                        focus:outline-none
+                                        focus:ring-2
+                                        focus:ring-emerald-500/30
+                                      `}
                                   >
-                                    <option value=''>Select…</option>
-                                    {heavyMetals.map((m) => {
+                                    <option value="">Select metal</option>
+
+                                    {heavyMetals.map((metal) => {
                                       const used = readings.some(
-                                        (r, i) =>
-                                          i !== index && r.heavyMetal === m,
+                                        (item, currentIndex) =>
+                                          currentIndex !== index &&
+                                          item.heavyMetal === metal,
                                       );
+
                                       return (
                                         <option
-                                          key={m}
-                                          value={m}
+                                          key={metal}
+                                          value={metal}
                                           disabled={used}
                                         >
-                                          {metalLabels[m]}
-                                          {used ? " ✓" : ""}
+                                          {metalLabels[metal] || metal}
                                         </option>
                                       );
                                     })}
                                   </select>
+
                                   <ChevronDown
-                                    className={`pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 ${theme?.textMuted}`}
+                                    className={`
+                                        pointer-events-none
+                                        absolute
+                                        right-2.5
+                                        top-1/2
+                                        h-3.5
+                                        w-3.5
+                                        -translate-y-1/2
+                                        ${theme?.textMuted}
+                                      `}
                                   />
                                 </div>
                               </td>
 
-                              <td className='px-3 lg:px-4 py-2.5 w-36 lg:w-44'>
+                              {/* Reading */}
+
+                              <td className="px-4 py-3">
                                 <input
-                                  type='number'
-                                  step='0.01'
+                                  type="number"
+                                  step="0.01"
                                   value={reading.xrfReading}
-                                  onChange={(e) =>
+                                  onChange={(event) =>
                                     updateReading(
                                       index,
                                       "xrfReading",
-                                      e.target.value,
+                                      event.target.value,
                                     )
                                   }
-                                  placeholder='0.000'
-                                  className={`w-full px-2.5 py-1.5 rounded-lg border ${theme?.border} ${theme?.card} ${theme?.text} text-xs lg:text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-gray-400 `}
+                                  placeholder="0.000"
+                                  className={`
+                                      w-32
+                                      rounded-xl
+                                      border
+                                      px-3
+                                      py-2
+                                      font-mono
+                                      text-xs
+                                      ${theme?.border}
+                                      ${theme?.card}
+                                      ${theme?.text}
+                                      focus:outline-none
+                                      focus:ring-2
+                                      focus:ring-emerald-500/30
+                                    `}
                                 />
                               </td>
 
-                              <td className='px-3 lg:px-4 py-2.5'>
+                              {/* Threshold */}
+
+                              <td className="px-4 py-3">
                                 {threshold ? (
-                                  <div
-                                    className={`text-xs ${theme?.textMuted} space-y-0.5`}
-                                  >
-                                    <p>
-                                      Safe{" "}
-                                      <span
-                                        className={`font-semibold text-gray-900`}
-                                      >
-                                        &lt;{threshold.safeLimit}
-                                      </span>
-                                    </p>
-                                    {threshold.warningLimit && (
-                                      <p>
-                                        Warn{" "}
-                                        <span
-                                          className={`font-semibold text-gray-900`}
-                                        >
-                                          {threshold.warningLimit}
-                                        </span>
-                                      </p>
-                                    )}
-                                    <p>
-                                      Danger{" "}
-                                      <span
-                                        className={`font-semibold text-gray-900`}
-                                      >
-                                        &gt;{threshold.dangerLimit}
-                                      </span>
-                                    </p>
-                                  </div>
+                                  <ThresholdDisplay
+                                    threshold={threshold}
+                                    theme={theme}
+                                  />
                                 ) : (
                                   <span
-                                    className={`text-xs ${theme?.textMuted} italic`}
+                                    className={`
+                                        text-[10px]
+                                        italic
+                                        ${theme?.textMuted}
+                                      `}
                                   >
-                                    Not set
+                                    Not configured
                                   </span>
                                 )}
                               </td>
 
-                              <td className='px-3 lg:px-4 py-2.5 whitespace-nowrap'>
-                                <span
-                                  className={`inline-flex items-center gap-1.5 ${cfg.badge} px-2 py-1 rounded-full text-xs font-semibold`}
-                                >
-                                  <span
-                                    className={`w-1.5 h-1.5 rounded-full ${cfg.dot} flex-shrink-0`}
-                                  />
-                                  {reading.xrfReading ? cfg.label : "Pending"}
-                                </span>
+                              {/* Status */}
+
+                              <td className="px-4 py-3">
+                                <StatusBadge status={status} />
                               </td>
 
-                              <td className='px-3 lg:px-4 py-2.5'>
+                              {/* Notes */}
+
+                              <td className="px-4 py-3">
                                 <input
-                                  type='text'
+                                  type="text"
                                   value={reading.xrfNotes}
-                                  onChange={(e) =>
+                                  onChange={(event) =>
                                     updateReading(
                                       index,
                                       "xrfNotes",
-                                      e.target.value,
+                                      event.target.value,
                                     )
                                   }
-                                  placeholder='Optional…'
-                                  className={`w-full px-2.5 py-1.5 rounded-lg border ${theme?.border} ${theme?.card} ${theme?.text} text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-gray-400 `}
+                                  placeholder="Optional note"
+                                  className={`
+                                      w-36
+                                      rounded-xl
+                                      border
+                                      px-3
+                                      py-2
+                                      text-xs
+                                      ${theme?.border}
+                                      ${theme?.card}
+                                      ${theme?.text}
+                                      focus:outline-none
+                                      focus:ring-2
+                                      focus:ring-emerald-500/30
+                                    `}
                                 />
                               </td>
 
-                              <td className='px-2 lg:px-3 py-2.5'>
+                              {/* Delete */}
+
+                              <td className="px-3 py-3">
                                 <button
+                                  type="button"
                                   onClick={() => removeReading(index)}
-                                  className='p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 '
+                                  className="
+                                      flex h-8 w-8
+                                      items-center justify-center
+                                      rounded-lg
+                                      text-slate-400
+                                      transition
+                                      hover:bg-red-50
+                                      hover:text-red-600
+                                      dark:hover:bg-red-950/30
+                                      dark:hover:text-red-400
+                                    "
+                                  title="Remove reading"
                                 >
-                                  <Trash2 className='w-3.5 h-3.5 lg:w-4 lg:h-4' />
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </button>
                               </td>
                             </tr>
@@ -647,145 +1110,217 @@ const HeavyMetalFormModalNew = ({
                     </table>
                   </div>
 
-                  <div className='md:hidden divide-y divide-gray-100 dark:divide-gray-700/60'>
+                  {/* ====================================================== */}
+                  {/* Mobile                                                    */}
+                  {/* ====================================================== */}
+
+                  <div className="divide-y divide-slate-100 dark:divide-slate-800 md:hidden">
                     {readings.map((reading, index) => {
                       const threshold = getThreshold(reading.heavyMetal);
+
                       const status = getStatus(
                         reading.xrfReading,
                         reading.heavyMetal,
                       );
-                      const cfg = STATUS_CONFIG[status];
+
+                      const config = STATUS_CONFIG[status];
 
                       return (
                         <div
                           key={index}
-                          className={`p-3.5 space-y-3 ${cfg.row} border-2`}
+                          className={`
+                              space-y-4
+                              p-4
+                              ${config.row}
+                            `}
                         >
-                          <div className='flex items-center justify-between'>
-                            <span
-                              className={`inline-flex items-center gap-1.5 ${cfg.badge} px-2.5 py-1 rounded-full text-xs font-semibold`}
-                            >
-                              <span
-                                className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`}
-                              />
-                              {reading.xrfReading ? cfg.label : "Pending"}
-                            </span>
+                          {/* Card top */}
+
+                          <div className="flex items-center justify-between gap-3">
+                            <StatusBadge status={status} />
+
                             <button
+                              type="button"
                               onClick={() => removeReading(index)}
-                              className='p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 '
+                              className="
+                                  flex h-8 w-8
+                                  items-center justify-center
+                                  rounded-lg
+                                  text-slate-400
+                                  hover:bg-red-50
+                                  hover:text-red-600
+                                  dark:hover:bg-red-950/30
+                                  dark:hover:text-red-400
+                                "
                             >
-                              <Trash2 className='w-3.5 h-3.5' />
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
 
+                          {/* Metal */}
+
                           <div>
-                            <label
-                              className={`text-xs font-semibold uppercase tracking-wide ${theme?.textMuted} block mb-1.5`}
-                            >
-                              Heavy Metal
-                            </label>
-                            <div className='relative'>
+                            <FieldLabel theme={theme}>Heavy metal</FieldLabel>
+
+                            <div className="relative">
                               <select
                                 value={reading.heavyMetal}
-                                onChange={(e) =>
-                                  changeMetal(index, e.target.value)
+                                onChange={(event) =>
+                                  changeMetal(index, event.target.value)
                                 }
-                                className={`appearance-none w-full pl-3 pr-8 py-2 rounded-lg border ${theme?.border} ${theme?.card} ${theme?.text} text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 `}
+                                className={`
+                                    w-full
+                                    appearance-none
+                                    rounded-xl
+                                    border
+                                    px-3
+                                    py-2.5
+                                    pr-9
+                                    text-sm
+                                    font-semibold
+                                    ${theme?.border}
+                                    ${theme?.card}
+                                    ${theme?.text}
+                                    focus:outline-none
+                                    focus:ring-2
+                                    focus:ring-emerald-500/30
+                                  `}
                               >
-                                {heavyMetals.map((m) => {
+                                {heavyMetals.map((metal) => {
                                   const used = readings.some(
-                                    (r, i) => i !== index && r.heavyMetal === m,
+                                    (item, currentIndex) =>
+                                      currentIndex !== index &&
+                                      item.heavyMetal === metal,
                                   );
+
                                   return (
-                                    <option key={m} value={m} disabled={used}>
-                                      {metalLabels[m]}
-                                      {used ? " ✓" : ""}
+                                    <option
+                                      key={metal}
+                                      value={metal}
+                                      disabled={used}
+                                    >
+                                      {metalLabels[metal] || metal}
                                     </option>
                                   );
                                 })}
                               </select>
+
                               <ChevronDown
-                                className={`pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 ${theme?.textMuted}`}
+                                className={`
+                                    pointer-events-none
+                                    absolute
+                                    right-3
+                                    top-1/2
+                                    h-4
+                                    w-4
+                                    -translate-y-1/2
+                                    ${theme?.textMuted}
+                                  `}
                               />
                             </div>
                           </div>
 
-                          <div className='grid grid-cols-2 gap-3'>
+                          {/* Reading + threshold */}
+
+                          <div className="grid grid-cols-2 gap-3">
                             <div>
-                              <label
-                                className={`text-xs font-semibold uppercase tracking-wide ${theme?.textMuted} block mb-1.5`}
-                              >
-                                XRF ({getUnit()})
-                              </label>
-                              <input
-                                type='number'
-                                step='0.01'
-                                value={reading.xrfReading}
-                                onChange={(e) =>
-                                  updateReading(
-                                    index,
-                                    "xrfReading",
-                                    e.target.value,
-                                  )
-                                }
-                                placeholder='0.000'
-                                className={`${inputCls} font-mono`}
-                              />
-                            </div>
-                            {threshold ? (
-                              <div>
-                                <label
-                                  className={`text-xs font-semibold uppercase tracking-wide ${theme?.textMuted} block mb-1.5`}
-                                >
-                                  {activeAuthority} Limits
-                                </label>
-                                <div
-                                  className={`text-xs ${theme?.textMuted} space-y-0.5 mt-2`}
-                                >
-                                  <p>
-                                    Safe{" "}
-                                    <span className={`font-semibold `}>
-                                      &lt;{threshold.safeLimit}
-                                    </span>
-                                  </p>
-                                  <p>
-                                    Danger{" "}
-                                    <span className={`font-semibold`}>
-                                      &gt;{threshold.dangerLimit}
-                                    </span>
-                                  </p>
-                                </div>
-                              </div>
-                            ) : (
-                              <div>
-                                <label
-                                  className={`text-xs font-semibold uppercase tracking-wide ${theme?.textMuted} block mb-1.5`}
-                                >
-                                  {activeAuthority} Limits
-                                </label>
+                              <FieldLabel theme={theme}>XRF reading</FieldLabel>
+
+                              <div className="relative">
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={reading.xrfReading}
+                                  onChange={(event) =>
+                                    updateReading(
+                                      index,
+                                      "xrfReading",
+                                      event.target.value,
+                                    )
+                                  }
+                                  placeholder="0.000"
+                                  className={`
+                                      w-full
+                                      rounded-xl
+                                      border
+                                      px-3
+                                      py-2.5
+                                      pr-11
+                                      font-mono
+                                      text-sm
+                                      ${theme?.border}
+                                      ${theme?.card}
+                                      ${theme?.text}
+                                      focus:outline-none
+                                      focus:ring-2
+                                      focus:ring-emerald-500/30
+                                    `}
+                                />
+
                                 <span
-                                  className={`text-xs ${theme?.textMuted} italic`}
+                                  className={`
+                                      pointer-events-none
+                                      absolute
+                                      right-3
+                                      top-1/2
+                                      -translate-y-1/2
+                                      text-[9px]
+                                      font-bold
+                                      ${theme?.textMuted}
+                                    `}
                                 >
-                                  Not set
+                                  ppm
                                 </span>
                               </div>
-                            )}
+                            </div>
+
+                            <div>
+                              <FieldLabel theme={theme}>Threshold</FieldLabel>
+
+                              {threshold ? (
+                                <ThresholdDisplay
+                                  threshold={threshold}
+                                  theme={theme}
+                                  compact
+                                />
+                              ) : (
+                                <div
+                                  className={`
+                                      flex
+                                      min-h-[42px]
+                                      items-center
+                                      rounded-xl
+                                      border
+                                      px-3
+                                      text-[10px]
+                                      italic
+                                      ${theme?.border}
+                                      ${theme?.textMuted}
+                                    `}
+                                >
+                                  Not configured
+                                </div>
+                              )}
+                            </div>
                           </div>
 
+                          {/* Notes */}
+
                           <div>
-                            <label
-                              className={`text-xs font-semibold uppercase tracking-wide ${theme?.textMuted} block mb-1.5`}
-                            >
-                              Notes (optional)
-                            </label>
+                            <FieldLabel theme={theme}>Notes</FieldLabel>
+
                             <input
-                              type='text'
+                              type="text"
                               value={reading.xrfNotes}
-                              onChange={(e) =>
-                                updateReading(index, "xrfNotes", e.target.value)
+                              onChange={(event) =>
+                                updateReading(
+                                  index,
+                                  "xrfNotes",
+                                  event.target.value,
+                                )
                               }
-                              placeholder='Add observations…'
-                              className={inputCls}
+                              placeholder="Add an observation (optional)"
+                              className={inputClass}
                             />
                           </div>
                         </div>
@@ -793,106 +1328,452 @@ const HeavyMetalFormModalNew = ({
                     })}
                   </div>
 
+                  {/* Footer */}
+
                   <div
-                    className={`px-3 sm:px-4 py-2.5 border-t ${theme?.border} ${theme.bg} flex items-center justify-between`}
+                    className={`
+                      flex
+                      items-center
+                      justify-between
+                      gap-3
+                      border-t
+                      px-4
+                      py-3
+                      ${theme?.border}
+                      ${theme?.bg}
+                    `}
                   >
-                    <p className={`text-xs ${theme?.textMuted}`}>
-                      <span className='font-semibold'>{readings.length}</span>{" "}
-                      reading{readings.length !== 1 ? "s" : ""} recorded
+                    <p
+                      className={`
+                        text-[9px]
+                        ${theme?.textMuted}
+                      `}
+                    >
+                      <span
+                        className={`
+                          font-bold
+                          ${theme?.text}
+                        `}
+                      >
+                        {readings.length}
+                      </span>{" "}
+                      reading
+                      {readings.length !== 1 ? "s" : ""}
                     </p>
-                    <p className={`text-xs ${theme?.textMuted}`}>
-                      Standard:{" "}
-                      <span className={`font-semibold ${theme?.text}`}>
-                        {activeAuthority}
+
+                    <p
+                      className={`
+                        text-[9px]
+                        ${theme?.textMuted}
+                      `}
+                    >
+                      Measurement unit:{" "}
+                      <span
+                        className={`
+                          font-bold
+                          ${theme?.text}
+                        `}
+                      >
+                        ppm
                       </span>
                     </p>
                   </div>
                 </div>
               )}
-            </div>
+            </section>
+
+            {/* ============================================================ */}
+            {/* Warning                                                        */}
+            {/* ============================================================ */}
 
             {worst !== "safe" && worst !== "unknown" && readings.length > 0 && (
-              <div
-                className={`rounded-xl border-l-4 px-4 py-3.5 flex items-start gap-3 ${
-                  worst === "dangerous"
-                    ? "bg-red-50 dark:bg-red-900/10 border-red-500"
-                    : "bg-amber-50 dark:bg-amber-900/10 border-amber-400"
-                }`}
-              >
-                <AlertTriangle
-                  className={`w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5 ${
-                    worst === "dangerous" ? "text-red-500" : "text-amber-500"
-                  }`}
-                />
-                <div className='min-w-0'>
-                  <p
-                    className={`font-semibold text-xs sm:text-sm ${
-                      worst === "dangerous"
-                        ? "text-red-800 dark:text-red-200"
-                        : "text-amber-800 dark:text-amber-200"
-                    }`}
-                  >
-                    {worst === "dangerous"
-                      ? "Critical Contamination Detected"
-                      : "Elevated Levels Detected"}
-                  </p>
-                  <p
-                    className={`text-xs mt-1 ${
-                      worst === "dangerous"
-                        ? "text-red-700 dark:text-red-300"
-                        : "text-amber-700 dark:text-amber-300"
-                    }`}
-                  >
-                    One or more readings exceed {activeAuthority} safe limits.
-                    Please review all values before submitting. This report will
-                    be flagged for supervisor review.
-                  </p>
-                </div>
-              </div>
+              <AnalysisWarning worst={worst} theme={theme} />
             )}
           </div>
         </div>
-        {/* buttons */}
-        <div
-          className={`px-4 sm:px-5 py-3.5 border-t ${theme?.border} bg-gray-50 dark:bg-gray-900/40 flex-shrink-0`}
+
+        {/* ================================================================ */}
+        {/* Footer actions                                                    */}
+        {/* ================================================================ */}
+
+        <footer
+          className={`
+            shrink-0
+            border-t
+            px-4
+            py-3.5
+            sm:px-5
+            ${theme?.border}
+            ${theme?.bg}
+          `}
         >
-          <div className='flex gap-2.5 sm:gap-3'>
+          <div className="flex gap-2.5">
             <button
+              type="button"
               onClick={onClose}
-              className={`flex-1 px-4 py-2.5 rounded-xl border ${theme?.border} ${theme?.card} ${theme?.text} font-semibold text-xs sm:text-sm hover:bg-gray-100 dark:hover:bg-gray-700 `}
+              className={`
+                flex-1
+                rounded-xl
+                border
+                px-4
+                py-2.5
+                text-xs
+                font-semibold
+                ${theme?.border}
+                ${theme?.card}
+                ${theme?.text}
+                ${theme?.hover}
+              `}
             >
               Cancel
             </button>
+
             <button
+              type="button"
               disabled={loading || readings.length === 0}
               onClick={handleSubmit}
-              className={`flex-1 px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm text-white shadow-sm hover:shadow-md  flex items-center justify-center gap-2 ${
-                loading || readings.length === 0
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : worst === "dangerous"
-                    ? "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
-                    : worst === "elevated"
-                      ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700"
-                      : "bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700"
-              }`}
+              className={`
+                flex
+                flex-[1.4]
+                items-center
+                justify-center
+                gap-2
+                rounded-xl
+                px-4
+                py-2.5
+                text-xs
+                font-bold
+                text-white
+                shadow-sm
+                transition
+                ${
+                  loading || readings.length === 0
+                    ? "cursor-not-allowed bg-slate-400"
+                    : worst === "dangerous"
+                      ? "bg-red-600 hover:bg-red-700"
+                      : worst === "elevated"
+                        ? "bg-amber-600 hover:bg-amber-700"
+                        : "bg-emerald-600 hover:bg-emerald-700"
+                }
+              `}
             >
               {loading ? (
                 <>
-                  <div className='w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-white/30 border-t-white rounded-full animate-spin' />
-                  <span>Saving…</span>
+                  <span
+                    className="
+                      h-3.5 w-3.5
+                      animate-spin
+                      rounded-full
+                      border-2
+                      border-white/30
+                      border-t-white
+                    "
+                  />
+                  Saving...
                 </>
               ) : (
                 <>
-                  <CheckCircle className='w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0' />
-                  <span>
-                    Save {readings.length || ""} Reading
-                    {readings.length !== 1 ? "s" : ""}
-                  </span>
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  Save {readings.length || ""} reading
+                  {readings.length !== 1 ? "s" : ""}
                 </>
               )}
             </button>
           </div>
+        </footer>
+      </div>
+    </div>
+  );
+};
+
+/* ========================================================================== */
+/* Sample info                                                               */
+/* ========================================================================== */
+
+const SampleInfo = ({ label, value, mono, highlight, theme }) => (
+  <div className="min-w-0 px-3 py-3 sm:px-4">
+    <p
+      className={`
+        text-[8px]
+        font-bold
+        uppercase
+        tracking-wider
+        ${theme?.textMuted}
+      `}
+    >
+      {label}
+    </p>
+
+    <p
+      className={`
+        mt-1
+        truncate
+        text-xs
+        font-semibold
+        ${highlight ? "text-emerald-600 dark:text-emerald-400" : theme?.text}
+        ${mono ? "font-mono" : ""}
+      `}
+    >
+      {value}
+    </p>
+  </div>
+);
+
+/* ========================================================================== */
+/* Table heading                                                             */
+/* ========================================================================== */
+
+const TableHeading = ({ children }) => (
+  <th
+    className="
+      px-4
+      py-3
+      text-left
+      text-[8px]
+      font-bold
+      uppercase
+      tracking-wider
+      text-slate-500
+      dark:text-slate-400
+    "
+  >
+    {children}
+  </th>
+);
+
+/* ========================================================================== */
+/* Field label                                                               */
+/* ========================================================================== */
+
+const FieldLabel = ({ children, theme }) => (
+  <label
+    className={`
+      mb-1.5
+      block
+      text-[9px]
+      font-bold
+      uppercase
+      tracking-wider
+      ${theme?.textMuted}
+    `}
+  >
+    {children}
+  </label>
+);
+
+/* ========================================================================== */
+/* Status summary                                                            */
+/* ========================================================================== */
+
+const StatusSummary = ({ label, count, config }) => {
+  if (!count) return null;
+
+  return (
+    <span
+      className={`
+        inline-flex
+        items-center
+        gap-1.5
+        rounded-full
+        px-2.5
+        py-1.5
+        text-[9px]
+        font-bold
+        ${config.badge}
+      `}
+    >
+      <span
+        className={`
+          h-1.5
+          w-1.5
+          rounded-full
+          ${config.dot}
+        `}
+      />
+      {count} {label}
+    </span>
+  );
+};
+
+/* ========================================================================== */
+/* Status badge                                                              */
+/* ========================================================================== */
+
+const StatusBadge = ({ status }) => {
+  const config = STATUS_CONFIG[status] || STATUS_CONFIG.UNKNOWN;
+
+  return (
+    <span
+      className={`
+        inline-flex
+        items-center
+        gap-1.5
+        whitespace-nowrap
+        rounded-full
+        px-2.5
+        py-1.5
+        text-[9px]
+        font-bold
+        ${config.badge}
+      `}
+    >
+      <span
+        className={`
+          h-1.5
+          w-1.5
+          rounded-full
+          ${config.dot}
+        `}
+      />
+
+      {config.label}
+    </span>
+  );
+};
+
+/* ========================================================================== */
+/* Threshold display                                                         */
+/* ========================================================================== */
+
+const ThresholdDisplay = ({ threshold, theme, compact = false }) => (
+  <div
+    className={`
+      rounded-xl
+      border
+      px-2.5
+      py-2
+      ${theme?.border}
+      ${theme?.bg}
+    `}
+  >
+    <div className="flex items-center gap-2">
+      <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">
+        Safe
+      </span>
+
+      <span
+        className={`
+          font-mono
+          text-[10px]
+          font-bold
+          ${theme?.text}
+        `}
+      >
+        {threshold.safeLimit}
+      </span>
+    </div>
+
+    {!compact &&
+      threshold.warningLimit !== null &&
+      threshold.warningLimit !== undefined && (
+        <div className="mt-0.5 flex items-center gap-2">
+          <span className="text-[9px] font-semibold text-amber-600 dark:text-amber-400">
+            Warn
+          </span>
+
+          <span
+            className={`
+              font-mono
+              text-[10px]
+              font-bold
+              ${theme?.text}
+            `}
+          >
+            {threshold.warningLimit}
+          </span>
         </div>
+      )}
+
+    <div className="mt-0.5 flex items-center gap-2">
+      <span className="text-[9px] font-semibold text-red-600 dark:text-red-400">
+        Danger
+      </span>
+
+      <span
+        className={`
+          font-mono
+          text-[10px]
+          font-bold
+          ${theme?.text}
+        `}
+      >
+        {threshold.dangerLimit}
+      </span>
+    </div>
+  </div>
+);
+
+/* ========================================================================== */
+/* Analysis warning                                                          */
+/* ========================================================================== */
+
+const AnalysisWarning = ({ worst, theme }) => {
+  const dangerous = worst === "dangerous";
+
+  return (
+    <div
+      className={`
+        flex
+        items-start
+        gap-3
+        rounded-2xl
+        border-l-4
+        px-4
+        py-3.5
+        ${
+          dangerous
+            ? "border-red-500 bg-red-50 dark:bg-red-950/20"
+            : "border-amber-500 bg-amber-50 dark:bg-amber-950/20"
+        }
+      `}
+    >
+      <div
+        className={`
+          flex h-8 w-8
+          shrink-0
+          items-center justify-center
+          rounded-lg
+          ${
+            dangerous
+              ? "bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400"
+              : "bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400"
+          }
+        `}
+      >
+        <AlertTriangle className="h-4 w-4" />
+      </div>
+
+      <div className="min-w-0">
+        <p
+          className={`
+            text-xs
+            font-bold
+            ${
+              dangerous
+                ? "text-red-800 dark:text-red-200"
+                : "text-amber-800 dark:text-amber-200"
+            }
+          `}
+        >
+          {dangerous ? "Contamination detected" : "Elevated levels detected"}
+        </p>
+
+        <p
+          className={`
+            mt-1
+            text-[10px]
+            leading-5
+            ${
+              dangerous
+                ? "text-red-700 dark:text-red-300"
+                : "text-amber-700 dark:text-amber-300"
+            }
+          `}
+        >
+          {dangerous
+            ? "One or more readings exceed the configured danger threshold. Review the results before submitting."
+            : "One or more readings are above the safe range. Review the measurements before submitting."}
+        </p>
       </div>
     </div>
   );

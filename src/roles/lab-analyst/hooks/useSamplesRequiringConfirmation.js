@@ -23,7 +23,7 @@ export const useSamplesRequiringConfirmation = () => {
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
   const [skip, setSkip] = useState(0);
-  const [take] = useState(DEFAULT_PAGE_SIZE);
+  const take = DEFAULT_PAGE_SIZE;
   const [totalItems, setTotalItems] = useState(0);
 
   // ── Debounce search ──────────────────────────────────────────────────────
@@ -46,11 +46,11 @@ export const useSamplesRequiringConfirmation = () => {
       }
 
       const res = debouncedQuery
-        ? await api.get("lab/samples/search", { params: { take, skip: 0, q: debouncedQuery } })
+        ? await api.get("/lab/samples/search", { params: { take, skip: 0, q: debouncedQuery } })
         : await api.get("/lab/samples-requiring-confirmation", { params: { take, skip: 0 } });
 
-      setSamples(res.data.data);
-      setTotalItems(res.data.pagination.total || 1);
+      setSamples(res.data.data || []);
+      setTotalItems(res.data.pagination?.total ?? 0);
     } catch (err) {
       console.error("Failed to fetch lab data:", err);
       setError(err.response?.data?.message || "Failed to load lab data");
@@ -65,7 +65,7 @@ export const useSamplesRequiringConfirmation = () => {
   }, [fetchSamples]);
 
   // ── Load more ─────────────────────────────────────────────────────────────
-  const canLoadMore = skip + take < (totalItems || 1);
+  const canLoadMore = skip + take < totalItems;
 
   const loadMore = async () => {
     if (isLoadingMore || !canLoadMore) return;
@@ -74,15 +74,16 @@ export const useSamplesRequiringConfirmation = () => {
     try {
       setIsLoadingMore(true);
       setError(null);
-      setSkip(newSkip);
 
       const res = debouncedQuery
         ? await api.get("lab/samples/search", { params: { take, skip: newSkip, q: debouncedQuery } })
         : await api.get("/lab/samples-requiring-confirmation", { params: { take, skip: newSkip } });
 
-      if (res.data?.data) {
+      if (res.data?.data?.length) {
         setSamples((prev) => [...prev, ...res.data.data]);
       }
+      setSkip(newSkip);
+      setTotalItems(res.data.pagination?.total ?? totalItems);
     } catch (err) {
       console.error("Failed to load more samples:", err);
       setError(err.response?.data?.message || "Failed to load more samples");
@@ -100,5 +101,6 @@ export const useSamplesRequiringConfirmation = () => {
     setQuery,
     canLoadMore,
     loadMore,
+    totalItems,
   };
 };
