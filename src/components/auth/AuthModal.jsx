@@ -150,17 +150,17 @@ const AuthModal = () => {
       <div
         className={`${theme.card} rounded-lg shadow-xl max-w-md w-full p-8 border ${theme.border}`}
       >
-        <div className="text-center mb-8">
-          <div className="bg-emerald-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertTriangle className="w-8 h-8 text-white" />
+        <div className='text-center mb-8'>
+          <div className='bg-emerald-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4'>
+            <AlertTriangle className='w-8 h-8 text-white' />
           </div>
-          <h1 className="text-2xl font-bold mb-2 text-white">LEADcap</h1>
+          <h1 className='text-2xl font-bold mb-2 text-white'>LEADcap</h1>
           <p className={`text-sm ${theme.textMuted}`}>
             Lead Exposure & Detection Capacity Platform
           </p>
         </div>
 
-        <div className="flex gap-2 mb-6">
+        <div className='flex gap-2 mb-6'>
           {["login", "signup"].map((mode) => (
             <button
               key={mode}
@@ -177,33 +177,33 @@ const AuthModal = () => {
           ))}
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className='space-y-4'>
           {authMode === "signup" && (
             <>
               <Input
-                label="Full Name"
+                label='Full Name'
                 value={authForm.name}
                 onChange={(e) => handleChange("name", e.target.value)}
-                placeholder="Enter your full name"
+                placeholder='Enter your full name'
                 theme={theme}
               />
 
               <Input
-                label="Invite Code"
+                label='Invite Code'
                 value={authForm.inviteCode}
                 onChange={(e) => handleChange("inviteCode", e.target.value)}
-                placeholder="Enter invite code"
+                placeholder='Enter invite code'
                 theme={theme}
               />
             </>
           )}
 
           <Input
-            label="Email"
-            type="email"
+            label='Email'
+            type='email'
             value={authForm.email}
             onChange={(e) => handleChange("email", e.target.value)}
-            placeholder="user@ledacap.ng"
+            placeholder='user@leadcap.ng'
             theme={theme}
             error={fieldErrors.email}
           />
@@ -212,7 +212,7 @@ const AuthModal = () => {
             <label className={`block text-sm font-medium mb-2 ${theme.text}`}>
               Password
             </label>
-            <div className="relative">
+            <div className='relative'>
               <input
                 type={showPassword ? "text" : "password"}
                 value={authForm.password}
@@ -220,29 +220,29 @@ const AuthModal = () => {
                 className={`w-full px-4 py-2 border rounded-lg ${
                   fieldErrors.password ? "border-red-500" : theme.input
                 }`}
-                placeholder="••••••••"
+                placeholder='••••••••'
               />
               <button
-                type="button"
+                type='button'
                 onClick={() => setShowPassword(!showPassword)}
                 className={`absolute right-3 top-1/2 transform -translate-y-1/2 ${theme.textMuted}`}
               >
                 {showPassword ? (
-                  <EyeOff className="w-5 h-5" />
+                  <EyeOff className='w-5 h-5' />
                 ) : (
-                  <Eye className="w-5 h-5" />
+                  <Eye className='w-5 h-5' />
                 )}
               </button>
             </div>
             {fieldErrors.password && (
-              <p className="text-red-500 text-sm mt-1">
+              <p className='text-red-500 text-sm mt-1'>
                 {fieldErrors.password}
               </p>
             )}
           </div>
 
           <button
-            type="submit"
+            type='submit'
             disabled={loading}
             className={`w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 rounded-lg ${
               loading && "opacity-60 cursor-not-allowed"
@@ -291,7 +291,7 @@ const Input = ({
         error ? "border-red-500" : theme.input
       }`}
     />
-    {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+    {error && <p className='text-red-500 text-sm mt-1'>{error}</p>}
   </div>
 );
 

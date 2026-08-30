@@ -6,121 +6,111 @@ import PrivateRoute from "./Route/PrivateRoute";
 import Layout from "./Route/Layout";
 import AuthModal from "./components/auth/AuthModal";
 
-const Dashboard = lazy(() => import("./components/views/Dashboard"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
 const InviteCodeGenerate = lazy(() => import("./pages/InviteCodeGenerate"));
 const MapView = lazy(() => import("./components/views/MapView"));
-const Reports = lazy(() => import("./components/views/Reports"));
+const Reports = lazy(() => import("./components/other/Reports"));
 const Database = lazy(() => import("./pages/Database"));
 const PolicyWelcome = lazy(() => import("./pages/PolicyWelcome"));
 
 const HeavyMetalFormModalNew = lazy(
-  () => import("./components/modals/lab-result_modal/HeavyMetalFormModalNew")
+  () => import("./components/modals/lab-result_modal/HeavyMetalFormModalNew"),
 );
 
 const ThresholdManagement = lazy(
-  () => import("./components/views/ThresholdManagement")
+  () => import("./components/other/ThresholdManagement"),
 );
 
 const InviteCodeManagement = lazy(
-  () => import("./components/views/InviteCodeManagement")
+  () => import("./components/other/InviteCodeManagement"),
 );
 
-const DataCollectorDashboard = lazy(() =>
-  import("./modules/data-collector/pages/DataCollectorDashboard")
+const DataCollectorDashboard = lazy(
+  () => import("./roles/data-collector/pages/DataCollectorDashboard"),
 );
 
-const DataCollectorWelcome = lazy(() =>
-  import("./modules/data-collector/pages/DataCollectorWelcome")
+const DataCollectorWelcome = lazy(
+  () => import("./roles/data-collector/pages/DataCollectorWelcome"),
 );
 
-const SupervisorDashboard = lazy(() =>
-  import("./modules/supervisor/pages/SupervisorDashboard")
+const SupervisorDashboard = lazy(
+  () => import("./roles/supervisor/pages/SupervisorDashboard"),
 );
 
-const CollectorManagement = lazy(() =>
-  import("./modules/supervisor/pages/CollectorManagement")
+const CollectorManagement = lazy(
+  () => import("./roles/supervisor/pages/CollectorManagement"),
 );
 
-const SampleReview = lazy(() =>
-  import("./modules/supervisor/pages/SampleReview")
+const SampleReview = lazy(
+  () => import("./roles/supervisor/pages/SampleReview"),
 );
 
-const LabAnalystDashboard = lazy(() =>
-  import("./modules/lab-analyst/pages/LabAnalystDashboard")
+const LabAnalystDashboard = lazy(
+  () => import("./roles/lab-analyst/pages/LabAnalystDashboard"),
 );
 
-const LabConfirmationForm = lazy(() =>
-  import("./modules/lab-analyst/pages/LabConfirmationForm")
+const LabConfirmationForm = lazy(
+  () => import("./roles/lab-analyst/pages/LabConfirmationForm"),
 );
 
-const LabWorkloadAnalytics = lazy(() =>
-  import("./modules/lab-analyst/pages/LabWorkloadAnalytics")
+const LabWorkloadAnalytics = lazy(
+  () => import("./roles/lab-analyst/pages/LabWorkloadAnalytics"),
 );
 
 const RiskIntelligence = lazy(
-  () => import("./modules/nafdac/pages/RiskIntelligence")
+  () => import("./roles/nafdac/pages/RiskIntelligence"),
 );
 
 const VerificationLogs = lazy(
-  () => import("./modules/nafdac/pages/VerificationLogs")
+  () => import("./roles/nafdac/pages/VerificationLogs"),
 );
 
-const ProductSearch = lazy(
-  () => import("./modules/nafdac/pages/ProductSearch")
-);
+const ProductSearch = lazy(() => import("./roles/nafdac/pages/ProductSearch"));
 
 const RegistryHistory = lazy(
-  () => import("./modules/nafdac/pages/RegistryHistory")
+  () => import("./roles/nafdac/pages/RegistryHistory"),
 );
 
 const RegistryUpload = lazy(
-  () => import("./modules/nafdac/pages/RegistryUpload")
+  () => import("./roles/nafdac/pages/RegistryUpload"),
 );
 
 const MohDashboard = lazy(
-  () => import("./modules/modulesMoh/pages/dashboard/MohDashboard")
+  () => import("./roles/moh/pages/dashboard/MohDashboard"),
 );
 
-const MohSamples = lazy(
-  () => import("./modules/modulesMoh/pages/MohSamples")
-);
+const MohSamples = lazy(() => import("./roles/moh/pages/MohSamples"));
 
-const MohReports = lazy(
-  () => import("./modules/modulesMoh/pages/reports/MohReports")
-);
+const MohReports = lazy(() => import("./roles/moh/pages/reports/MohReports"));
 
-const MohVerification = lazy(
-  () => import("./modules/modulesMoh/pages/MohVerification")
-);
+const MohVerification = lazy(() => import("./roles/moh/pages/MohVerification"));
 
 const MohContamination = lazy(
-  () => import("./modules/modulesMoh/pages/MohContamination")
+  () => import("./roles/moh/pages/MohContamination"),
 );
 
 import { EnumsProvider } from "./context/EnumsContext";
 import { Toaster } from "react-hot-toast";
 import { useTheme } from "./context/ThemeContext";
 
-const PolicyDashboard = lazy(
-  () =>
-    import("./modules/son").then((module) => ({
-      default: module.PolicyDashboard,
-    }))
+const PolicyDashboard = lazy(() =>
+  import("./roles/son").then((module) => ({
+    default: module.PolicyDashboard,
+  })),
 );
 
-const NafdacDashboard = lazy(
-  () =>
-    import("./modules/nafdac").then((module) => ({
-      default: module.NafdacDashboard,
-    }))
+const NafdacDashboard = lazy(() =>
+  import("./roles/nafdac").then((module) => ({
+    default: module.NafdacDashboard,
+  })),
 );
 
 const HeadResearcherDashboard = lazy(
-  () => import("./modules/shared/pages/HeadResearcherDashboard")
+  () => import("./modules/shared/pages/HeadResearcherDashboard"),
 );
 
 const ResearchModelingDashboard = lazy(
-  () => import("./modules/university/pages/ResearchModelingDashboard")
+  () => import("./modules/university/pages/ResearchModelingDashboard"),
 );
 
 import {
@@ -132,10 +122,7 @@ import {
 const App = () => {
   const dispatch = useDispatch();
 
-  const {
-    currentUser,
-    isAuthenticated,
-  } = useSelector((state) => state.auth);
+  const { currentUser, isAuthenticated } = useSelector((state) => state.auth);
 
   const { theme } = useTheme();
 
@@ -145,9 +132,7 @@ const App = () => {
     dispatch({ type: "auth/logout" });
   };
 
-  const canonicalRole = getCanonicalRole(
-    currentUser?.role,
-  );
+  const canonicalRole = getCanonicalRole(currentUser?.role);
 
   /**
    * Decide where an authenticated user should land.
@@ -192,26 +177,25 @@ const App = () => {
     <EnumsProvider isAuthenticated={isAuthenticated}>
       <div>
         <Toaster
-          position="top-center"
+          position='top-center'
           toastOptions={{
             duration: 3000,
           }}
         />
 
         <Suspense
-      fallback={
-        <div className="flex min-h-[50vh] items-center justify-center">
-          Loading...
-        </div>
-      }
-    >
+          fallback={
+            <div className='flex min-h-[50vh] items-center justify-center'>
+              Loading...
+            </div>
+          }
+        >
+          <Routes>
+            {/* ================================================================== */}
+            {/* PUBLIC                                                             */}
+            {/* ================================================================== */}
 
-        <Routes>
-          {/* ================================================================== */}
-          {/* PUBLIC                                                             */}
-          {/* ================================================================== */}
-
-          {/*
+            {/*
             /auth is the ONLY public application route.
 
             It contains BOTH:
@@ -220,25 +204,22 @@ const App = () => {
 
             Unauthenticated users must not reach any other application page.
           */}
-          <Route
-            path="/auth"
-            element={
-              isAuthenticated && currentUser ? (
-                <Navigate
-                  to={getAuthenticatedHome()}
-                  replace
-                />
-              ) : (
-                <AuthModal theme={theme} />
-              )
-            }
-          />
+            <Route
+              path='/auth'
+              element={
+                isAuthenticated && currentUser ? (
+                  <Navigate to={getAuthenticatedHome()} replace />
+                ) : (
+                  <AuthModal theme={theme} />
+                )
+              }
+            />
 
-          {/* ================================================================== */}
-          {/* AUTHENTICATED APPLICATION                                          */}
-          {/* ================================================================== */}
+            {/* ================================================================== */}
+            {/* AUTHENTICATED APPLICATION                                          */}
+            {/* ================================================================== */}
 
-          {/*
+            {/*
             IMPORTANT:
 
             The authentication guard wraps Layout itself.
@@ -247,514 +228,366 @@ const App = () => {
             authenticated application infrastructure from mounting for
             unauthenticated users.
           */}
-          <Route
-            element={
-              <PrivateRoute>
-                <Layout />
-              </PrivateRoute>
-            }
-          >
-            {/* ---------------------------------------------------------------- */}
-            {/* Root                                                             */}
-            {/* ---------------------------------------------------------------- */}
-
             <Route
-              path="/"
               element={
-                <Navigate
-                  to={getAuthenticatedHome()}
-                  replace
-                />
+                <PrivateRoute>
+                  <Layout />
+                </PrivateRoute>
               }
-            />
+            >
+              {/* ---------------------------------------------------------------- */}
+              {/* Root                                                             */}
+              {/* ---------------------------------------------------------------- */}
 
-            {/* ---------------------------------------------------------------- */}
-            {/* General Dashboard                                                */}
-            {/* ---------------------------------------------------------------- */}
+              <Route
+                path='/'
+                element={<Navigate to={getAuthenticatedHome()} replace />}
+              />
 
-            <Route
-              path="/dashboard"
-              element={
-                <PrivateRoute
-                  allowedRoles={ROUTE_PERMISSIONS.dashboard}
-                >
-                  {canonicalRole === ROLES.SUPERVISOR ? (
-                    <SupervisorDashboard />
-                  ) : canonicalRole === ROLES.HEAD_RESEARCHER ? (
-                    <HeadResearcherDashboard />
-                  ) : canonicalRole === ROLES.NAFDAC ? (
-                    <NafdacDashboard />
-                  ) : canonicalRole === ROLES.UNIVERSITY ? (
+              {/* ---------------------------------------------------------------- */}
+              {/* General Dashboard                                                */}
+              {/* ---------------------------------------------------------------- */}
+
+              <Route
+                path='/dashboard'
+                element={
+                  <PrivateRoute allowedRoles={ROUTE_PERMISSIONS.dashboard}>
+                    {canonicalRole === ROLES.SUPERVISOR ? (
+                      <SupervisorDashboard />
+                    ) : canonicalRole === ROLES.HEAD_RESEARCHER ? (
+                      <HeadResearcherDashboard />
+                    ) : canonicalRole === ROLES.NAFDAC ? (
+                      <NafdacDashboard />
+                    ) : canonicalRole === ROLES.UNIVERSITY ? (
+                      <ResearchModelingDashboard />
+                    ) : [ROLES.SON, ROLES.RTSL].includes(canonicalRole) ? (
+                      <PolicyDashboard />
+                    ) : (
+                      <Dashboard theme={theme} />
+                    )}
+                  </PrivateRoute>
+                }
+              />
+
+              {/* ---------------------------------------------------------------- */}
+              {/* Data Collector                                                   */}
+              {/* ---------------------------------------------------------------- */}
+
+              <Route
+                path='/data-collector-welcome'
+                element={
+                  <PrivateRoute allowedRoles={ROUTE_PERMISSIONS.dataCollector}>
+                    <DataCollectorWelcome />
+                  </PrivateRoute>
+                }
+              />
+
+              <Route
+                path='/data-collector'
+                element={
+                  <PrivateRoute allowedRoles={ROUTE_PERMISSIONS.dataCollector}>
+                    <DataCollectorDashboard />
+                  </PrivateRoute>
+                }
+              />
+
+              <Route
+                path='/heavy-metal'
+                element={
+                  <PrivateRoute
+                    allowedRoles={[ROLES.SUPERADMIN, ROLES.DATA_COLLECTOR]}
+                  >
+                    <HeavyMetalFormModalNew />
+                  </PrivateRoute>
+                }
+              />
+
+              {/* ---------------------------------------------------------------- */}
+              {/* Database                                                          */}
+              {/* ---------------------------------------------------------------- */}
+
+              <Route
+                path='/database'
+                element={
+                  <PrivateRoute allowedRoles={ROUTE_PERMISSIONS.database}>
+                    <Database theme={theme} />
+                  </PrivateRoute>
+                }
+              />
+
+              {/* ---------------------------------------------------------------- */}
+              {/* Reports                                                           */}
+              {/* ---------------------------------------------------------------- */}
+
+              <Route
+                path='/reports'
+                element={
+                  <PrivateRoute allowedRoles={ROUTE_PERMISSIONS.reports}>
+                    <Reports theme={theme} />
+                  </PrivateRoute>
+                }
+              />
+
+              {/* ---------------------------------------------------------------- */}
+              {/* University Research & Modeling                                   */}
+              {/* ---------------------------------------------------------------- */}
+
+              <Route
+                path='/research'
+                element={
+                  <PrivateRoute allowedRoles={ROUTE_PERMISSIONS.research}>
                     <ResearchModelingDashboard />
-                  ) : [
-                      ROLES.SON,
-                      ROLES.RTSL,
-                    ].includes(canonicalRole) ? (
-                    <PolicyDashboard />
-                  ) : (
-                    <Dashboard theme={theme} />
-                  )}
-                </PrivateRoute>
-              }
-            />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* ---------------------------------------------------------------- */}
-            {/* Data Collector                                                   */}
-            {/* ---------------------------------------------------------------- */}
+              {/* ---------------------------------------------------------------- */}
+              {/* Geographic Map                                                    */}
+              {/* ---------------------------------------------------------------- */}
 
-            <Route
-              path="/data-collector-welcome"
-              element={
-                <PrivateRoute
-                  allowedRoles={
-                    ROUTE_PERMISSIONS.dataCollector
-                  }
-                >
-                  <DataCollectorWelcome />
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path='/map'
+                element={
+                  <PrivateRoute allowedRoles={ROUTE_PERMISSIONS.map}>
+                    <MapView theme={theme} />
+                  </PrivateRoute>
+                }
+              />
 
-            <Route
-              path="/data-collector"
-              element={
-                <PrivateRoute
-                  allowedRoles={
-                    ROUTE_PERMISSIONS.dataCollector
-                  }
-                >
-                  <DataCollectorDashboard />
-                </PrivateRoute>
-              }
-            />
+              {/* ---------------------------------------------------------------- */}
+              {/* Superadmin / Platform Management                                  */}
+              {/* ---------------------------------------------------------------- */}
 
-            <Route
-              path="/heavy-metal"
-              element={
-                <PrivateRoute
-                  allowedRoles={[
-                    ROLES.SUPERADMIN,
-                    ROLES.DATA_COLLECTOR,
-                  ]}
-                >
-                  <HeavyMetalFormModalNew />
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path='/thresholds'
+                element={
+                  <PrivateRoute allowedRoles={ROUTE_PERMISSIONS.thresholds}>
+                    <ThresholdManagement theme={theme} />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* ---------------------------------------------------------------- */}
-            {/* Database                                                          */}
-            {/* ---------------------------------------------------------------- */}
+              <Route
+                path='/invitecodes'
+                element={
+                  <PrivateRoute allowedRoles={ROUTE_PERMISSIONS.inviteCodes}>
+                    <InviteCodeGenerate theme={theme} />
+                  </PrivateRoute>
+                }
+              />
 
-            <Route
-              path="/database"
-              element={
-                <PrivateRoute
-                  allowedRoles={
-                    ROUTE_PERMISSIONS.database
-                  }
-                >
-                  <Database theme={theme} />
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path='/invites'
+                element={
+                  <PrivateRoute allowedRoles={ROUTE_PERMISSIONS.inviteCodes}>
+                    <InviteCodeManagement theme={theme} />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* ---------------------------------------------------------------- */}
-            {/* Reports                                                           */}
-            {/* ---------------------------------------------------------------- */}
+              {/* ---------------------------------------------------------------- */}
+              {/* Supervisor                                                        */}
+              {/* ---------------------------------------------------------------- */}
 
-            <Route
-              path="/reports"
-              element={
-                <PrivateRoute
-                  allowedRoles={
-                    ROUTE_PERMISSIONS.reports
-                  }
-                >
-                  <Reports theme={theme} />
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path='/collectors'
+                element={
+                  <PrivateRoute
+                    allowedRoles={ROUTE_PERMISSIONS.collectorManagement}
+                  >
+                    <CollectorManagement />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* ---------------------------------------------------------------- */}
-            {/* University Research & Modeling                                   */}
-            {/* ---------------------------------------------------------------- */}
+              <Route
+                path='/sample-review/:collectorId'
+                element={
+                  <PrivateRoute allowedRoles={ROUTE_PERMISSIONS.sampleReview}>
+                    <SampleReview />
+                  </PrivateRoute>
+                }
+              />
 
-            <Route
-              path="/research"
-              element={
-                <PrivateRoute
-                  allowedRoles={ROUTE_PERMISSIONS.research}
-                >
-                  <ResearchModelingDashboard />
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path='/sample-review'
+                element={
+                  <PrivateRoute allowedRoles={ROUTE_PERMISSIONS.sampleReview}>
+                    <SampleReview theme={theme} />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* ---------------------------------------------------------------- */}
-            {/* Geographic Map                                                    */}
-            {/* ---------------------------------------------------------------- */}
+              {/* ---------------------------------------------------------------- */}
+              {/* Laboratory                                                        */}
+              {/* ---------------------------------------------------------------- */}
 
-            <Route
-              path="/map"
-              element={
-                <PrivateRoute
-                  allowedRoles={
-                    ROUTE_PERMISSIONS.map
-                  }
-                >
-                  <MapView theme={theme} />
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path='/lab-samples'
+                element={
+                  <PrivateRoute allowedRoles={ROUTE_PERMISSIONS.lab}>
+                    <LabAnalystDashboard theme={theme} />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* ---------------------------------------------------------------- */}
-            {/* Superadmin / Platform Management                                  */}
-            {/* ---------------------------------------------------------------- */}
+              <Route
+                path='/lab-recording'
+                element={
+                  <PrivateRoute allowedRoles={ROUTE_PERMISSIONS.lab}>
+                    <LabWorkloadAnalytics theme={theme} />
+                  </PrivateRoute>
+                }
+              />
 
-            <Route
-              path="/thresholds"
-              element={
-                <PrivateRoute
-                  allowedRoles={
-                    ROUTE_PERMISSIONS.thresholds
-                  }
-                >
-                  <ThresholdManagement
-                    theme={theme}
-                  />
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path='/record-reading/:sampleId'
+                element={
+                  <PrivateRoute allowedRoles={ROUTE_PERMISSIONS.lab}>
+                    <LabConfirmationForm theme={theme} />
+                  </PrivateRoute>
+                }
+              />
 
-            <Route
-              path="/invitecodes"
-              element={
-                <PrivateRoute
-                  allowedRoles={
-                    ROUTE_PERMISSIONS.inviteCodes
-                  }
-                >
-                  <InviteCodeGenerate
-                    theme={theme}
-                  />
-                </PrivateRoute>
-              }
-            />
+              {/* ---------------------------------------------------------------- */}
+              {/* NAFDAC                                                            */}
+              {/* ---------------------------------------------------------------- */}
 
-            <Route
-              path="/invites"
-              element={
-                <PrivateRoute
-                  allowedRoles={
-                    ROUTE_PERMISSIONS.inviteCodes
-                  }
-                >
-                  <InviteCodeManagement
-                    theme={theme}
-                  />
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path='/nafdac-upload'
+                element={
+                  <PrivateRoute allowedRoles={ROUTE_PERMISSIONS.nafdac}>
+                    <RegistryUpload theme={theme} />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* ---------------------------------------------------------------- */}
-            {/* Supervisor                                                        */}
-            {/* ---------------------------------------------------------------- */}
+              <Route
+                path='/nafdac-history'
+                element={
+                  <PrivateRoute allowedRoles={ROUTE_PERMISSIONS.nafdac}>
+                    <RegistryHistory theme={theme} />
+                  </PrivateRoute>
+                }
+              />
 
-            <Route
-              path="/collectors"
-              element={
-                <PrivateRoute
-                  allowedRoles={
-                    ROUTE_PERMISSIONS.collectorManagement
-                  }
-                >
-                  <CollectorManagement />
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path='/nafdac-products'
+                element={
+                  <PrivateRoute
+                    allowedRoles={[
+                      ROLES.NAFDAC,
+                      ROLES.LAB_ANALYST,
+                      ROLES.HEAD_RESEARCHER,
+                    ]}
+                  >
+                    <ProductSearch theme={theme} />
+                  </PrivateRoute>
+                }
+              />
 
-            <Route
-              path="/sample-review/:collectorId"
-              element={
-                <PrivateRoute
-                  allowedRoles={
-                    ROUTE_PERMISSIONS.sampleReview
-                  }
-                >
-                  <SampleReview />
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path='/nafdac-verifications'
+                element={
+                  <PrivateRoute
+                    allowedRoles={[
+                      ROLES.NAFDAC,
+                      ROLES.SUPERVISOR,
+                      ROLES.HEAD_RESEARCHER,
+                    ]}
+                  >
+                    <VerificationLogs theme={theme} />
+                  </PrivateRoute>
+                }
+              />
 
-            <Route
-              path="/sample-review"
-              element={
-                <PrivateRoute
-                  allowedRoles={
-                    ROUTE_PERMISSIONS.sampleReview
-                  }
-                >
-                  <SampleReview
-                    theme={theme}
-                  />
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path='/nafdac-risk'
+                element={
+                  <PrivateRoute allowedRoles={[ROLES.NAFDAC, ROLES.SON]}>
+                    <RiskIntelligence theme={theme} />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* ---------------------------------------------------------------- */}
-            {/* Laboratory                                                        */}
-            {/* ---------------------------------------------------------------- */}
+              {/* ---------------------------------------------------------------- */}
+              {/* Ministry of Health                                               */}
+              {/* ---------------------------------------------------------------- */}
 
-            <Route
-              path="/lab-samples"
-              element={
-                <PrivateRoute
-                  allowedRoles={
-                    ROUTE_PERMISSIONS.lab
-                  }
-                >
-                  <LabAnalystDashboard
-                    theme={theme}
-                  />
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path='/moh/dashboard'
+                element={
+                  <PrivateRoute allowedRoles={ROUTE_PERMISSIONS.moh}>
+                    <MohDashboard theme={theme} />
+                  </PrivateRoute>
+                }
+              />
 
-            <Route
-              path="/lab-recording"
-              element={
-                <PrivateRoute
-                  allowedRoles={
-                    ROUTE_PERMISSIONS.lab
-                  }
-                >
-                  <LabWorkloadAnalytics
-                    theme={theme}
-                  />
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path='/moh/samples'
+                element={
+                  <PrivateRoute allowedRoles={ROUTE_PERMISSIONS.moh}>
+                    <MohSamples theme={theme} />
+                  </PrivateRoute>
+                }
+              />
 
-            <Route
-              path="/record-reading/:sampleId"
-              element={
-                <PrivateRoute
-                  allowedRoles={
-                    ROUTE_PERMISSIONS.lab
-                  }
-                >
-                  <LabConfirmationForm
-                    theme={theme}
-                  />
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path='/moh/verification'
+                element={
+                  <PrivateRoute allowedRoles={ROUTE_PERMISSIONS.moh}>
+                    <MohVerification theme={theme} />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* ---------------------------------------------------------------- */}
-            {/* NAFDAC                                                            */}
-            {/* ---------------------------------------------------------------- */}
+              <Route
+                path='/moh/contamination'
+                element={
+                  <PrivateRoute allowedRoles={ROUTE_PERMISSIONS.moh}>
+                    <MohContamination theme={theme} />
+                  </PrivateRoute>
+                }
+              />
 
-            <Route
-              path="/nafdac-upload"
-              element={
-                <PrivateRoute
-                  allowedRoles={
-                    ROUTE_PERMISSIONS.nafdac
-                  }
-                >
-                  <RegistryUpload
-                    theme={theme}
-                  />
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path='/moh/reports'
+                element={
+                  <PrivateRoute allowedRoles={ROUTE_PERMISSIONS.moh}>
+                    <MohReports theme={theme} />
+                  </PrivateRoute>
+                }
+              />
 
-            <Route
-              path="/nafdac-history"
-              element={
-                <PrivateRoute
-                  allowedRoles={
-                    ROUTE_PERMISSIONS.nafdac
-                  }
-                >
-                  <RegistryHistory
-                    theme={theme}
-                  />
-                </PrivateRoute>
-              }
-            />
+              {/* ---------------------------------------------------------------- */}
+              {/* Policy Welcome                                                    */}
+              {/* ---------------------------------------------------------------- */}
 
-            <Route
-              path="/nafdac-products"
-              element={
-                <PrivateRoute
-                  allowedRoles={[
-                    ROLES.NAFDAC,
-                    ROLES.LAB_ANALYST,
-                    ROLES.HEAD_RESEARCHER,
-                  ]}
-                >
-                  <ProductSearch
-                    theme={theme}
-                  />
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path='/policy-welcome'
+                element={
+                  <PrivateRoute allowedRoles={ROUTE_PERMISSIONS.policy}>
+                    <PolicyWelcome />
+                  </PrivateRoute>
+                }
+              />
 
-            <Route
-              path="/nafdac-verifications"
-              element={
-                <PrivateRoute
-                  allowedRoles={[
-                    ROLES.NAFDAC,
-                    ROLES.SUPERVISOR,
-                    ROLES.HEAD_RESEARCHER,
-                  ]}
-                >
-                  <VerificationLogs
-                    theme={theme}
-                  />
-                </PrivateRoute>
-              }
-            />
+              {/* ---------------------------------------------------------------- */}
+              {/* Unknown authenticated route                                       */}
+              {/* ---------------------------------------------------------------- */}
 
-            <Route
-              path="/nafdac-risk"
-              element={
-                <PrivateRoute
-                  allowedRoles={[
-                    ROLES.NAFDAC,
-                    ROLES.SON,
-                  ]}
-                >
-                  <RiskIntelligence
-                    theme={theme}
-                  />
-                </PrivateRoute>
-              }
-            />
+              <Route
+                path='*'
+                element={<Navigate to={getAuthenticatedHome()} replace />}
+              />
+            </Route>
 
-            {/* ---------------------------------------------------------------- */}
-            {/* Ministry of Health                                               */}
-            {/* ---------------------------------------------------------------- */}
+            {/* ------------------------------------------------------------------ */}
+            {/* Unknown unauthenticated route                                      */}
+            {/* ------------------------------------------------------------------ */}
 
-            <Route
-              path="/moh/dashboard"
-              element={
-                <PrivateRoute
-                  allowedRoles={
-                    ROUTE_PERMISSIONS.moh
-                  }
-                >
-                  <MohDashboard
-                    theme={theme}
-                  />
-                </PrivateRoute>
-              }
-            />
-
-            <Route
-              path="/moh/samples"
-              element={
-                <PrivateRoute
-                  allowedRoles={
-                    ROUTE_PERMISSIONS.moh
-                  }
-                >
-                  <MohSamples
-                    theme={theme}
-                  />
-                </PrivateRoute>
-              }
-            />
-
-            <Route
-              path="/moh/verification"
-              element={
-                <PrivateRoute
-                  allowedRoles={
-                    ROUTE_PERMISSIONS.moh
-                  }
-                >
-                  <MohVerification
-                    theme={theme}
-                  />
-                </PrivateRoute>
-              }
-            />
-
-            <Route
-              path="/moh/contamination"
-              element={
-                <PrivateRoute
-                  allowedRoles={
-                    ROUTE_PERMISSIONS.moh
-                  }
-                >
-                  <MohContamination
-                    theme={theme}
-                  />
-                </PrivateRoute>
-              }
-            />
-
-            <Route
-              path="/moh/reports"
-              element={
-                <PrivateRoute
-                  allowedRoles={
-                    ROUTE_PERMISSIONS.moh
-                  }
-                >
-                  <MohReports
-                    theme={theme}
-                  />
-                </PrivateRoute>
-              }
-            />
-
-            {/* ---------------------------------------------------------------- */}
-            {/* Policy Welcome                                                    */}
-            {/* ---------------------------------------------------------------- */}
-
-            <Route
-              path="/policy-welcome"
-              element={
-                <PrivateRoute
-                  allowedRoles={
-                    ROUTE_PERMISSIONS.policy
-                  }
-                >
-                  <PolicyWelcome />
-                </PrivateRoute>
-              }
-            />
-
-            {/* ---------------------------------------------------------------- */}
-            {/* Unknown authenticated route                                       */}
-            {/* ---------------------------------------------------------------- */}
-
-            <Route
-              path="*"
-              element={
-                <Navigate
-                  to={getAuthenticatedHome()}
-                  replace
-                />
-              }
-            />
-          </Route>
-
-          {/* ------------------------------------------------------------------ */}
-          {/* Unknown unauthenticated route                                      */}
-          {/* ------------------------------------------------------------------ */}
-
-          <Route
-            path="*"
-            element={<Navigate to="/auth" replace />}
-          />
-        </Routes>
+            <Route path='*' element={<Navigate to='/auth' replace />} />
+          </Routes>
         </Suspense>
       </div>
     </EnumsProvider>

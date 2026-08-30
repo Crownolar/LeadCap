@@ -15,11 +15,11 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import api from "../../../utils/api";
-import { DEFAULT_PAGE_SIZE } from "../constants/supervisor.constants";
+import { DEFAULT_PAGE_SIZE } from "../constants/constants";
 import { useSupervisorScope } from "./useSupervisorScope";
 
 const INITIAL_REVIEW_FORM = {
-  status: "APPROVED",
+  action: "APPROVED",
   comments: "",
   issues: [],
   requestedChanges: "",
@@ -27,7 +27,11 @@ const INITIAL_REVIEW_FORM = {
 
 export const useSampleReview = () => {
   const { collectorId } = useParams();
-  const { loading: scopeLoading, error: scopeError, hasCollector } = useSupervisorScope();
+  const {
+    loading: scopeLoading,
+    error: scopeError,
+    hasCollector,
+  } = useSupervisorScope();
   const hasRequestedCollector = !collectorId || hasCollector(collectorId);
 
   // ── Data ─────────────────────────────────────────────────────────────────
@@ -58,12 +62,19 @@ export const useSampleReview = () => {
   const [imageFailed, setImageFailed] = useState(false);
 
   // ── Derived ───────────────────────────────────────────────────────────────
-  const statusCounts = useMemo(() => ({
-    PENDING: stats?.pendingReviews ?? 0,
-    APPROVED: stats?.approvedSamples ?? 0,
-    REJECTED: stats?.reviewBreakdown?.rejected ?? 0,
-    FLAGGED: stats?.flaggedSamples ?? 0,
-  }), [stats]);
+  const statusCounts = useMemo(
+    () => ({
+      PENDING: stats?.reviewBreakdown?.PENDING_REVIEW ?? 0,
+      "APPROVED FOR XRF": stats?.reviewBreakdown?.APPROVED_FOR_XRF ?? 0,
+      "XRF COMPLETED": stats?.reviewBreakdown?.XRF_COMPLETED ?? 0,
+      "APPROVED FOR AAS": stats?.reviewBreakdown?.XRF_COMPLETED ?? 0,
+      "AAS COMPLETED": stats?.reviewBreakdown?.XRF_COMPLETED ?? 0,
+      COMPLETED: stats?.reviewBreakdown?.COMPLETED ?? 0,
+      REJECTED: stats?.reviewBreakdown?.REJECTED ?? 0,
+      FLAGGED: stats?.reviewBreakdown?.FLAGGED ?? 0,
+    }),
+    [stats],
+  );
 
   const getReviewStatus = (sample) =>
     sample.review?.status ?? sample.reviewStatus ?? "PENDING";
@@ -83,20 +94,25 @@ export const useSampleReview = () => {
       }));
     }
 
-    return [{
-      id: "LEAD",
-      heavyMetal: "LEAD",
-      xrfReading: selectedSample?.leadLevel ?? 0,
-      aasReading: 0,
-      status: selectedSample?.contaminationStatus || "PENDING",
-    }];
+    return [
+      {
+        id: "LEAD",
+        heavyMetal: "LEAD",
+        xrfReading: selectedSample?.leadLevel ?? 0,
+        aasReading: 0,
+        status: selectedSample?.contaminationStatus || "PENDING",
+      },
+    ];
   }, [selectedSample]);
 
   const getProductPhotoSrc = useCallback((photoUrl) => {
     if (!photoUrl) return null;
-    const baseUrl = import.meta.env.VITE_BACKEND_URL || "https://api.leadcap.ng";
-    if (photoUrl.startsWith("https//")) return photoUrl.replace("https//", "https://");
-    if (photoUrl.startsWith("http://") || photoUrl.startsWith("https://")) return photoUrl;
+    const baseUrl =
+      import.meta.env.VITE_BACKEND_URL || "https://api.leadcap.ng";
+    if (photoUrl.startsWith("https//"))
+      return photoUrl.replace("https//", "https://");
+    if (photoUrl.startsWith("http://") || photoUrl.startsWith("https://"))
+      return photoUrl;
     return `${baseUrl.replace(/\/$/, "")}/${photoUrl.replace(/^\/+/, "")}`;
   }, []);
 
@@ -121,21 +137,18 @@ export const useSampleReview = () => {
       setLoading(true);
       setError(null);
 
-      const params = { status: filterStatus, page, pageSize: DEFAULT_PAGE_SIZE };
+      const params = {
+        status: filterStatus.replaceAll(" ", "_"),
+        page,
+        pageSize: DEFAULT_PAGE_SIZE,
+      };
       if (collectorId) params.collectorId = collectorId;
 
       const res = await api.get("/supervisor/samples", { params });
       const payload = res.data?.data ?? res.data;
+      const samples = Array.isArray(payload) ? payload : [];
 
-      const extracted =
-        payload?.samples ||
-        payload?.items ||
-        payload?.rows ||
-        payload?.results ||
-        payload?.data ||
-        (Array.isArray(payload) ? payload : []);
-
-      setSamples(extracted);
+      setSamples(samples);
     } catch (err) {
       console.error("Error fetching samples:", err);
       setError(err.response?.data?.message || err.message);
@@ -153,14 +166,18 @@ export const useSampleReview = () => {
   useEffect(() => {
     if (!scopeLoading) fetchReviewMeta();
   }, [fetchReviewMeta, scopeLoading]);
-  useEffect(() => { fetchSamples(); }, [fetchSamples]);
+  useEffect(() => {
+    fetchSamples();
+  }, [fetchSamples]);
 
   useEffect(() => {
     if (!scopeLoading && collectorId && !hasRequestedCollector) {
       setSamples([]);
       setSelectedSample(null);
       setBulkSelection(new Set());
-      setError("This Data Collector is not assigned to you. Their samples are outside your review scope.");
+      setError(
+        "This Data Collector is not assigned to you. Their samples are outside your review scope.",
+      );
       setTotalCount(0);
       setTotalPages(1);
     }
@@ -190,7 +207,7 @@ export const useSampleReview = () => {
   const handleSelectSample = useCallback((sample) => {
     setSelectedSample(sample);
     setReviewForm({
-      status: getReviewStatus(sample) === "PENDING" ? "APPROVED" : getReviewStatus(sample),
+      action: getReviewStatus(sample) ? getReviewStatus(sample) : "PENDING",
       comments: sample.review?.comments || "",
       issues: sample.review?.issues || [],
       requestedChanges: sample.review?.requestedChanges || "",
@@ -208,9 +225,10 @@ export const useSampleReview = () => {
     }
   }, [selectedSample, samples, handleSelectSample]);
 
-  const currentSampleIndex = selectedSample && samples.length
-    ? samples.findIndex((s) => s.id === selectedSample.id) + 1
-    : 0;
+  const currentSampleIndex =
+    selectedSample && samples.length
+      ? samples.findIndex((s) => s.id === selectedSample.id) + 1
+      : 0;
 
   // ── Review form helpers ───────────────────────────────────────────────────
   const setReviewStatus = (status) =>
@@ -232,39 +250,46 @@ export const useSampleReview = () => {
     if (!selectedSample || scopeLoading) return;
 
     if (collectorId && !hasRequestedCollector) {
-      toast.error("You are not authorized to review samples for this Data Collector.");
+      toast.error(
+        "You are not authorized to review samples for this Data Collector.",
+      );
       return;
     }
 
-    if (reviewForm.status === "REJECTED") {
+    if (status === "REJECTED") {
       const hasReason =
         reviewForm.comments?.trim() ||
         reviewForm.requestedChanges?.trim() ||
         reviewForm.issues?.length > 0;
+
       if (!hasReason) {
-        toast.error("Rejection reason required. Add comments or select an issue.");
+        toast.error(
+          "Rejection reason required. Add comments or select an issue.",
+        );
         return;
       }
     }
 
     try {
       setReviewing(true);
-      const response = await api.post(
-        `/supervisor/samples/${selectedSample.id}/review`,
-        {
-          status: reviewForm.status,
-          comments: reviewForm.requestedChanges || reviewForm.comments,
-          issues: reviewForm.issues,
-        },
-      );
+      const body = {
+        status: reviewForm.status,
+        comments: reviewForm.requestedChanges || reviewForm.comments,
+        issues: reviewForm.issues,
+      };
+
+      const response = await api.post(`/review/${selectedSample.id}/`, body);
       if (response.data?.success) {
-        toast.success(`Sample ${reviewForm.status.toLowerCase()} successfully.`);
+        toast.success(`Sample has been ${status}.`);
         await refreshAll();
         setBulkSelection(new Set());
       }
     } catch (err) {
       console.error("Error submitting review:", err);
-      toast.error("Failed to submit review: " + (err.response?.data?.message || err.message));
+      toast.error(
+        "Failed to submit review: " +
+          (err.response?.data?.message || err.message),
+      );
     } finally {
       setReviewing(false);
     }
@@ -289,10 +314,12 @@ export const useSampleReview = () => {
 
   const clearBulkSelection = () => setBulkSelection(new Set());
 
-  // ── Bulk submit ───────────────────────────────────────────────────────────
+  // ── Bulk submit ─────────────────────────────────────────────────────────
   const handleBulkAction = async (status) => {
     if (scopeLoading || (collectorId && !hasRequestedCollector)) {
-      toast.error("You are not authorized to process samples outside your assigned collector scope.");
+      toast.error(
+        "You are not authorized to process samples outside your assigned collector scope.",
+      );
       return;
     }
     if (bulkSelection.size === 0) {
@@ -300,10 +327,13 @@ export const useSampleReview = () => {
       return;
     }
     if (status === "REJECTED") {
-      toast.error("Rejection requires a reason. Please reject samples individually.");
+      toast.error(
+        "Rejection requires a reason. Please reject samples individually.",
+      );
       return;
     }
-    if (!window.confirm(`Mark ${bulkSelection.size} sample(s) as ${status}?`)) return;
+    if (!window.confirm(`Mark ${bulkSelection.size} sample(s) as ${status}?`))
+      return;
 
     try {
       setBulkProcessing(true);
@@ -312,8 +342,10 @@ export const useSampleReview = () => {
 
       for (const sampleId of bulkSelection) {
         try {
-          await api.post(`/supervisor/samples/${sampleId}/review`, {
-            status, comments: "", issues: [],
+          await api.post(`/reviews/${sampleId}`, {
+            action: status,
+            comments: "",
+            issues: [],
           });
           successCount++;
         } catch {
@@ -323,9 +355,13 @@ export const useSampleReview = () => {
 
       const total = bulkSelection.size;
       if (errorCount === 0) {
-        toast.success(total === 1 ? "1 sample updated." : `${total} samples updated.`);
+        toast.success(
+          total === 1 ? "1 sample updated." : `${total} samples updated.`,
+        );
       } else if (successCount > 0) {
-        toast(`Updated ${successCount} of ${total}. ${errorCount} failed.`, { icon: "⚠️" });
+        toast(`Updated ${successCount} of ${total}. ${errorCount} failed.`, {
+          icon: "⚠️",
+        });
       } else {
         toast.error("Could not update selected samples. Please try again.");
       }
@@ -341,12 +377,38 @@ export const useSampleReview = () => {
   };
 
   return {
-    samples, stats, selectedSample, normalizedReadings, statusCounts,
-    loading: loading || scopeLoading, statsLoading, reviewing, bulkProcessing, error: error || scopeError,
-    filterStatus, setFilterStatus, page, setPage, totalCount, totalPages,
-    handleSelectSample, currentSampleIndex, goToNextSample,
-    reviewForm, setReviewStatus, setReviewComments, toggleIssue, handleSubmitReview,
-    bulkSelection, toggleBulkItem, toggleSelectAll, clearBulkSelection, handleBulkAction,
-    imageFailed, setImageFailed, getProductPhotoSrc, refreshAll,
+    samples,
+    stats,
+    selectedSample,
+    normalizedReadings,
+    statusCounts,
+    loading: loading || scopeLoading,
+    statsLoading,
+    reviewing,
+    bulkProcessing,
+    error: error || scopeError,
+    filterStatus,
+    setFilterStatus,
+    page,
+    setPage,
+    totalCount,
+    totalPages,
+    handleSelectSample,
+    currentSampleIndex,
+    goToNextSample,
+    reviewForm,
+    setReviewStatus,
+    setReviewComments,
+    toggleIssue,
+    handleSubmitReview,
+    bulkSelection,
+    toggleBulkItem,
+    toggleSelectAll,
+    clearBulkSelection,
+    handleBulkAction,
+    imageFailed,
+    setImageFailed,
+    getProductPhotoSrc,
+    refreshAll,
   };
 };

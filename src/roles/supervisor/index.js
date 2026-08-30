@@ -1,17 +1,10 @@
-/**
- * index.js — supervisor module barrel
- * ─────────────────────────────────────
- * The router and Layout import from here only.
- * Internal module structure can change without touching any external files.
- *
- * Usage in router:
- *   import {
- *     SupervisorDashboard,
- *     CollectorManagement,
- *     SampleReview,
- *     CollectorPickerModal,
- *   } from "../modules/supervisor";
- */
+//   example import
+//     import {
+//       SupervisorDashboard,
+//       CollectorManagement,
+//       SampleReview,
+//       CollectorPickerModal,
+//     } from "../modules/supervisor";
 
 // ── Pages (used by router) ───────────────────────────────────────────────────
 export { default as SupervisorDashboard } from "./pages/SupervisorDashboard";

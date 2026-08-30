@@ -16,14 +16,21 @@ import { useSelector } from "react-redux";
 import { useTheme } from "../../context/ThemeContext";
 import NavItem from "../common/NavItem";
 import { useState } from "react";
-import { CollectorPickerModal } from "../../modules/supervisor";
+import { CollectorPickerModal } from "../../roles/supervisor";
 import { useLocation } from "react-router";
 
 const roleConfig = {
   superadmin: {
     sampleButton: true,
     excelImport: true,
-    navItems: ["dashboard", "database", "map", "reports", "thresholds", "invites"],
+    navItems: [
+      "dashboard",
+      "database",
+      "map",
+      "reports",
+      "thresholds",
+      "invites",
+    ],
   },
   headresearcher: {
     sampleButton: false,
@@ -49,16 +56,24 @@ const roleConfig = {
     sampleButton: false,
     excelImport: false,
     navItems: [
-      "dashboard", "map", "nafdac-upload", "nafdac-history",
-      "nafdac-products", "nafdac-verifications", "nafdac-risk",
+      "dashboard",
+      "map",
+      "nafdac-upload",
+      "nafdac-history",
+      "nafdac-products",
+      "nafdac-verifications",
+      "nafdac-risk",
     ],
   },
   policymakerfmohsw: {
     sampleButton: false,
     excelImport: false,
     navItems: [
-      "moh-dashboard", "moh-samples", "moh-reports",
-      "moh-verification", "moh-contamination",
+      "moh-dashboard",
+      "moh-samples",
+      "moh-reports",
+      "moh-verification",
+      "moh-contamination",
     ],
   },
   supervisor: {
@@ -79,29 +94,129 @@ const roleConfig = {
 };
 
 const allNavItems = [
-  { icon: BarChart3, label: "Dashboard", route: "/dashboard", key: "dashboard" },
-  { icon: BrainCircuit, label: "Research & Modeling", route: "/research", key: "research" },
-  { icon: Beaker, label: "My Samples", route: "/data-collector", key: "my-samples" },
-  { icon: Beaker, label: "Lab Samples", route: "/lab-samples", key: "lab-samples" },
-  { icon: Microscope, label: "Lab Recording", route: "/lab-recording", key: "lab-recording" },
-  { icon: Database, label: "Sample Database", route: "/database", key: "database" },
+  {
+    icon: BarChart3,
+    label: "Dashboard",
+    route: "/dashboard",
+    key: "dashboard",
+  },
+  {
+    icon: BrainCircuit,
+    label: "Research & Modeling",
+    route: "/research",
+    key: "research",
+  },
+  {
+    icon: Beaker,
+    label: "My Samples",
+    route: "/data-collector",
+    key: "my-samples",
+  },
+  {
+    icon: Beaker,
+    label: "Lab Samples",
+    route: "/lab-samples",
+    key: "lab-samples",
+  },
+  {
+    icon: Microscope,
+    label: "Lab Recording",
+    route: "/lab-recording",
+    key: "lab-recording",
+  },
+  {
+    icon: Database,
+    label: "Sample Database",
+    route: "/database",
+    key: "database",
+  },
   { icon: Map, label: "Geographic View", route: "/map", key: "map" },
   { icon: FileText, label: "Reports", route: "/reports", key: "reports" },
-  { icon: Users, label: "Data Collectors", route: "/collectors", key: "collectors" },
-  { icon: FileText, label: "Review Samples", route: "/sample-review", key: "sample-review" },
-  { icon: Settings, label: "Thresholds", route: "/thresholds", key: "thresholds" },
+  {
+    icon: Users,
+    label: "Data Collectors",
+    route: "/collectors",
+    key: "collectors",
+  },
+  {
+    icon: FileText,
+    label: "Review Samples",
+    route: "/sample-review",
+    key: "sample-review",
+  },
+  {
+    icon: Settings,
+    label: "Thresholds",
+    route: "/thresholds",
+    key: "thresholds",
+  },
   { icon: Plus, label: "Invite Codes", route: "/invitecodes", key: "invites" },
-  { icon: FlaskConical, label: "Registry Upload", route: "/nafdac-upload", key: "nafdac-upload" },
-  { icon: Database, label: "Registry History", route: "/nafdac-history", key: "nafdac-history" },
-  { icon: Beaker, label: "Product Search", route: "/nafdac-products", key: "nafdac-products" },
-  { icon: FileText, label: "Verification Logs", route: "/nafdac-verifications", key: "nafdac-verifications" },
-  { icon: Microscope, label: "Risk Intelligence", route: "/nafdac-risk", key: "nafdac-risk" },
-  { icon: Users, label: "User Governance", route: "/nafdac-users", key: "nafdac-users" },
-  { icon: BarChart3, label: "MOH Dashboard", route: "/moh/dashboard", key: "moh-dashboard" },
-  { icon: Database, label: "MOH Samples", route: "/moh/samples", key: "moh-samples" },
-  { icon: FileText, label: "MOH Reports", route: "/moh/reports", key: "moh-reports" },
-  { icon: Microscope, label: "Verification", route: "/moh/verification", key: "moh-verification" },
-  { icon: Beaker, label: "Contamination", route: "/moh/contamination", key: "moh-contamination" },
+  {
+    icon: FlaskConical,
+    label: "Registry Upload",
+    route: "/nafdac-upload",
+    key: "nafdac-upload",
+  },
+  {
+    icon: Database,
+    label: "Registry History",
+    route: "/nafdac-history",
+    key: "nafdac-history",
+  },
+  {
+    icon: Beaker,
+    label: "Product Search",
+    route: "/nafdac-products",
+    key: "nafdac-products",
+  },
+  {
+    icon: FileText,
+    label: "Verification Logs",
+    route: "/nafdac-verifications",
+    key: "nafdac-verifications",
+  },
+  {
+    icon: Microscope,
+    label: "Risk Intelligence",
+    route: "/nafdac-risk",
+    key: "nafdac-risk",
+  },
+  {
+    icon: Users,
+    label: "User Governance",
+    route: "/nafdac-users",
+    key: "nafdac-users",
+  },
+  {
+    icon: BarChart3,
+    label: "MOH Dashboard",
+    route: "/moh/dashboard",
+    key: "moh-dashboard",
+  },
+  {
+    icon: Database,
+    label: "MOH Samples",
+    route: "/moh/samples",
+    key: "moh-samples",
+  },
+  {
+    icon: FileText,
+    label: "MOH Reports",
+    route: "/moh/reports",
+    key: "moh-reports",
+  },
+  {
+    icon: Microscope,
+    label: "Verification",
+    route: "/moh/verification",
+    key: "moh-verification",
+  },
+  {
+    icon: Beaker,
+    label: "Contamination",
+    route: "/moh/contamination",
+    key: "moh-contamination",
+  },
 ];
 
 const Sidebar = ({
@@ -116,14 +231,16 @@ const Sidebar = ({
   canCreateSample,
 }) => {
   const { currentUser } = useSelector((state) => state.auth);
-  const normalizedRole = currentUser?.role?.toLowerCase().replace(/[\s_.-]/g, "");
+  const normalizedRole = currentUser?.role
+    ?.toLowerCase()
+    .replace(/[\s_.-]/g, "");
   const config = roleConfig[normalizedRole] || roleConfig.superadmin;
   const { theme, darkMode } = useTheme();
   const [showCollectorPicker, setShowCollectorPicker] = useState(false);
   const location = useLocation();
 
   const navItemsToRender = allNavItems.filter((item) =>
-    config.navItems.includes(item.key)
+    config.navItems.includes(item.key),
   );
 
   const isCollector = normalizedRole === "datacollector";
@@ -152,13 +269,15 @@ const Sidebar = ({
           className={`
             w-full flex items-center gap-3 px-3 py-2.5 rounded-xl
             text-left transition-all duration-150
-            ${isActive
-              ? "bg-emerald-500 text-white shadow-sm"
-              : `${theme?.text} ${theme?.hover}`}
+            ${
+              isActive
+                ? "bg-emerald-500 text-white shadow-sm"
+                : `${theme?.text} ${theme?.hover}`
+            }
           `}
         >
-          <item.icon className="w-[18px] h-[18px] shrink-0" />
-          <span className="text-sm font-medium truncate">Review Samples</span>
+          <item.icon className='w-[18px] h-[18px] shrink-0' />
+          <span className='text-sm font-medium truncate'>Review Samples</span>
         </button>
       );
     }
@@ -194,12 +313,14 @@ const Sidebar = ({
               w-full font-semibold py-2.5 px-3 rounded-xl
               flex items-center justify-center gap-2 text-sm
               transition-all duration-150
-              ${sampleCreationBlocked || sampleCreationPending
-                ? "bg-gray-400 text-white cursor-not-allowed opacity-80"
-                : "bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm"}
+              ${
+                sampleCreationBlocked || sampleCreationPending
+                  ? "bg-gray-400 text-white cursor-not-allowed opacity-80"
+                  : "bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm"
+              }
             `}
           >
-            <Plus className="w-[18px] h-[18px]" />
+            <Plus className='w-[18px] h-[18px]' />
             {sampleCreationPending ? "Checking Assignment..." : "New Sample"}
           </button>
 
@@ -228,7 +349,7 @@ const Sidebar = ({
             ${theme?.text} ${theme?.hover} transition-colors
           `}
         >
-          <Upload className="w-[18px] h-[18px]" />
+          <Upload className='w-[18px] h-[18px]' />
           Import Excel
         </button>
       )}
@@ -239,13 +360,13 @@ const Sidebar = ({
     <>
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 z-[2000] bg-slate-950/55 backdrop-blur-[2px] lg:hidden"
+          className='fixed inset-0 z-[2000] bg-slate-950/55 backdrop-blur-[2px] lg:hidden'
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
       {/* Desktop */}
-      <div className="hidden lg:block w-[240px] shrink-0">
+      <div className='hidden lg:block w-[240px] shrink-0'>
         <aside
           className={`
             sticky top-[88px] z-30
@@ -256,13 +377,11 @@ const Sidebar = ({
             ${theme?.card}
           `}
         >
-          <nav className="flex-1 min-h-0 overflow-y-auto scrollbar-hide space-y-1 pr-1">
+          <nav className='flex-1 min-h-0 overflow-y-auto scrollbar-hide space-y-1 pr-1'>
             {navItemsToRender.map(renderNavItem)}
           </nav>
 
-          <div className="shrink-0 mt-3">
-            {actionButtons}
-          </div>
+          <div className='shrink-0 mt-3'>{actionButtons}</div>
         </aside>
       </div>
 
@@ -277,11 +396,11 @@ const Sidebar = ({
           ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
-        <nav className="flex-1 min-h-0 overflow-y-auto scrollbar-hide space-y-1 pr-1">
+        <nav className='flex-1 min-h-0 overflow-y-auto scrollbar-hide space-y-1 pr-1'>
           {navItemsToRender.map(renderNavItem)}
         </nav>
 
-        <div className="shrink-0 mt-3">{actionButtons}</div>
+        <div className='shrink-0 mt-3'>{actionButtons}</div>
       </aside>
 
       {showCollectorPicker && (
