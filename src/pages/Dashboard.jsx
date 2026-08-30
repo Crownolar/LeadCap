@@ -25,12 +25,12 @@ import {
   YAxis,
 } from "recharts";
 
-import { useTheme } from "../../context/ThemeContext";
-import api from "../../utils/api";
+import { useTheme } from "../context/ThemeContext";
+import api from "../utils/api";
 import {
   aggregateByMonth,
   deriveLocationData,
-} from "../../utils/chartDataHelpers";
+} from "../utils/chartDataHelpers";
 
 /* -------------------------------------------------------------------------- */
 /* Helpers                                                                    */

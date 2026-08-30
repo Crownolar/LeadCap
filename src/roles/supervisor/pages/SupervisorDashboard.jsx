@@ -397,7 +397,7 @@ const SupervisorDashboard = () => {
                       {c.isActive ? "Active" : "Inactive"}
                     </StatusBadge>
                   </div>
-                  <div className='mt-4 grid grid-cols-3 gap-3'>
+                  <div className='mt-4 grid  grid-cols-1 md:grid-cols-3 gap-3'>
                     <MetricTile
                       icon={null}
                       label='Total'
