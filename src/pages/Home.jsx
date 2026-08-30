@@ -1,6 +1,13 @@
 import { useAuth } from "../hooks/useAuth";
 import { useSamples } from "../hooks/useSamples";
 import { useTheme } from "../hooks/useTheme";
+<<<<<<< HEAD
+import SampleFormModal from "../components/modals/SampleFormModal";
+import SampleDetailModal from "../components/modals/SampleDetailModal";
+import { useRef, useState, useMemo } from "react";
+import { Navigate } from "react-router";
+import { useSelector } from "react-redux";
+=======
 import AuthModal from "../components/auth/AuthModal";
 import Dashboard from "../components/views/Dashboard";
 import Database from "../components/views/DatabaseView";
@@ -9,38 +16,13 @@ import SampleFormModal from "../components/modals/SampleFormModal";
 import SampleDetailModal from "../components/modals/SampleDetailModal";
 import { lazy, Suspense, useRef, useState, useMemo } from "react";
 const MapView = lazy(() => import("../components/views/MapView"));
+>>>>>>> 5154c95bb8a09c1bfa1c070f873e32370179438f
 
 const Home = () => {
-  const {
-    isAuthenticated,
-    setIsAuthenticated,
-    currentUser,
-    setCurrentUser,
-    authForm,
-    setAuthForm,
-    showPassword,
-    setShowPassword,
-    authMode,
-    setAuthMode,
-    handleLogin,
-    handleSignup,
-  } = useAuth();
+  const { isAuthenticated, currentUser } = useSelector((state) => state.auth);
 
   const { theme } = useTheme();
-  const {
-    filteredSamples,
-    addSample,
-    states,
-    loading,
-    searchTerm,
-    setSearchTerm,
-    filterState,
-    setFilterState,
-    filterProduct,
-    setFilterProduct,
-    filterStatus,
-    setFilterStatus,
-  } = useSamples(currentUser);
+  const { filteredSamples, addSample } = useSamples(currentUser);
   const [currentView, setCurrentView] = useState("dashboard");
   const [showForm, setShowForm] = useState(false);
   const [selectedSample, setSelectedSample] = useState(null);
@@ -68,27 +50,17 @@ const Home = () => {
   const handleFormSubmit = (formData) => addSample(formData);
 
   if (!isAuthenticated) {
-    return (
-      <div className={`${theme.bg} min-h-screen`}>
-        <AuthModal
-          theme={theme}
-          authMode={authMode}
-          setAuthMode={setAuthMode}
-          authForm={authForm}
-          setAuthForm={setAuthForm}
-          showPassword={showPassword}
-          setShowPassword={setShowPassword}
-          handleLogin={handleLogin}
-          handleSignup={handleSignup}
-          setCurrentUser={setCurrentUser}
-          setIsAuthenticated={setIsAuthenticated}
-        />
-      </div>
-    );
+    return <Navigate to='auth' replace />;
   }
 
   return (
     <>
+<<<<<<< HEAD
+      {currentView === "dashboard" && <Navigate to='dashboard' />}
+      {currentView === "database" && <Navigate to='database' />}
+      {currentView === "map" && <Navigate to='map' />}
+      {currentView === "reports" && <Navigate to='reports' />}
+=======
       {currentView === "dashboard" && (
         <Dashboard samples={filteredSamples} loading={loading} theme={theme} />
       )}
@@ -122,6 +94,7 @@ const Home = () => {
       {currentView === "reports" && (
         <Reports theme={theme} samples={filteredSamples} />
       )}
+>>>>>>> 5154c95bb8a09c1bfa1c070f873e32370179438f
       {showForm && (
         <SampleFormModal
           theme={theme}

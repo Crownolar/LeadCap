@@ -627,6 +627,16 @@ const DatabaseView = ({
           </button>
         </div>
 
+<<<<<<< HEAD
+      {!fetchSampleError && (
+        <>
+          {!loading && (
+            <h1>
+              Showing {filteredSamples.length} of {totalItems}{" "}
+            </h1>
+          )}
+
+=======
         {/* ============================================================ */}
         {/* SEARCH + FILTERS                                              */}
         {/* ============================================================ */}
@@ -639,6 +649,7 @@ const DatabaseView = ({
             ${theme?.border}
           `}
         >
+>>>>>>> 5154c95bb8a09c1bfa1c070f873e32370179438f
           <div
             className="
               grid
@@ -648,7 +659,40 @@ const DatabaseView = ({
               xl:grid-cols-[minmax(220px,1.5fr)_repeat(4,minmax(140px,1fr))_auto]
             "
           >
+<<<<<<< HEAD
+            <div className='hidden sm:block overflow-x-auto'>
+              <table className='w-full min-w-[800px] text-sm'>
+                <thead className={theme?.card}>
+                  <tr>
+                    {[
+                      "Product",
+                      "Location",
+                      ...(canSeeCollector ? ["Collector"] : []),
+                      "Max Reading (ppm)",
+                      "Status",
+                      "Date",
+                      "Actions",
+                    ].map((header) => (
+                      <th
+                        key={header}
+                        className={`px-4 py-3 text-left font-semibold ${theme?.textMuted}`}
+                      >
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                {/* desktop view */}
+                <tbody className='divide-y divide-gray-200 dark:divide-gray-700 '>
+                  {filteredSamples?.map((sample, i) => {
+                    const maxReading = getMaxReading(
+                      sample?.heavyMetalReadings,
+                    );
+                    const sampleStatus =
+                      getContaminationStatus(sample).toLowerCase();
+=======
             {/* Search */}
+>>>>>>> 5154c95bb8a09c1bfa1c070f873e32370179438f
 
             <div className="relative">
               <Search
@@ -771,6 +815,33 @@ const DatabaseView = ({
                         "Unknown"}
                     </option>
                   );
+<<<<<<< HEAD
+                })}
+            </div>
+
+            {fetchSampleError && (
+              <div className='py-3 flex justify-center'>
+                <p className='text-sm mt-1 text-red-600'>
+                  Error occurred while fetching more samples. Check connection
+                  and refresh
+                </p>
+              </div>
+            )}
+            {loadingMore && (
+              <div className='flex items-center justify-center h-48'>
+                <Loader className='animate-spin mr-2  size-10' />
+              </div>
+            )}
+            {loadingMoreError && (
+              <div className='py-3 flex justify-center'>
+                <p className='text-sm mt-1 text-red-600'>
+                  Error occurred while fetching more samples. Check connection
+                  and refresh
+                </p>
+              </div>
+            )}
+            {!fetchSampleError && !loading && filteredSamples?.length > 0 && (
+=======
                 }
               )}
             </FilterSelect>
@@ -842,6 +913,7 @@ const DatabaseView = ({
             </FilterSelect>
 
             {hasActiveFilters && (
+>>>>>>> 5154c95bb8a09c1bfa1c070f873e32370179438f
               <button
                 type="button"
                 onClick={clearFilters}

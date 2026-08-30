@@ -1,11 +1,3 @@
-/**
- * useCollectorStats.js
- * ─────────────────────
- * Fetches the global sample stats card values.
- * Kept separate from useCollectorSamples so either can be used
- * independently (e.g. a future stats-only widget).
- */
-
 import { useState, useEffect } from "react";
 import api from "../../../utils/api";
 
@@ -30,7 +22,9 @@ export const useCollectorStats = () => {
     };
 
     fetch();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return { stats, loading, error };

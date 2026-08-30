@@ -5,13 +5,13 @@ import { useSelector, useDispatch } from "react-redux";
 import { handleLogout } from "../redux/slice/authSlice";
 import { useTheme } from "../context/ThemeContext";
 import SampleFormModal from "../components/modals/SampleFormModal";
-import { lazy, Suspense, useState  } from "react";
+import { lazy, Suspense, useState } from "react";
 const HeavyMetalFormModalNew = lazy(
   () => import("../components/modals/lab-result_modal/HeavyMetalFormModalNew"),
 );
 import { createSample } from "../redux/slice/samplesSlice";
 import useRoleDataLoader from "../hooks/useRoleDataLoader";
-import { useSupervisor } from "../modules/data-collector/hooks/useSupervisor";
+import { useSupervisor } from "../roles/data-collector/hooks/useSupervisor";
 
 const Layout = () => {
   const dispatch = useDispatch();
@@ -64,7 +64,7 @@ const Layout = () => {
 
   return (
     <div className={`min-h-screen ${theme.bg} ${theme.text}`}>
-      <div className="flex min-h-screen flex-col">
+      <div className='flex min-h-screen flex-col'>
         <Header
           currentUser={currentUser}
           handleLogout={logout}
@@ -72,8 +72,8 @@ const Layout = () => {
           setMobileMenuOpen={setMobileMenuOpen}
         />
 
-        <div className="flex flex-1 min-h-0 relative">
-          <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-1 min-h-0 gap-6">
+        <div className='flex flex-1 min-h-0 relative'>
+          <div className='w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-1 min-h-0 gap-6'>
             <Sidebar
               mobileMenuOpen={mobileMenuOpen}
               setMobileMenuOpen={setMobileMenuOpen}
@@ -112,7 +112,7 @@ const Layout = () => {
 
           {mobileMenuOpen && (
             <div
-              className="fixed inset-0 z-30 bg-black/30 backdrop-blur-[1px] lg:hidden"
+              className='fixed inset-0 z-30 bg-black/30 backdrop-blur-[1px] lg:hidden'
               onClick={() => setMobileMenuOpen(false)}
             />
           )}

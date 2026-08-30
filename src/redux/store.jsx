@@ -1,9 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { persistReducer, persistStore } from "redux-persist";
 import sessionStorage from "redux-persist/lib/storage/session";
-import authReducer from "../redux/slice/authSlice";
-import samplesReducer from "./slice/samplesSlice";
-import userReducer from "./slice/userSlice";
+import { authReducer, samplesReducer, userReducer } from ".";
 import { combineReducers } from "redux";
 import heavyMetalReducer from "./slice/heavyMetalSlice";
 
