@@ -1,26 +1,85 @@
 /**
  * supervisor.constants.js
  * ────────────────────────
- * All static config for the Supervisor module.
- * Never hardcode these inline in components or pages.
+ * Static configuration for the Supervisor module.
  */
 
-// ── Review status tabs ───────────────────────────────────────────────────────
+// ─── Review statuses ────────────────────────────────────────────────────────
 
-export const STATUS_TABS = ["PENDING", "APPROVED", "REJECTED", "FLAGGED"];
-
-export const STATUS_TAB_META = {
-  PENDING: { sub: "Awaiting action" },
-  APPROVED: { sub: "Approved items" },
-  REJECTED: { sub: "Returned items" },
-  FLAGGED: { sub: "Needs attention" },
+export const REVIEW_STATUSES = {
+  PENDING_REVIEW: "PENDING_REVIEW",
+  APPROVED_FOR_XRF: "APPROVED_FOR_XRF",
+  XRF_IN_PROGRESS: "XRF_IN_PROGRESS",
+  XRF_COMPLETED: "XRF_COMPLETED",
+  APPROVED_FOR_AAS: "APPROVED_FOR_AAS",
+  COMPLETED: "COMPLETED",
+  REJECTED: "REJECTED",
+  FLAGGED: "FLAGGED",
 };
 
-// ── Review decision options ──────────────────────────────────────────────────
 
-export const REVIEW_DECISIONS = ["APPROVED", "REJECTED", "FLAGGED"];
+// ─── Review tabs ────────────────────────────────────────────────────────────
 
-// ── Issue checklist options (sample review form) ─────────────────────────────
+export const STATUS_TABS = [
+  "PENDING_REVIEW",
+  "APPROVED_FOR_XRF",
+  "XRF_COMPLETED",
+  "APPROVED_FOR_AAS",
+  "COMPLETED",
+  "REJECTED",
+  "FLAGGED",
+];
+
+export const STATUS_TAB_META = {
+  PENDING_REVIEW: {
+    label: "Pending",
+    sub: "Awaiting review",
+  },
+
+  APPROVED_FOR_XRF: {
+    label: "XRF Queue",
+    sub: "Ready for screening",
+  },
+
+  XRF_COMPLETED: {
+    label: "XRF Complete",
+    sub: "Screening completed",
+  },
+
+  APPROVED_FOR_AAS: {
+    label: "AAS Queue",
+    sub: "Requires lab confirmation",
+  },
+
+  COMPLETED: {
+    label: "Completed",
+    sub: "Review completed",
+  },
+
+  REJECTED: {
+    label: "Rejected",
+    sub: "Returned samples",
+  },
+
+  FLAGGED: {
+    label: "Flagged",
+    sub: "Needs attention",
+  },
+};
+
+
+// ─── Review actions ─────────────────────────────────────────────────────────
+
+export const REVIEW_ACTIONS = {
+  APPROVED_FOR_XRF: "APPROVED_FOR_XRF",
+  APPROVED_FOR_AAS: "APPROVED_FOR_AAS",
+  COMPLETED: "COMPLETED",
+  REJECTED: "REJECTED",
+  FLAGGED: "FLAGGED",
+};
+
+
+// ─── Issue checklist ────────────────────────────────────────────────────────
 
 export const ISSUE_OPTIONS = [
   "Incomplete GPS location",
@@ -33,15 +92,43 @@ export const ISSUE_OPTIONS = [
   "Other",
 ];
 
-// ── Pie chart colours (review distribution) ──────────────────────────────────
 
-export const REVIEW_CHART_COLORS = ["#f59e0b", "#10b981", "#ef4444", "#8b5cf6"];
+// ─── Heavy metals ───────────────────────────────────────────────────────────
 
-// ── Bulk actions that are allowed ────────────────────────────────────────────
-// Rejection is excluded from bulk — requires individual comments.
+export const HEAVY_METALS = [
+  "LEAD",
+  "CADMIUM",
+  "CHROMIUM",
+  "NICKEL",
+  "ARSENIC",
+  "MERCURY",
+];
 
-export const BULK_ALLOWED_STATUSES = ["APPROVED", "FLAGGED"];
 
-// ── Default pagination ────────────────────────────────────────────────────────
+// ─── Chart colours ──────────────────────────────────────────────────────────
+
+export const REVIEW_CHART_COLORS = [
+  "#f59e0b",
+  "#10b981",
+  "#0ea5e9",
+  "#8b5cf6",
+  "#64748b",
+  "#ef4444",
+  "#d97706",
+];
+
+
+// ─── Pagination ─────────────────────────────────────────────────────────────
 
 export const DEFAULT_PAGE_SIZE = 25;
+
+// ── Heavy metals ──────────────────────────────────────────────────────────────
+
+export const HEAVY_METALS = [
+  "LEAD",
+  "CADMIUM",
+  "CHROMIUM",
+  "NICKEL",
+  "ARSENIC",
+  "MERCURY",
+];
