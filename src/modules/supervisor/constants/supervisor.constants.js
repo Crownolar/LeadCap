@@ -123,12 +123,3 @@ export const REVIEW_CHART_COLORS = [
 export const DEFAULT_PAGE_SIZE = 25;
 
 // ── Heavy metals ──────────────────────────────────────────────────────────────
-
-export const HEAVY_METALS = [
-  "LEAD",
-  "CADMIUM",
-  "CHROMIUM",
-  "NICKEL",
-  "ARSENIC",
-  "MERCURY",
-];

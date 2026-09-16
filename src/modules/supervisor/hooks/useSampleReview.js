@@ -6,16 +6,15 @@ import {
   getReviewDetail,
   submitReviewAction,
   getSampleHeavyMetalReadings,
-  createBatchXrfReadings,
-  createSingleXrfReading,
-} from "../api/supervisorReview.api";
+  createBatchXRFReadings,
+  createXRFReading,
+} from "../services/supervisor.service";
 
 import { DEFAULT_PAGE_SIZE } from "../constants/supervisor.constants";
 
-export default function useSampleReviews() {
+export function useSampleReview(collectorId = null) {
   const [reviews, setReviews] = useState([]);
   const [stats, setStats] = useState(null);
-
   const [selectedSample, setSelectedSample] = useState(null);
   const [reviewDetail, setReviewDetail] = useState(null);
   const [heavyMetalReadings, setHeavyMetalReadings] = useState([]);
@@ -23,24 +22,38 @@ export default function useSampleReviews() {
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
-
   const [actionLoading, setActionLoading] = useState(false);
-
   const [error, setError] = useState(null);
 
   const [pagination, setPagination] = useState({
     page: 1,
     take: DEFAULT_PAGE_SIZE,
     total: 0,
+    skip: 0,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
   });
 
-  // ─── Fetch review statistics ─────────────────────────────────────────────
+  /* ------------------------------------------------------------------------ */
+  /* FETCH REVIEW STATS                                                      */
+  /* ------------------------------------------------------------------------ */
 
   const fetchStats = useCallback(async () => {
     setStatsLoading(true);
 
     try {
-      const response = await getReviewStats();
+      const params = {};
+
+      if (collectorId) {
+        params.collectorId = collectorId;
+      }
+
+      console.log("Fetching review stats with params:", params);
+
+      const response = await getReviewStats(params);
+
+      console.log("Review stats response:", response);
 
       setStats(response?.data || response);
     } catch (err) {
@@ -48,19 +61,29 @@ export default function useSampleReviews() {
     } finally {
       setStatsLoading(false);
     }
-  }, []);
+  }, [collectorId]);
 
-  // ─── Fetch reviews ───────────────────────────────────────────────────────
+  /* ------------------------------------------------------------------------ */
+  /* FETCH REVIEWS                                                           */
+  /* ------------------------------------------------------------------------ */
 
   const fetchReviews = useCallback(
-    async ({ status, page = 1, take = DEFAULT_PAGE_SIZE, search } = {}) => {
+    async ({
+      status,
+      page = 1,
+      skip,
+      take = DEFAULT_PAGE_SIZE,
+      search,
+      collectorId: requestedCollectorId,
+      append = false,
+    } = {}) => {
       setLoading(true);
       setError(null);
 
       try {
         const params = {
-          skip: (page - 1) * take,
-          take,
+          page,
+          pageSize: take,
         };
 
         if (status) {
@@ -71,33 +94,98 @@ export default function useSampleReviews() {
           params.search = search;
         }
 
+        const activeCollectorId =
+          requestedCollectorId !== undefined
+            ? requestedCollectorId
+            : collectorId;
+
+        if (activeCollectorId) {
+          params.collectorId = activeCollectorId;
+        }
+
+        console.log("Fetching reviews with params:", params);
+
+        console.log("========== REVIEW REQUEST ==========");
+        console.log("Selected collector ID:", activeCollectorId);
+        console.log("Request params:", params);
+
         const response = await getReviews(params);
 
-        const payload = response?.data || response;
+        console.log("========== REVIEW RESPONSE ==========");
+        console.log("Response:", response);
+        console.log(
+          "Creators returned:",
+          response?.data?.data?.map((item) => item.creator?.fullName),
+        );
 
-        setReviews(payload?.data || []);
+        console.log("ACTIVE COLLECTOR:", activeCollectorId);
+        console.log("FETCHING REVIEWS:", params);
+
+        console.log("Reviews API response:", response);
+
+        const payload = response;
+
+        const reviewList = Array.isArray(payload?.data)
+          ? payload.data
+          : Array.isArray(payload)
+            ? payload
+            : [];
+
+        console.log("Normalized review list:", reviewList);
+
+        setReviews(reviewList);
+
+        const apiPagination = payload?.pagination || {};
+
+        const apiSkip = apiPagination.skip ?? 0;
+        const apiTake =
+          apiPagination.pageSize ??
+          apiPagination.take ??
+          apiPagination.limit ??
+          take;
+
+        const apiTotal =
+          apiPagination.totalCount ?? payload?.total ?? reviewList.length;
 
         setPagination({
-          page,
-          take: payload?.take || take,
-          total: payload?.total || 0,
+          page: apiPagination.page ?? page,
+          skip: apiSkip,
+          take: apiTake,
+          total: apiTotal,
+          totalPages:
+            apiPagination.totalPages ??
+            Math.max(1, Math.ceil(apiTotal / apiTake)),
+          hasNextPage:
+            apiPagination.hasNextPage ?? apiSkip + apiTake < apiTotal,
+          hasPrevPage: apiPagination.hasPrevPage ?? apiSkip > 0,
         });
+
+        return reviewList;
       } catch (err) {
         console.error("Failed to fetch reviews:", err);
+
+        console.error("========== REVIEW ERROR ==========");
+        console.error("Status:", err?.response?.status);
+        console.error("Response data:", err?.response?.data);
+        console.error("Response message:", err?.response?.data?.message);
 
         setError(
           err?.response?.data?.message || "Failed to load sample reviews",
         );
 
         setReviews([]);
+
+        throw err;
       } finally {
         setLoading(false);
       }
     },
-    [],
+    [collectorId],
   );
 
-  // ─── Fetch individual review detail ──────────────────────────────────────
+  /* ------------------------------------------------------------------------ */
+  /* FETCH REVIEW DETAIL                                                     */
+  /* ------------------------------------------------------------------------ */
 
   const fetchReviewDetail = useCallback(async (sampleId) => {
     if (!sampleId) return null;
@@ -121,7 +209,9 @@ export default function useSampleReviews() {
     }
   }, []);
 
-  // ─── Fetch heavy metal readings ──────────────────────────────────────────
+  /* ------------------------------------------------------------------------ */
+  /* FETCH HEAVY METAL READINGS                                              */
+  /* ------------------------------------------------------------------------ */
 
   const fetchHeavyMetalReadings = useCallback(async (sampleId) => {
     if (!sampleId) return [];
@@ -131,9 +221,11 @@ export default function useSampleReviews() {
 
       const readings = response?.data || response || [];
 
-      setHeavyMetalReadings(Array.isArray(readings) ? readings : []);
+      const normalizedReadings = Array.isArray(readings) ? readings : [];
 
-      return readings;
+      setHeavyMetalReadings(normalizedReadings);
+
+      return normalizedReadings;
     } catch (err) {
       console.error("Failed to fetch heavy metal readings:", err);
 
@@ -143,7 +235,9 @@ export default function useSampleReviews() {
     }
   }, []);
 
-  // ─── Select sample ───────────────────────────────────────────────────────
+  /* ------------------------------------------------------------------------ */
+  /* SELECT SAMPLE                                                           */
+  /* ------------------------------------------------------------------------ */
 
   const selectSample = useCallback(
     async (sample) => {
@@ -163,19 +257,21 @@ export default function useSampleReviews() {
     [fetchReviewDetail, fetchHeavyMetalReadings],
   );
 
-  // ─── Submit review action ────────────────────────────────────────────────
+  /* ------------------------------------------------------------------------ */
+  /* REVIEW ACTION                                                           */
+  /* ------------------------------------------------------------------------ */
 
   const performReviewAction = useCallback(
     async ({
       sampleId,
       action,
-      comments,
+      comments = "",
       issues = [],
       requestedChanges = "",
       currentStatus,
     }) => {
       if (!sampleId || !action) {
-        throw new Error("Sample ID and review action are required");
+        throw new Error("Sample ID and review action are required.");
       }
 
       setActionLoading(true);
@@ -190,11 +286,14 @@ export default function useSampleReviews() {
 
         await Promise.all([
           fetchStats(),
+
           fetchReviewDetail(sampleId),
+
           fetchReviews({
             status: currentStatus,
             page: pagination.page,
             take: pagination.take,
+            collectorId,
           }),
         ]);
 
@@ -216,22 +315,24 @@ export default function useSampleReviews() {
     ],
   );
 
-  // ─── Submit batch XRF readings ───────────────────────────────────────────
+  /* ------------------------------------------------------------------------ */
+  /* BATCH XRF READINGS                                                      */
+  /* ------------------------------------------------------------------------ */
 
   const submitBatchXrfReadings = useCallback(
     async ({ sampleId, readings }) => {
       if (!sampleId) {
-        throw new Error("Sample ID is required");
+        throw new Error("Sample ID is required.");
       }
 
       if (!Array.isArray(readings) || readings.length === 0) {
-        throw new Error("At least one XRF reading is required");
+        throw new Error("At least one XRF reading is required.");
       }
 
       setActionLoading(true);
 
       try {
-        const response = await createBatchXrfReadings({
+        const response = await createBatchXRFReadings({
           sampleId,
           readings,
         });
@@ -254,14 +355,20 @@ export default function useSampleReviews() {
     [fetchHeavyMetalReadings, fetchReviewDetail, fetchStats],
   );
 
-  // ─── Submit single XRF reading ───────────────────────────────────────────
+  /* ------------------------------------------------------------------------ */
+  /* SINGLE XRF READING                                                      */
+  /* ------------------------------------------------------------------------ */
 
   const submitSingleXrfReading = useCallback(
     async (payload) => {
+      if (!payload?.sampleId) {
+        throw new Error("Sample ID is required.");
+      }
+
       setActionLoading(true);
 
       try {
-        const response = await createSingleXrfReading(payload);
+        const response = await createXRFReading(payload);
 
         await Promise.all([
           fetchHeavyMetalReadings(payload.sampleId),
@@ -281,31 +388,95 @@ export default function useSampleReviews() {
     [fetchHeavyMetalReadings, fetchReviewDetail, fetchStats],
   );
 
-  // ─── Refresh everything ──────────────────────────────────────────────────
+  /* ------------------------------------------------------------------------ */
+  /* REFRESH                                                                 */
+  /* ------------------------------------------------------------------------ */
 
   const refresh = useCallback(async () => {
     await Promise.all([
       fetchStats(),
+
       fetchReviews({
         page: pagination.page,
         take: pagination.take,
+        collectorId,
       }),
     ]);
   }, [fetchStats, fetchReviews, pagination.page, pagination.take]);
 
-  // ─── Initial load ────────────────────────────────────────────────────────
+  /* ------------------------------------------------------------------------ */
+  /* INITIAL LOAD                                                            */
+  /* ------------------------------------------------------------------------ */
 
   useEffect(() => {
     fetchStats();
+  }, [fetchStats]);
 
-    fetchReviews({
-      page: 1,
-      take: DEFAULT_PAGE_SIZE,
-    });
-  }, [fetchStats, fetchReviews]);
+  const loadMore = useCallback(
+    async ({ status, search, collectorId: requestedCollectorId } = {}) => {
+      if (reviews.length >= pagination.total) return;
+
+      const activeCollectorId =
+        requestedCollectorId !== undefined ? requestedCollectorId : collectorId;
+      const nextPage = pagination.page + 1;
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const params = {
+          page: nextPage,
+          pageSize: pagination.take,
+        };
+
+        if (status) params.status = status;
+        if (search) params.search = search;
+        if (activeCollectorId) params.collectorId = activeCollectorId;
+
+        const response = await getReviews(params);
+        const payload = response;
+        const newReviews = Array.isArray(payload?.data) ? payload.data : [];
+        const apiPagination = payload?.pagination || {};
+
+        setReviews((prev) => {
+          const seen = new Set(prev.map((item) => item.id));
+          return [...prev, ...newReviews.filter((item) => !seen.has(item.id))];
+        });
+
+        const apiSkip = apiPagination.skip ?? reviews.length;
+        const apiTake =
+          apiPagination.pageSize ??
+          apiPagination.take ??
+          apiPagination.limit ??
+          pagination.take;
+        const apiTotal =
+          apiPagination.totalCount ?? payload?.total ?? pagination.total;
+
+        setPagination((prev) => ({
+          ...prev,
+          page: apiPagination.page ?? Math.floor(apiSkip / apiTake) + 1,
+          skip: apiSkip,
+          take: apiTake,
+          total: apiTotal,
+          totalPages:
+            apiPagination.totalPages ??
+            Math.max(1, Math.ceil(apiTotal / apiTake)),
+          hasNextPage:
+            apiPagination.hasNextPage ?? apiSkip + apiTake < apiTotal,
+          hasPrevPage: apiPagination.hasPrevPage ?? apiSkip > 0,
+        }));
+      } catch (err) {
+        console.error("Failed to load more reviews:", err);
+        setError(err?.response?.data?.message || "Failed to load more samples");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [pagination.take, pagination.total, reviews.length, collectorId],
+  );
 
   return {
-    // Data
+    /* Data */
     reviews,
     stats,
     selectedSample,
@@ -313,14 +484,14 @@ export default function useSampleReviews() {
     heavyMetalReadings,
     pagination,
 
-    // States
+    /* States */
     loading,
     statsLoading,
     detailLoading,
     actionLoading,
     error,
 
-    // Actions
+    /* Actions */
     fetchStats,
     fetchReviews,
     fetchReviewDetail,
@@ -332,7 +503,10 @@ export default function useSampleReviews() {
     performReviewAction,
     submitBatchXrfReadings,
     submitSingleXrfReading,
-
     refresh,
+
+    loadMore,
   };
 }
+
+export default useSampleReview;

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 
+import { useLocation, useParams } from "react-router-dom";
+
 import {
   Search,
   RefreshCw,
-  ChevronLeft,
-  ChevronRight,
   ClipboardCheck,
   FlaskConical,
   CheckCircle2,
@@ -14,7 +14,7 @@ import {
   Loader2,
 } from "lucide-react";
 
-import useSampleReviews from "../hooks/useSampleReview";
+import useSampleReview from "../hooks/useSampleReview";
 
 import {
   STATUS_TABS,
@@ -33,7 +33,7 @@ import {
 import { useTheme } from "../../../context/ThemeContext";
 
 // Adjust this path based on where you create the modal
-import ReviewDetailModal from "../components/ReviewDetailModal";
+import ReviewDetailModal from "../pages/ReviewDetailModal";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STAT CARD
@@ -74,10 +74,7 @@ function ReviewStatCard({
 
           <div className="mt-2 flex items-end gap-2">
             {loading ? (
-              <Loader2
-                size={20}
-                className="animate-spin text-emerald-500"
-              />
+              <Loader2 size={20} className="animate-spin text-emerald-500" />
             ) : (
               <span className={`text-2xl font-bold ${theme.text}`}>
                 {value ?? 0}
@@ -104,14 +101,14 @@ function ReviewStatCard({
 // STATUS TAB
 // ─────────────────────────────────────────────────────────────────────────────
 
-function StatusTab({
-  status,
-  active,
-  count,
-  onClick,
-  theme,
-}) {
-  const meta = STATUS_TAB_META[status];
+function StatusTab({ status, active, count, onClick, theme }) {
+  const meta =
+    status === "ALL"
+      ? {
+          label: "All Samples",
+          sub: "View every submitted sample",
+        }
+      : STATUS_TAB_META[status];
 
   return (
     <button
@@ -120,22 +117,14 @@ function StatusTab({
       className={`
         relative min-w-max px-4 py-3 text-left
         transition-colors border-b-2
-        ${
-          active
-            ? "border-emerald-500"
-            : `border-transparent ${theme.hover}`
-        }
+        ${active ? "border-emerald-500" : `border-transparent ${theme.hover}`}
       `}
     >
       <div className="flex items-center gap-2">
         <span
           className={`
             text-xs font-semibold
-            ${
-              active
-                ? "text-emerald-600 dark:text-emerald-400"
-                : theme.text
-            }
+            ${active ? "text-emerald-600 dark:text-emerald-400" : theme.text}
           `}
         >
           {meta?.label || formatReviewStatus(status)}
@@ -146,11 +135,7 @@ function StatusTab({
             className={`
               rounded-full px-1.5 py-0.5
               text-[9px] font-bold font-mono
-              ${
-                active
-                  ? "bg-emerald-500/10 text-emerald-600"
-                  : theme.bg
-              }
+              ${active ? "bg-emerald-500/10 text-emerald-600" : theme.bg}
             `}
           >
             {count}
@@ -159,9 +144,7 @@ function StatusTab({
       </div>
 
       {meta?.sub && (
-        <p className={`mt-1 text-[10px] ${theme.textMuted}`}>
-          {meta.sub}
-        </p>
+        <p className={`mt-1 text-[10px] ${theme.textMuted}`}>{meta.sub}</p>
       )}
     </button>
   );
@@ -171,12 +154,7 @@ function StatusTab({
 // SAMPLE ROW
 // ─────────────────────────────────────────────────────────────────────────────
 
-function SampleRow({
-  sample,
-  selected,
-  onClick,
-  theme,
-}) {
+function SampleRow({ sample, selected, onClick, theme }) {
   const status = getSampleReviewStatus(sample);
 
   return (
@@ -222,15 +200,11 @@ function SampleRow({
 
             <span>•</span>
 
-            <span>
-              {getSampleLocation(sample)}
-            </span>
+            <span>{getSampleLocation(sample)}</span>
 
             <span>•</span>
 
-            <span>
-              {formatDate(sample.createdAt)}
-            </span>
+            <span>{formatDate(sample.createdAt)}</span>
           </div>
         </div>
 
@@ -261,6 +235,15 @@ function SampleRow({
 export default function SampleReview() {
   const { theme } = useTheme();
 
+  const location = useLocation();
+  const { collectorId } = useParams();
+
+  const activeCollectorId = collectorId || null;
+
+  const collectorName =
+    location.state?.collectorName ||
+    (activeCollectorId ? "Selected Collector" : "All Collectors");
+
   const {
     reviews,
     stats,
@@ -277,21 +260,18 @@ export default function SampleReview() {
     selectSample,
     setSelectedSample,
     fetchStats,
-  } = useSampleReviews();
+    loadMore,
+  } = useSampleReview(activeCollectorId);
 
   // ─── Local UI state ───────────────────────────────────────────────────────
 
-  const [activeStatus, setActiveStatus] =
-    useState("PENDING_REVIEW");
+  const [activeStatus, setActiveStatus] = useState("ALL");
 
-  const [search, setSearch] =
-    useState("");
+  const [search, setSearch] = useState("");
 
-  const [debouncedSearch, setDebouncedSearch] =
-    useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const [isDetailOpen, setIsDetailOpen] =
-    useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   // ─── Search debounce ──────────────────────────────────────────────────────
 
@@ -307,40 +287,39 @@ export default function SampleReview() {
 
   useEffect(() => {
     fetchReviews({
-      status: activeStatus,
+      collectorId: activeCollectorId,
+      status: activeStatus === "ALL" ? undefined : activeStatus,
       page: 1,
       take: DEFAULT_PAGE_SIZE,
       search: debouncedSearch,
     });
-  }, [
-    activeStatus,
-    debouncedSearch,
-    fetchReviews,
-  ]);
+  }, [collectorId, activeStatus, debouncedSearch, fetchReviews]);
 
   // ─── Status counts ────────────────────────────────────────────────────────
 
   const statusCounts = useMemo(() => {
-    return {
+    const counts = {
       PENDING_REVIEW: stats?.pending ?? 0,
 
-      APPROVED_FOR_XRF:
-        stats?.approvedForXRF ?? 0,
+      APPROVED_FOR_XRF: stats?.approvedForXRF ?? 0,
 
-      XRF_COMPLETED:
-        stats?.xrfCompleted ?? 0,
+      XRF_COMPLETED: stats?.xrfCompleted ?? 0,
 
-      APPROVED_FOR_AAS:
-        stats?.approvedForAAS ?? 0,
+      APPROVED_FOR_AAS: stats?.approvedForAAS ?? 0,
 
-      COMPLETED:
-        stats?.completed ?? 0,
+      COMPLETED: stats?.completed ?? 0,
 
-      REJECTED:
-        stats?.rejected ?? 0,
+      REJECTED: stats?.rejected ?? 0,
 
-      FLAGGED:
-        stats?.flagged ?? 0,
+      FLAGGED: stats?.flagged ?? 0,
+    };
+
+    return {
+      ALL:
+        stats?.total ??
+        Object.values(counts).reduce((total, count) => total + count, 0),
+
+      ...counts,
     };
   }, [stats]);
 
@@ -403,10 +382,7 @@ export default function SampleReview() {
       // This should call GET /reviews/:sampleId inside the hook
       await selectSample(sample);
     } catch (error) {
-      console.error(
-        "Failed to load sample review detail:",
-        error
-      );
+      console.error("Failed to load sample review detail:", error);
     }
   };
 
@@ -424,7 +400,8 @@ export default function SampleReview() {
       fetchStats(),
 
       fetchReviews({
-        status: activeStatus,
+        collectorId: activeCollectorId,
+        status: activeStatus === "ALL" ? undefined : activeStatus,
         page: pagination.page,
         take: pagination.take,
         search: debouncedSearch,
@@ -432,22 +409,14 @@ export default function SampleReview() {
     ]);
   };
 
-  // ─── Pagination ───────────────────────────────────────────────────────────
+  // ─── Load More ────────────────────────────────────────────────────────────
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(
-      pagination.total / pagination.take
-    )
-  );
+  const hasMore = Boolean(pagination.hasNextPage) && reviews.length < pagination.total;
 
-  const handlePageChange = (page) => {
-    if (page < 1 || page > totalPages) return;
-
-    fetchReviews({
-      status: activeStatus,
-      page,
-      take: pagination.take,
+  const handleLoadMore = () => {
+    loadMore({
+      collectorId: activeCollectorId,
+      status: activeStatus === "ALL" ? undefined : activeStatus,
       search: debouncedSearch,
     });
   };
@@ -472,16 +441,15 @@ export default function SampleReview() {
             Supervisor workspace
           </p>
 
-          <h1
-            className={`mt-1 text-xl font-bold sm:text-2xl ${theme.text}`}
-          >
+          <h1 className={`mt-1 text-xl font-bold sm:text-2xl ${theme.text}`}>
             Sample Review
           </h1>
 
-          <p
-            className={`mt-1 text-sm ${theme.textMuted}`}
-          >
-            Review submitted samples and manage laboratory workflow.
+          <p className={`mt-1 text-sm ${theme.textMuted}`}>
+            Reviewing samples from{" "}
+            <span className={`font-semibold ${theme.text}`}>
+              {collectorName}
+            </span>
           </p>
         </div>
 
@@ -502,13 +470,8 @@ export default function SampleReview() {
         >
           <RefreshCw
             size={14}
-            className={
-              loading || statsLoading
-                ? "animate-spin"
-                : ""
-            }
+            className={loading || statsLoading ? "animate-spin" : ""}
           />
-
           Refresh
         </button>
       </div>
@@ -530,9 +493,7 @@ export default function SampleReview() {
             active={activeStatus === card.status}
             loading={statsLoading}
             theme={theme}
-            onClick={() =>
-              setActiveStatus(card.status)
-            }
+            onClick={() => setActiveStatus(card.status)}
           />
         ))}
       </div>
@@ -555,15 +516,13 @@ export default function SampleReview() {
           `}
         >
           <div className="flex min-w-max">
-            {STATUS_TABS.map((status) => (
+            {["ALL", ...STATUS_TABS].map((status) => (
               <StatusTab
                 key={status}
                 status={status}
                 count={statusCounts[status]}
                 active={activeStatus === status}
-                onClick={() =>
-                  setActiveStatus(status)
-                }
+                onClick={() => setActiveStatus(status)}
                 theme={theme}
               />
             ))}
@@ -590,9 +549,7 @@ export default function SampleReview() {
 
             <input
               value={search}
-              onChange={(event) =>
-                setSearch(event.target.value)
-              }
+              onChange={(event) => setSearch(event.target.value)}
               placeholder="Search samples, products, codes..."
               className={`
                 w-full rounded-lg border py-2 pl-9 pr-3
@@ -636,14 +593,9 @@ export default function SampleReview() {
             "
           >
             <div className="flex flex-col items-center gap-3">
-              <Loader2
-                size={24}
-                className="animate-spin text-emerald-500"
-              />
+              <Loader2 size={24} className="animate-spin text-emerald-500" />
 
-              <p
-                className={`text-xs ${theme.textMuted}`}
-              >
+              <p className={`text-xs ${theme.textMuted}`}>
                 Loading sample reviews...
               </p>
             </div>
@@ -659,20 +611,13 @@ export default function SampleReview() {
               items-center justify-center px-6 text-center
             "
           >
-            <ClipboardCheck
-              size={28}
-              className="mb-3 text-emerald-500/60"
-            />
+            <ClipboardCheck size={28} className="mb-3 text-emerald-500/60" />
 
-            <h3
-              className={`text-sm font-semibold ${theme.text}`}
-            >
+            <h3 className={`text-sm font-semibold ${theme.text}`}>
               No samples found
             </h3>
 
-            <p
-              className={`mt-1 text-xs ${theme.textMuted}`}
-            >
+            <p className={`mt-1 text-xs ${theme.textMuted}`}>
               There are currently no samples in this workflow stage.
             </p>
           </div>
@@ -686,91 +631,54 @@ export default function SampleReview() {
               <SampleRow
                 key={sample.id}
                 sample={sample}
-                selected={
-                  selectedSample?.id === sample.id
-                }
-                onClick={() =>
-                  handleSelectSample(sample)
-                }
+                selected={selectedSample?.id === sample.id}
+                onClick={() => handleSelectSample(sample)}
                 theme={theme}
               />
             ))}
           </div>
         )}
-
-        {/* Pagination */}
-
-        {!loading && pagination.total > pagination.take && (
-          <div
-            className={`
-              flex items-center justify-between border-t px-4 py-3
-              ${theme.border}
-            `}
-          >
-            <p
-              className={`text-[11px] ${theme.textMuted}`}
-            >
-              Page {pagination.page} of {totalPages}
-            </p>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                disabled={pagination.page <= 1}
-                onClick={() =>
-                  handlePageChange(
-                    pagination.page - 1
-                  )
-                }
-                className={`
-                  rounded-lg border p-1.5
-                  disabled:cursor-not-allowed disabled:opacity-40
-                  ${theme.border}
-                  ${theme.hover}
-                `}
-              >
-                <ChevronLeft
-                  size={16}
-                  className={theme.text}
-                />
-              </button>
-
-              <button
-                type="button"
-                disabled={
-                  pagination.page >= totalPages
-                }
-                onClick={() =>
-                  handlePageChange(
-                    pagination.page + 1
-                  )
-                }
-                className={`
-                  rounded-lg border p-1.5
-                  disabled:cursor-not-allowed disabled:opacity-40
-                  ${theme.border}
-                  ${theme.hover}
-                `}
-              >
-                <ChevronRight
-                  size={16}
-                  className={theme.text}
-                />
-              </button>
-            </div>
-          </div>
-        )}
       </div>
+      {/* load more */}
+
+      {!loading && reviews.length > 0 && hasMore && (
+        <div className="flex justify-center pt-6">
+          <button
+            onClick={handleLoadMore}
+            disabled={loading}
+            className="
+        inline-flex items-center gap-2
+        rounded-xl border border-slate-200
+        bg-white px-5 py-2.5
+        text-sm font-semibold text-slate-700
+        shadow-sm transition
+        hover:bg-slate-50
+        disabled:cursor-not-allowed
+        disabled:opacity-60
+        dark:border-slate-700
+        dark:bg-slate-800
+        dark:text-slate-200
+        dark:hover:bg-slate-700
+      "
+          >
+            {loading ? "Loading..." : "Load More Samples"}
+
+            {!loading && (
+              <span className="text-xs font-normal text-slate-400">
+                ({reviews.length} of {pagination.total})
+              </span>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* ─── Review Detail ─────────────────────────────────────────── */}
 
-      {isDetailOpen && (
+      {isDetailOpen && selectedSample && (
         <ReviewDetailModal
-          isOpen={isDetailOpen}
+          sampleId={selectedSample.id}
           onClose={handleCloseDetail}
-          sample={selectedSample}
-          reviewDetail={reviewDetail}
-          loading={detailLoading}
+          onRefresh={handleRefresh}
         />
       )}
     </div>
